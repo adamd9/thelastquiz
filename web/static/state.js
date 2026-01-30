@@ -20,6 +20,7 @@ export const state = {
   selectedRunQuizMeta: null,
   selectedRunQuizId: null,
   runResults: [],
+  runResultsSummary: null,
   assets: [],
   runLog: "",
   runLogExists: false,

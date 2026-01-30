@@ -84,7 +84,13 @@ class ModelPicker extends HTMLElement {
       groupSelect.value = state.selectedGroup || "";
       groupSelect.addEventListener("change", (event) => {
         state.selectedGroup = event.target.value;
+        console.log("[model-picker] group changed", {
+          group: state.selectedGroup,
+          models: state.models.length,
+          groupIds: (state.groups[state.selectedGroup] || []).length,
+        });
         notifyModelSelectionChanged();
+        this.updateModelList();
       });
     }
     this.querySelector("input[type=text]")?.addEventListener("input", (event) => {

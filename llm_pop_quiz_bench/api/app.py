@@ -16,6 +16,7 @@ from pydantic import BaseModel
 
 from ..core import reporter
 from ..core.model_config import model_config_loader
+from ..core.costs import estimate_run_cost, fetch_openrouter_pricing_map
 from ..core.openrouter import fetch_user_models, normalize_models, strip_prefix
 from ..core.quiz_meta import build_quiz_meta
 from ..core.quiz_converter import convert_to_quiz
@@ -575,7 +576,9 @@ def get_run_results(run_id: str) -> dict:
     conn = connect(runtime_paths.db_path)
     rows = fetch_results(conn, run_id)
     conn.close()
-    return {"results": rows}
+    pricing_map = fetch_openrouter_pricing_map()
+    cost_summary = estimate_run_cost(rows, pricing_map) if rows else None
+    return {"results": rows, "summary": {"cost": cost_summary} if cost_summary else None}
 
 
 @app.get("/api/runs/{run_id}/log")

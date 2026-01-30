@@ -50,6 +50,7 @@ export async function loadRunDetails(runId, includeLog = false) {
   state.selectedRunData = runData.run || null;
   state.assets = runData.assets || [];
   state.runResults = resultsData.results || [];
+  state.runResultsSummary = resultsData.summary || null;
   state.runError = null;
   if (logData) {
     state.runLog = logData.log || "";

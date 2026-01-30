@@ -159,6 +159,18 @@ class RunPanel extends HTMLElement {
     const groupLabel = runData?.settings?.group
       ? escapeHtml(runData.settings.group)
       : "";
+    const costSummary = state.runResultsSummary?.cost;
+    const costValue = costSummary?.total;
+    const missingPricing = costSummary?.missing_pricing || [];
+    const hasCost = Number.isFinite(costValue);
+    const costLabel = hasCost ? `$${costValue.toFixed(4)}` : "Unavailable";
+    const missingLabel =
+      missingPricing.length > 0
+        ? ` (missing pricing for ${missingPricing.length} model${missingPricing.length === 1 ? "" : "s"})`
+        : "";
+    const costLine = costSummary
+      ? `<div class="status">Est. cost: ${costLabel}${missingLabel}</div>`
+      : "";
     this.innerHTML = `
       <div class="panel">
         <div class="panel-header">
@@ -172,6 +184,7 @@ class RunPanel extends HTMLElement {
         <div class="status-grid">
           <div class="status status-wrap">Models (${modelCount}): ${modelList}</div>
           ${groupLabel ? `<div class="status">Group: ${groupLabel}</div>` : ""}
+          ${costLine}
           ${state.runError ? `<div class="status">${state.runError}</div>` : ""}
           <div class="status">
             Status:
