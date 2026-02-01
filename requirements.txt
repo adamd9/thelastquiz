@@ -9,6 +9,7 @@ tqdm
 structlog
 fastapi
 uvicorn
+gunicorn
 python-multipart
 openai
 anthropic
