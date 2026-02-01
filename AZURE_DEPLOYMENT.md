@@ -36,10 +36,10 @@ az webapp create \
 
 ### 2. Configure Application Settings
 
-Set the required environment variables:
+Set the required environment variables and startup command:
 
 ```bash
-# Configure the startup command
+# Configure the startup command (IMPORTANT: This tells Azure how to start your app)
 az webapp config set \
   --resource-group <resource-group-name> \
   --name <app-name> \
@@ -152,10 +152,9 @@ https://<app-name>.azurewebsites.net/api/health
 
 The application has been configured for Azure Web App Service with the following files:
 
-- **`startup.sh`**: Startup script that launches the application using Gunicorn with Uvicorn workers
-- **`app.py`**: Root-level entry point that imports the FastAPI application
-- **`.deployment`**: Azure deployment configuration file
-- **`requirements.txt`**: Python dependencies including `gunicorn` for production
+- **`startup.sh`**: Startup script that launches the application using Gunicorn with Uvicorn workers. This script must be configured as the startup command in Azure (see deployment steps above).
+- **`app.py`**: Root-level entry point that imports the FastAPI application, making it easier for Azure and other platforms to locate the app.
+- **`requirements.txt`**: Python dependencies including `gunicorn` for production deployment.
 
 ## Environment Variables
 
