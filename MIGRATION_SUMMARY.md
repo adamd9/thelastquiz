@@ -1,7 +1,12 @@
 # Azure Web App Service Migration Summary
 
 ## Overview
-This migration refactors the LLM Pop Quiz Bench application to be compatible with Azure Web App Service deployment. The changes maintain backward compatibility with the existing local development workflow while adding production-ready deployment capabilities.
+This migration refactors the LLM Pop Quiz Bench application to be compatible with Azure Web App Service deployment. The application is a **full-stack web application** with a FastAPI backend and a static JavaScript frontend. The changes maintain backward compatibility with the existing local development workflow while adding production-ready deployment capabilities.
+
+**Important**: The application already includes built-in frontend serving capabilities. The FastAPI app serves:
+- Backend API at `/api/*` endpoints
+- Static frontend files from `web/static/`
+- Main UI from `web/index.html` at root and SPA routes
 
 ## Changes Made
 
@@ -61,31 +66,40 @@ The existing GitHub Actions workflow (`.github/workflows/main_thelastquiz.yml`) 
 ## Architecture
 
 ```
-┌─────────────────────────────────────┐
-│  Azure Web App Service              │
-│  ┌───────────────────────────────┐  │
-│  │  Gunicorn (Master Process)    │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │ Uvicorn Worker 1        │  │  │
-│  │  │ FastAPI App             │  │  │
-│  │  └─────────────────────────┘  │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │ Uvicorn Worker 2        │  │  │
-│  │  │ FastAPI App             │  │  │
-│  │  └─────────────────────────┘  │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │ Uvicorn Worker 3        │  │  │
-│  │  │ FastAPI App             │  │  │
-│  │  └─────────────────────────┘  │  │
-│  │  ┌─────────────────────────┐  │  │
-│  │  │ Uvicorn Worker 4        │  │  │
-│  │  │ FastAPI App             │  │  │
-│  │  └─────────────────────────┘  │  │
-│  └───────────────────────────────┘  │
-│                                      │
-│  Listens on: 0.0.0.0:$PORT          │
-└─────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│  Azure Web App Service                                          │
+│  ┌───────────────────────────────────────────────────────────┐  │
+│  │  Gunicorn (Master Process)                                │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │ Uvicorn Worker 1 - FastAPI App                      │  │  │
+│  │  │  ┌──────────────────┬──────────────────────────┐   │  │  │
+│  │  │  │ API Routes       │ Static File Serving      │   │  │  │
+│  │  │  │ /api/health      │ /static/* → web/static/  │   │  │  │
+│  │  │  │ /api/models      │ / → web/index.html       │   │  │  │
+│  │  │  │ /api/quizzes     │ SPA fallback             │   │  │  │
+│  │  │  │ /api/runs        │                          │   │  │  │
+│  │  │  └──────────────────┴──────────────────────────┘   │  │  │
+│  │  └─────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │ Uvicorn Worker 2 - FastAPI App                      │  │  │
+│  │  └─────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │ Uvicorn Worker 3 - FastAPI App                      │  │  │
+│  │  └─────────────────────────────────────────────────────┘  │  │
+│  │  ┌─────────────────────────────────────────────────────┐  │  │
+│  │  │ Uvicorn Worker 4 - FastAPI App                      │  │  │
+│  │  └─────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  Listens on: 0.0.0.0:$PORT                                      │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+**Frontend Architecture:**
+- Single Page Application (SPA) using vanilla JavaScript modules
+- Component-based architecture (web components)
+- Static assets served by FastAPI's StaticFiles middleware
+- Client-side routing with SPA fallback
 
 ## Next Steps
 

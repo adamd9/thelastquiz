@@ -2,6 +2,14 @@
 
 This guide explains how to deploy the LLM Pop Quiz Bench application to Azure Web App Service.
 
+## Application Overview
+
+The LLM Pop Quiz Bench is a **full-stack web application** consisting of:
+- **Backend API**: FastAPI-based REST API (`llm_pop_quiz_bench/api/`)
+- **Frontend**: Static web application with JavaScript components (`web/`)
+
+The FastAPI application serves both the API endpoints (under `/api/`) and the static frontend files. When deployed to Azure, users access the web interface at the root URL.
+
 ## Prerequisites
 
 - Azure account with an active subscription
@@ -143,10 +151,14 @@ After deployment, access your application at:
 https://<app-name>.azurewebsites.net
 ```
 
-Check the health endpoint:
+You should see the LLM Pop Quiz Bench web interface with the dashboard and quiz creation wizard.
+
+Check the API health endpoint:
 ```
 https://<app-name>.azurewebsites.net/api/health
 ```
+
+This should return: `{"status":"ok"}`
 
 ## Application Structure
 
@@ -155,6 +167,18 @@ The application has been configured for Azure Web App Service with the following
 - **`startup.sh`**: Startup script that launches the application using Gunicorn with Uvicorn workers. This script must be configured as the startup command in Azure (see deployment steps above).
 - **`app.py`**: Root-level entry point that imports the FastAPI application, making it easier for Azure and other platforms to locate the app.
 - **`requirements.txt`**: Python dependencies including `gunicorn` for production deployment.
+- **`web/`**: Frontend static files directory
+  - `web/index.html`: Main HTML entry point
+  - `web/static/`: JavaScript, CSS, and assets for the web interface
+
+### How the Application Serves Content
+
+The FastAPI application is configured to serve both the API and the frontend:
+- API endpoints: `https://<your-app>.azurewebsites.net/api/*`
+- Static files: `https://<your-app>.azurewebsites.net/static/*`
+- Frontend UI: `https://<your-app>.azurewebsites.net/` (root and all non-API routes)
+
+The application uses FastAPI's `StaticFiles` middleware to serve the `web/static/` directory and returns `web/index.html` for the root path and any non-API routes (SPA fallback).
 
 ## Environment Variables
 
