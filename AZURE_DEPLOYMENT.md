@@ -164,12 +164,13 @@ This should return: `{"status":"ok"}`
 
 The application has been configured for Azure Web App Service with the following files:
 
-- **`startup.sh`**: Startup script that launches the application using Gunicorn with Uvicorn workers. This script must be configured as the startup command in Azure (see deployment steps above).
-- **`app.py`**: Root-level entry point that imports the FastAPI application, making it easier for Azure and other platforms to locate the app.
-- **`requirements.txt`**: Python dependencies including `gunicorn` for production deployment.
+- **`startup.sh`**: Startup script that launches the application using Gunicorn with Uvicorn workers. This script specifies the correct ASGI worker class and must be configured as the startup command in Azure (see deployment steps above).
+- **`requirements.txt`**: Python dependencies including `gunicorn` and `uvicorn` for production deployment.
 - **`web/`**: Frontend static files directory
   - `web/index.html`: Main HTML entry point
   - `web/static/`: JavaScript, CSS, and assets for the web interface
+
+The FastAPI application is located at `llm_pop_quiz_bench/api/app.py` and is referenced in `startup.sh` using the module path `llm_pop_quiz_bench.api.app:app`.
 
 ### How the Application Serves Content
 
