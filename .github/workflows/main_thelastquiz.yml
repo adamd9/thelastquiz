@@ -33,7 +33,6 @@ jobs:
           pip install -r requirements.txt
                 
       # By default, when you enable GitHub CI/CD integration through the Azure portal, the platform automatically sets the SCM_DO_BUILD_DURING_DEPLOYMENT application setting to true. This triggers the use of Oryx, a build engine that handles application compilation and dependency installation (e.g., pip install) directly on the platform during deployment. Hence, we exclude the antenv virtual environment directory from the deployment artifact to reduce the payload size. 
-      # The deployment includes the web/ directory with the frontend static files.
       - name: Upload artifact for deployment jobs
         uses: actions/upload-artifact@v4
         with:
@@ -41,9 +40,6 @@ jobs:
           path: |
             .
             !antenv/
-
-      # The startup.sh script will be automatically recognized by Azure App Service
-      # when the SCM_DO_BUILD_DURING_DEPLOYMENT setting is enabled.
 
       # 🚫 Opting Out of Oryx Build
       # If you prefer to disable the Oryx build process during deployment, follow these steps:
@@ -67,9 +63,9 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v2
         with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_A480948A2CEB4CC589196C53AA5EE792 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_50AEF289EAD74775B6CCFFC2FC1BB9FC }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_A43E6766C00A48308A1C396AF214D31C }}
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_53E2D245628F40E58D945A623B8BCAE1 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_E4A3B05C63B749529EEC3ABFA09E0801 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_C81540132A79486BAFB42D29535464FC }}
 
       - name: 'Deploy to Azure Web App'
         uses: azure/webapps-deploy@v3
