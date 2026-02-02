@@ -9,7 +9,7 @@ LLM Pop Quiz Bench is a full-stack web application that:
 - Runs quizzes across multiple LLM providers (OpenAI, Anthropic, Google, Grok, and more)
 - Collects and analyzes each model's answers and reasoning
 - Generates comprehensive reports with charts and insights
-- Stores all results in a local SQLite database
+- Stores all results in a SQLite database (location configurable)
 
 ## Quick Start
 
