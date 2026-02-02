@@ -24,7 +24,7 @@ LLM Pop Quiz Bench is a full-stack web application that:
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd thelastquiz
+   cd <repository-directory>
    ```
 
 2. **Install dependencies**
