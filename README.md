@@ -2,6 +2,14 @@
 
 Minimal prototype implementing instructions from `llm_pop_quiz_bench_python_build_spec.md`.
 
+## Azure Deployment
+
+For deploying to Azure App Service, see:
+- **[STARTUP_COMMAND.md](./STARTUP_COMMAND.md)** - Quick guide to configure startup command in Azure Portal
+- **[AZURE_DEPLOYMENT.md](./AZURE_DEPLOYMENT.md)** - Complete deployment guide
+
+## Local Development
+
 After installing dependencies you can run the demo quiz:
 
 ```bash

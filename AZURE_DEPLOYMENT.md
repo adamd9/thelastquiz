@@ -2,6 +2,8 @@
 
 This guide explains how to deploy the LLM Pop Quiz Bench application to Azure Web App Service.
 
+> **Quick Start**: If you need to configure a custom startup command in the Azure Portal, see [STARTUP_COMMAND.md](./STARTUP_COMMAND.md) for step-by-step instructions.
+
 ## Application Overview
 
 The LLM Pop Quiz Bench is a **full-stack web application** consisting of:
@@ -247,7 +249,9 @@ az webapp log download \
 
 ### Common Issues
 
-1. **App not starting**: Check the startup logs using `az webapp log tail`
+1. **App not starting or Azure not detecting the app correctly**: 
+   - Check the startup logs using `az webapp log tail`
+   - If Azure is using the wrong startup command, see [STARTUP_COMMAND.md](./STARTUP_COMMAND.md) to configure a custom startup command in the Azure Portal
 2. **Dependencies not installed**: Ensure `requirements.txt` is in the root directory
 3. **Port binding issues**: Azure automatically sets the PORT environment variable
 4. **Runtime data not persisting**: Enable persistent storage with `WEBSITES_ENABLE_APP_SERVICE_STORAGE=true`
