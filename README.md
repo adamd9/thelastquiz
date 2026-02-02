@@ -15,7 +15,7 @@ LLM Pop Quiz Bench is a full-stack web application that:
 
 ### Prerequisites
 
-- Python 3.11 or higher
+- Python 3.11 or higher (Python 3.12 recommended for Azure deployment)
 - pip (Python package manager)
 - API keys for the LLM providers you want to use
 
@@ -201,6 +201,12 @@ If you prefer using the Azure Portal:
 1. Navigate to your App Service in the Azure Portal
 2. Go to **Configuration** → **General settings**
 3. Set **Startup Command** to: `bash startup.sh`
+   
+   > **Note**: You can also use the full gunicorn command directly instead of the script. The `startup.sh` script is equivalent to:
+   > ```
+   > gunicorn llm_pop_quiz_bench.api.app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 120 --access-logfile - --error-logfile -
+   > ```
+
 4. Go to **Configuration** → **Application settings**
 5. Add the required environment variables
 6. Click **Save** and restart the app
