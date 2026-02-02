@@ -53,7 +53,7 @@ Set the required environment variables and startup command:
 az webapp config set \
   --resource-group <resource-group-name> \
   --name <app-name> \
-  --startup-file "startup.sh"
+  --startup-file "bash startup.sh"
 
 # Set application settings (environment variables)
 az webapp config appsettings set \

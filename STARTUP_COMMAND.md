@@ -86,7 +86,7 @@ Or to use the startup.sh script:
 az webapp config set \
   --resource-group <resource-group-name> \
   --name <app-name> \
-  --startup-file "startup.sh"
+  --startup-file "bash startup.sh"
 ```
 
 ## Additional Resources
