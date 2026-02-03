@@ -13,7 +13,7 @@ from .types import QAResult
 from .utils import parse_choice_json
 from .runtime_data import build_runtime_paths, get_runtime_paths
 from .logging_utils import rotate_log_if_needed
-from .sqlite_store import connect, insert_results, insert_run, update_run_status, upsert_quiz
+from .db_factory import connect
 
 
 def _extract_actual_error(exception: Exception) -> str:
@@ -70,11 +70,9 @@ async def run_quiz(
     runtime_paths = get_runtime_paths() if runtime_dir is None else build_runtime_paths(runtime_dir)
 
     log_path = runtime_paths.logs_dir / f"{run_id}.log"
-    conn = connect(runtime_paths.db_path)
-    upsert_quiz(conn, quiz, quiz_json)
-    insert_run(
-        conn,
-        run_id=run_id,
+    db = connect(runtime_paths.db_path)
+    db.upsert_quiz(quiz, quiz_json)
+    db.insert_run(run_id=run_id,
         quiz_id=quiz["id"],
         status="running",
         models=[adapter.id for adapter in adapters],
@@ -149,7 +147,7 @@ async def run_quiz(
             _append_log(log_path, f"Model {adapter.id} failed completely: {actual_error}")
             failed_adapters.append((adapter.id, actual_error))
             continue
-        insert_results(conn, run_id, quiz["id"], adapter.id, model_records)
+        db.insert_results(run_id, quiz["id"], adapter.id, model_records)
 
     # Print summary of model results
     _append_log(log_path, "=" * 60)
@@ -175,8 +173,8 @@ async def run_quiz(
     _append_log(log_path, "=" * 60)
     _append_log(log_path, "Run complete. Waiting on reports if enabled.")
 
-    update_run_status(conn, run_id, "completed")
-    conn.close()
+    db.update_run_status(run_id, "completed")
+    db.close()
 
 
 def run_sync(*args, **kwargs) -> None:

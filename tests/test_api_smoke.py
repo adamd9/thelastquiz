@@ -142,7 +142,7 @@ def test_delete_quiz_removes_runs_and_assets(client, monkeypatch):
     import importlib
 
     from llm_pop_quiz_bench.core.runtime_data import get_runtime_paths
-    from llm_pop_quiz_bench.core.sqlite_store import connect, insert_asset, insert_run
+    from llm_pop_quiz_bench.core.db_factory import connect
 
     api_app = importlib.import_module("llm_pop_quiz_bench.api.app")
 
@@ -166,14 +166,14 @@ def test_delete_quiz_removes_runs_and_assets(client, monkeypatch):
     quiz_id = resp.json()["quiz"]["id"]
 
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    insert_run(conn, run_id="run-123", quiz_id=quiz_id, status="running", models=["m"])
+    db = connect(runtime_paths.db_path)
+    db.insert_run(run_id="run-123", quiz_id=quiz_id, status="running", models=["m"])
     run_assets_dir = runtime_paths.assets_dir / "run-123"
     run_assets_dir.mkdir(parents=True, exist_ok=True)
     asset_path = run_assets_dir / "report.txt"
     asset_path.write_text("sample", encoding="utf-8")
-    insert_asset(conn, "run-123", "report", asset_path)
-    conn.close()
+    db.insert_asset("run-123", "report", asset_path)
+    db.close()
 
     delete_resp = client.delete(f"/api/quizzes/{quiz_id}")
     assert delete_resp.status_code == 200
@@ -182,10 +182,13 @@ def test_delete_quiz_removes_runs_and_assets(client, monkeypatch):
     assert data["runs_removed"] == 1
     assert not run_assets_dir.exists()
 
-    conn = connect(runtime_paths.db_path)
-    run_count = conn.execute("SELECT COUNT(*) FROM runs WHERE quiz_id = ?", (quiz_id,)).fetchone()[0]
-    quiz_count = conn.execute("SELECT COUNT(*) FROM quizzes WHERE quiz_id = ?", (quiz_id,)).fetchone()[0]
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    # For disk/mongo storage, we need to use the db interface, not SQL directly
+    runs = db.fetch_runs()
+    run_count = len([r for r in runs if r["quiz_id"] == quiz_id])
+    quizzes = db.fetch_quizzes()
+    quiz_count = len([q for q in quizzes if q["quiz_id"] == quiz_id])
+    db.close()
 
     assert run_count == 0
     assert quiz_count == 0
