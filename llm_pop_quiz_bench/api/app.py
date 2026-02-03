@@ -23,22 +23,7 @@ from ..core.quiz_converter import convert_to_quiz
 from ..core.runtime_data import build_runtime_paths, get_runtime_paths
 from ..core.runner import run_sync
 from ..core.logging_utils import rotate_log_if_needed
-from ..core.sqlite_store import (
-    connect,
-    delete_quiz,
-    delete_assets_for_run,
-    fetch_assets,
-    fetch_quiz_record,
-    fetch_quiz_json,
-    fetch_quizzes,
-    fetch_results,
-    fetch_run,
-    fetch_runs,
-    insert_run,
-    mark_stale_runs_failed,
-    update_run_status,
-    upsert_quiz,
-)
+from ..core.db_factory import connect
 
 app = FastAPI()
 
@@ -96,9 +81,9 @@ def _format_conversion_error_detail(error: Exception, limit: int = 300) -> str:
 @app.on_event("startup")
 def cleanup_stale_runs() -> None:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    run_ids = mark_stale_runs_failed(conn)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    run_ids = db.mark_stale_runs_failed()
+    db.close()
     if run_ids:
         for run_id in run_ids:
             log_path = runtime_paths.logs_dir / f"{run_id}.log"
@@ -154,36 +139,36 @@ def _run_and_report(
     run_sync(quiz_path, adapters, run_id, runtime_root)
     if generate_report:
         runtime_paths = build_runtime_paths(runtime_root)
-        conn = connect(runtime_paths.db_path)
-        update_run_status(conn, run_id, "reporting")
-        conn.close()
+        db = connect(runtime_paths.db_path)
+        db.update_run_status(run_id, "reporting")
+        db.close()
         try:
             reporter.generate_markdown_report(run_id, runtime_root)
         except Exception:
-            conn = connect(runtime_paths.db_path)
-            update_run_status(conn, run_id, "failed")
-            conn.close()
+            db = connect(runtime_paths.db_path)
+            db.update_run_status(run_id, "failed")
+            db.close()
             raise
-        conn = connect(runtime_paths.db_path)
-        update_run_status(conn, run_id, "completed")
-        conn.close()
+        db = connect(runtime_paths.db_path)
+        db.update_run_status(run_id, "completed")
+        db.close()
 
 
 def _report_only(run_id: str, runtime_root: Path) -> None:
     runtime_paths = build_runtime_paths(runtime_root)
-    conn = connect(runtime_paths.db_path)
-    update_run_status(conn, run_id, "reporting")
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    db.update_run_status(run_id, "reporting")
+    db.close()
     try:
         reporter.generate_markdown_report(run_id, runtime_root)
     except Exception:
-        conn = connect(runtime_paths.db_path)
-        update_run_status(conn, run_id, "failed")
-        conn.close()
+        db = connect(runtime_paths.db_path)
+        db.update_run_status(run_id, "failed")
+        db.close()
         raise
-    conn = connect(runtime_paths.db_path)
-    update_run_status(conn, run_id, "completed")
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    db.update_run_status(run_id, "completed")
+    db.close()
 
 
 @app.get("/api/health")
@@ -255,22 +240,22 @@ def list_models() -> dict:
 @app.get("/api/quizzes")
 def list_quizzes() -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    quizzes = fetch_quizzes(conn)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    quizzes = db.fetch_quizzes()
+    db.close()
     return {"quizzes": quizzes}
 
 
 @app.get("/api/quizzes/{quiz_id}")
 def get_quiz(quiz_id: str) -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
+    db = connect(runtime_paths.db_path)
     try:
-        record = fetch_quiz_record(conn, quiz_id)
+        record = db.fetch_quiz_record(quiz_id)
     except ValueError as exc:
-        conn.close()
+        db.close()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    conn.close()
+    db.close()
     if not record:
         raise HTTPException(status_code=404, detail="Quiz not found")
     raw_preview = _build_raw_preview(record.get("raw_payload"))
@@ -286,17 +271,17 @@ def get_quiz(quiz_id: str) -> dict:
 @app.delete("/api/quizzes/{quiz_id}")
 def remove_quiz(quiz_id: str) -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
+    db = connect(runtime_paths.db_path)
     try:
-        record = fetch_quiz_record(conn, quiz_id)
+        record = db.fetch_quiz_record(quiz_id)
     except ValueError:
         record = {"raw_payload": None}
     if not record:
-        conn.close()
+        db.close()
         raise HTTPException(status_code=404, detail="Quiz not found")
 
-    run_ids = delete_quiz(conn, quiz_id)
-    conn.close()
+    run_ids = db.delete_quiz(quiz_id)
+    db.close()
 
     quiz_path = runtime_paths.quizzes_dir / f"{quiz_id}.json"
     if quiz_path.exists():
@@ -362,9 +347,9 @@ async def parse_quiz(
     quiz_def["id"] = uuid.uuid4().hex
     quiz_json = json.dumps(quiz_def, ensure_ascii=False, indent=2)
 
-    conn = connect(runtime_paths.db_path)
-    upsert_quiz(conn, quiz_def, quiz_json, raw_payload)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    db.upsert_quiz(quiz_def, quiz_json, raw_payload)
+    db.close()
     return {
         "quiz": quiz_def,
         "quiz_json": quiz_json,
@@ -380,9 +365,9 @@ async def reprocess_quiz(
     model: str | None = Form(None),
 ) -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    record = fetch_quiz_record(conn, quiz_id)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    record = db.fetch_quiz_record(quiz_id)
+    db.close()
     if not record:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
@@ -429,9 +414,9 @@ async def reprocess_quiz(
         )
 
     quiz_json = json.dumps(quiz_def, ensure_ascii=False, indent=2)
-    conn = connect(runtime_paths.db_path)
-    upsert_quiz(conn, quiz_def, quiz_json, raw_payload)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    db.upsert_quiz(quiz_def, quiz_json, raw_payload)
+    db.close()
     return {
         "quiz": quiz_def,
         "quiz_json": quiz_json,
@@ -446,13 +431,13 @@ def create_run(req: RunRequest, background_tasks: BackgroundTasks) -> dict:
     runtime_paths = get_runtime_paths()
     use_mocks = os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() == "mock"
 
-    conn = connect(runtime_paths.db_path)
+    db = connect(runtime_paths.db_path)
     try:
-        quiz_json = fetch_quiz_json(conn, req.quiz_id)
+        quiz_json = db.fetch_quiz_json(req.quiz_id)
     except ValueError as exc:
-        conn.close()
+        db.close()
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    conn.close()
+    db.close()
     if not quiz_json:
         raise HTTPException(status_code=404, detail="Quiz not found")
 
@@ -479,16 +464,14 @@ def create_run(req: RunRequest, background_tasks: BackgroundTasks) -> dict:
         raise HTTPException(status_code=400, detail="No available models to run")
 
     run_id = uuid.uuid4().hex
-    conn = connect(runtime_paths.db_path)
-    insert_run(
-        conn,
-        run_id=run_id,
+    db = connect(runtime_paths.db_path)
+    db.insert_run(run_id=run_id,
         quiz_id=req.quiz_id,
         status="queued",
         models=[adapter.id for adapter in adapters],
         settings={"group": req.group} if req.group else None,
     )
-    conn.close()
+    db.close()
     background_tasks.add_task(
         _run_and_report,
         quiz_path,
@@ -503,19 +486,19 @@ def create_run(req: RunRequest, background_tasks: BackgroundTasks) -> dict:
 @app.get("/api/runs")
 def list_runs() -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    runs = fetch_runs(conn)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    runs = db.fetch_runs()
+    db.close()
     return {"runs": runs}
 
 
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: str) -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    run = fetch_run(conn, run_id)
-    assets = fetch_assets(conn, run_id)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    run = db.fetch_run(run_id)
+    assets = db.fetch_assets(run_id)
+    db.close()
     if not run:
         raise HTTPException(status_code=404, detail="Run not found")
     run_assets_dir = runtime_paths.assets_dir / run_id
@@ -532,20 +515,20 @@ def get_run(run_id: str) -> dict:
 @app.post("/api/runs/{run_id}/report")
 def rerun_report(run_id: str, background_tasks: BackgroundTasks) -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    run = fetch_run(conn, run_id)
+    db = connect(runtime_paths.db_path)
+    run = db.fetch_run(run_id)
     if not run:
-        conn.close()
+        db.close()
         raise HTTPException(status_code=404, detail="Run not found")
     if run.get("status") in {"queued", "running", "reporting"}:
-        conn.close()
+        db.close()
         raise HTTPException(status_code=400, detail="Run is still in progress")
-    results = fetch_results(conn, run_id)
+    results = db.fetch_results(run_id)
     if not results:
-        conn.close()
+        db.close()
         raise HTTPException(status_code=400, detail="Run has no results to analyze")
-    delete_assets_for_run(conn, run_id)
-    conn.close()
+    db.delete_assets_for_run(run_id)
+    db.close()
 
     run_assets_dir = runtime_paths.assets_dir / run_id
     for subdir in ("reports", "charts", "pandasai_charts"):
@@ -573,9 +556,9 @@ def get_asset(run_id: str, asset_path: str) -> FileResponse:
 @app.get("/api/runs/{run_id}/results")
 def get_run_results(run_id: str) -> dict:
     runtime_paths = get_runtime_paths()
-    conn = connect(runtime_paths.db_path)
-    rows = fetch_results(conn, run_id)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    rows = db.fetch_results(run_id)
+    db.close()
     pricing_map = fetch_openrouter_pricing_map()
     cost_summary = estimate_run_cost(rows, pricing_map) if rows else None
     return {"results": rows, "summary": {"cost": cost_summary} if cost_summary else None}
