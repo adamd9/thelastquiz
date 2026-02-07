@@ -16,7 +16,7 @@ LLM Pop Quiz Bench is a full-stack web application that:
 
 ### Prerequisites
 
-- Python 3.11 or higher (Python 3.12 recommended for Azure deployment)
+- Python 3.11 or higher
 - pip (Python package manager)
 - API keys for the LLM providers you want to use
 
@@ -149,104 +149,14 @@ For development with auto-reload:
 uvicorn llm_pop_quiz_bench.api.app:app --reload --host 0.0.0.0 --port 8000
 ```
 
-## Deployment to Azure App Service
-
-### Prerequisites
-
-- Azure account with active subscription
-- Azure CLI installed (`az` command)
-
-### Quick Deployment
-
-1. **Create Azure resources**
-   ```bash
-   # Login to Azure
-   az login
-   
-   # Create resource group
-   az group create --name <resource-group> --location eastus
-   
-   # Create App Service plan
-   az appservice plan create \
-     --name <plan-name> \
-     --resource-group <resource-group> \
-     --sku B1 \
-     --is-linux
-   
-   # Create Web App
-   az webapp create \
-     --resource-group <resource-group> \
-     --plan <plan-name> \
-     --name <app-name> \
-     --runtime "PYTHON:3.12"
-   ```
-
-2. **Configure startup command**
-   ```bash
-   az webapp config set \
-     --resource-group <resource-group> \
-     --name <app-name> \
-     --startup-file "bash startup.sh"
-   ```
-
-3. **Set environment variables**
-   ```bash
-   az webapp config appsettings set \
-     --resource-group <resource-group> \
-     --name <app-name> \
-     --settings \
-       OPENROUTER_API_KEY="<your-key>" \
-       OPENAI_API_KEY="<your-key>" \
-       LLM_POP_QUIZ_ENV="real" \
-       LLM_POP_QUIZ_RUNTIME_DIR="/home/runtime-data"
-   ```
-
-4. **Deploy from GitHub**
-   ```bash
-   az webapp deployment source config \
-     --resource-group <resource-group> \
-     --name <app-name> \
-     --repo-url <your-github-repo-url> \
-     --branch main \
-     --manual-integration
-   ```
-
-### Alternative: Azure Portal Configuration
-
-If you prefer using the Azure Portal:
-
-1. Navigate to your App Service in the Azure Portal
-2. Go to **Configuration** → **General settings**
-3. Set **Startup Command** to: `bash startup.sh`
-   
-   > **Note**: You can also use the full gunicorn command directly instead of the script. The `startup.sh` script is equivalent to:
-   > ```
-   > gunicorn llm_pop_quiz_bench.api.app:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --timeout 120 --access-logfile - --error-logfile -
-   > ```
-
-4. Go to **Configuration** → **Application settings**
-5. Add the required environment variables
-6. Click **Save** and restart the app
-
-### Verifying Deployment
-
-After deployment:
-- Visit: `https://<your-app-name>.azurewebsites.net`
-- Check health: `https://<your-app-name>.azurewebsites.net/api/health`
-
-To view logs:
-```bash
-az webapp log tail --resource-group <resource-group> --name <app-name>
-```
-
 ## Architecture
 
 ### Application Stack
 
 - **Backend**: FastAPI (Python) with async support
 - **Frontend**: Vanilla JavaScript with Web Components
-- **Database**: SQLite for local storage
-- **Server**: Gunicorn with Uvicorn workers (production) or Uvicorn (development)
+- **Database**: MongoDB (primary) or disk-based JSONL storage (fallback)
+- **Server**: Uvicorn
 
 ### API Endpoints
 
@@ -299,7 +209,6 @@ web/
 
 - Check application logs in `runtime-data/logs/`
 - Review API responses in browser developer tools
-- For Azure deployment issues, check Azure App Service logs
 
 ## Contributing
 

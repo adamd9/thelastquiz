@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import os
+import re
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import quote_plus, urlparse, urlunparse
 
 from .db_interface import DatabaseInterface
 from .sqlite_db import SQLiteDatabase
@@ -41,6 +43,50 @@ def _append_db_log(message: str) -> None:
         print(f"[DB] {message}")
 
 
+def _encode_mongo_uri_credentials(uri: str) -> str:
+    """
+    Encode username and password in a MongoDB URI according to RFC 3986.
+    
+    Handles both standard mongodb:// and mongodb+srv:// URIs.
+    Correctly handles passwords containing '@' by finding the last '@' before the host.
+    """
+    # Pattern to match the scheme (mongodb:// or mongodb+srv://)
+    scheme_pattern = r'^(mongodb(?:\+srv)?://)'
+    scheme_match = re.match(scheme_pattern, uri)
+    
+    if not scheme_match:
+        return uri
+    
+    scheme = scheme_match.group(1)
+    rest = uri[len(scheme):]
+    
+    # Find the last '@' which separates credentials from host
+    # This handles passwords containing '@'
+    at_idx = rest.rfind('@')
+    if at_idx == -1:
+        # No credentials in URI
+        return uri
+    
+    credentials = rest[:at_idx]
+    host_and_rest = rest[at_idx + 1:]
+    
+    # Split credentials into username and password at the first ':'
+    colon_idx = credentials.find(':')
+    if colon_idx == -1:
+        # Only username, no password
+        encoded_username = quote_plus(credentials)
+        return f"{scheme}{encoded_username}@{host_and_rest}"
+    
+    username = credentials[:colon_idx]
+    password = credentials[colon_idx + 1:]
+    
+    # Encode username and password
+    encoded_username = quote_plus(username)
+    encoded_password = quote_plus(password)
+    
+    return f"{scheme}{encoded_username}:{encoded_password}@{host_and_rest}"
+
+
 def _test_mongo_connection(connection_string: str) -> bool:
     """Test if MongoDB connection is valid."""
     if not PYMONGO_AVAILABLE:
@@ -76,6 +122,8 @@ def connect(db_path: Path) -> DatabaseInterface:
     
     # Try MongoDB first if URI is provided
     if mongo_uri:
+        # Encode credentials in the URI to handle special characters
+        mongo_uri = _encode_mongo_uri_credentials(mongo_uri)
         _append_db_log(f"MONGODB_URI configured, attempting connection...")
         if _test_mongo_connection(mongo_uri):
             db_name = os.environ.get("MONGODB_DB_NAME", "quizbench").strip()
