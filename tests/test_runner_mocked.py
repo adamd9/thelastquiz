@@ -8,7 +8,7 @@ import json
 
 from llm_pop_quiz_bench.adapters.mock_adapter import MockAdapter
 from llm_pop_quiz_bench.core.runner import run_quiz
-from llm_pop_quiz_bench.core.sqlite_store import connect, fetch_results
+from llm_pop_quiz_bench.core.db_factory import connect
 
 
 async def _run(tmp_path: Path):
@@ -34,13 +34,13 @@ async def _run(tmp_path: Path):
     runtime_dir = tmp_path / "runtime-data"
     await run_quiz(quiz_path, [MockAdapter()], run_id, runtime_dir)
 
-    # Check that results are stored in SQLite
+    # Check that results are stored in database
     db_path = runtime_dir / "db" / "quizbench.sqlite3"
-    assert db_path.exists(), f"Expected database at {db_path}"
+    # Note: The database might be disk-based storage now, not SQLite
 
-    conn = connect(db_path)
-    rows = fetch_results(conn, run_id)
-    conn.close()
+    db = connect(db_path)
+    rows = db.fetch_results(run_id)
+    db.close()
 
     assert rows, "Expected at least one result row"
     assert rows[0]["run_id"] == run_id

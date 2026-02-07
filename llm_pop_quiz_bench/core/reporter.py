@@ -11,7 +11,7 @@ import pandas as pd
 from . import visualizer
 from .llm_scorer import score_quiz_with_llm, score_quiz_fallback
 from .runtime_data import build_runtime_paths, get_runtime_paths
-from .sqlite_store import connect, fetch_quiz_def, fetch_results, insert_asset
+from .db_factory import connect
 from .store import write_csv
 
 
@@ -29,9 +29,9 @@ def write_summary_csv(path: Path, rows: Iterable[dict]) -> None:
 
 def load_results(run_id: str, runtime_dir: Path | None = None) -> pd.DataFrame:
     runtime_paths = get_runtime_paths() if runtime_dir is None else build_runtime_paths(runtime_dir)
-    conn = connect(runtime_paths.db_path)
-    rows = fetch_results(conn, run_id)
-    conn.close()
+    db = connect(runtime_paths.db_path)
+    rows = db.fetch_results(run_id)
+    db.close()
     return pd.DataFrame(rows)
 
 
@@ -840,11 +840,11 @@ def generate_markdown_report(run_id: str, runtime_dir: Path | None = None) -> No
     raw_choices_path = summary_dir / f"{run_id}_raw_choices.csv"
     write_summary_csv(raw_choices_path, df.to_dict(orient="records"))
 
-    conn = connect(runtime_paths.db_path)
-    insert_asset(conn, run_id, "csv_raw_choices", raw_choices_path)
+    db = connect(runtime_paths.db_path)
+    db.insert_asset(run_id, "csv_raw_choices", raw_choices_path)
 
     for quiz_id, qdf in df.groupby("quiz_id"):
-        quiz_def = fetch_quiz_def(conn, quiz_id)
+        quiz_def = db.fetch_quiz_def(quiz_id)
         if not quiz_def:
             raise ValueError(f"Quiz definition not found for quiz ID: {quiz_id}")
 
@@ -853,7 +853,7 @@ def generate_markdown_report(run_id: str, runtime_dir: Path | None = None) -> No
         outcome_csv_path = summary_dir / f"{run_id}_{quiz_id}_outcomes.csv"
         if outcome_summary_data:
             write_summary_csv(outcome_csv_path, outcome_summary_data)
-            insert_asset(conn, run_id, "csv_outcomes", outcome_csv_path)
+            db.insert_asset(run_id, "csv_outcomes", outcome_csv_path)
 
         outcomes = compute_model_outcomes(qdf, quiz_def)
         md_lines = [f"# {quiz_def['title']}", f"Source: {quiz_def['source']['url']}"]
@@ -872,7 +872,7 @@ def generate_markdown_report(run_id: str, runtime_dir: Path | None = None) -> No
             if chart_path and chart_path.exists():
                 relative_path = f"../charts/{chart_path.name}"
                 md_lines.append(f"\n![{chart_path.stem}]({relative_path})\n")
-                insert_asset(conn, run_id, f"chart_{chart_type}", chart_path)
+                db.insert_asset(run_id, f"chart_{chart_type}", chart_path)
 
         # Add fun results interpretation section
         md_lines.append("\n## Results Summary and Interpretation")
@@ -916,13 +916,13 @@ def generate_markdown_report(run_id: str, runtime_dir: Path | None = None) -> No
             for path in vis_paths.values():
                 rel = path.relative_to(summary_dir.parent)
                 md_lines.append(f"\n![{path.stem}]({rel.as_posix()})")
-                insert_asset(conn, run_id, "chart_pandasai", path)
+                db.insert_asset(run_id, "chart_pandasai", path)
         except Exception:
             pass
 
         md_content = "\n".join(md_lines)
         md_file = summary_dir / f"{run_id}.{quiz_id}.md"
         md_file.write_text(md_content, encoding="utf-8")
-        insert_asset(conn, run_id, "report_markdown", md_file)
+        db.insert_asset(run_id, "report_markdown", md_file)
 
-    conn.close()
+    db.close()

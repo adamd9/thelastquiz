@@ -9,7 +9,8 @@ LLM Pop Quiz Bench is a full-stack web application that:
 - Runs quizzes across multiple LLM providers (OpenAI, Anthropic, Google, Grok, and more)
 - Collects and analyzes each model's answers and reasoning
 - Generates comprehensive reports with charts and insights
-- Stores all results in a SQLite database (location configurable)
+- Stores all results in MongoDB (if configured) or disk-based storage (fallback)
+- Automatically migrates existing SQLite databases to the new storage
 
 ## Quick Start
 
@@ -44,6 +45,10 @@ LLM Pop Quiz Bench is a full-stack web application that:
    OPENROUTER_API_KEY=your_openrouter_key_here
    OPENAI_API_KEY=your_openai_key_here
    LLM_POP_QUIZ_ENV=real
+   
+   # Optional: Configure MongoDB (falls back to disk-based storage if not set)
+   # MONGODB_URI=mongodb://localhost:27017
+   # MONGODB_DB_NAME=quizbench
    ```
 
 4. **Start the application**
@@ -85,6 +90,18 @@ Example quizzes are available in the `quizzes/` directory.
 | `LLM_POP_QUIZ_LOG_MAX_BYTES` | Maximum log file size in bytes | `5242880` (5MB) |
 | `LLM_POP_QUIZ_LOG_MAX_AGE_HOURS` | Maximum log age in hours | `24` |
 | `LLM_POP_QUIZ_LOG_MAX_FILES` | Maximum number of log files to keep | `5` |
+| `MONGODB_URI` | MongoDB connection URI (optional) | None (uses disk storage) |
+| `MONGODB_DB_NAME` | MongoDB database name | `quizbench` |
+
+### Database Storage
+
+The application supports multiple storage backends with automatic fallback:
+
+1. **MongoDB** (primary): If `MONGODB_URI` is configured and a valid connection can be established, all data is stored in MongoDB.
+
+2. **Disk-based JSONL storage** (fallback): If MongoDB is not available or not configured, data is stored in JSONL files on disk (`runtime-data/db/disk_storage/`).
+
+3. **Automatic Migration**: If an existing SQLite database is detected (`runtime-data/db/quizbench.sqlite3`), it will be automatically migrated to the configured storage backend on first startup. The original SQLite file is backed up as `quizbench.sqlite3.backup`.
 
 ### Model Configuration
 
@@ -96,7 +113,7 @@ Models are configured in `config/models.yaml`. You can:
 ### Runtime Data
 
 All application data is stored in the runtime directory (default: `runtime-data/`):
-- `runtime-data/db/quizbench.sqlite3` - SQLite database with all quiz runs and results
+- `runtime-data/db/` - Database storage (MongoDB, disk-based JSONL, or legacy SQLite)
 - `runtime-data/assets/<run_id>/` - Generated reports, charts, and visualizations
 - `runtime-data/logs/` - Application logs
 
