@@ -164,8 +164,15 @@ def _migrate_sqlite_to_new_db(sqlite_path: Path, new_db: DatabaseInterface) -> N
     # Check if migration marker exists
     migration_marker = sqlite_path.parent / ".migrated"
     if migration_marker.exists():
-        _append_db_log("Migration already completed (marker found), skipping")
-        return
+        # Marker exists, but check if target DB actually has data
+        # This handles the case where migration happened to a different target
+        existing_quizzes = new_db.fetch_quizzes()
+        existing_runs = new_db.fetch_runs()
+        if existing_quizzes or existing_runs:
+            _append_db_log("Migration already completed (marker found and target has data), skipping")
+            return
+        else:
+            _append_db_log("Migration marker found but target DB is empty, proceeding with migration")
     
     _append_db_log(f"Starting migration from SQLite database: {sqlite_path}")
     
