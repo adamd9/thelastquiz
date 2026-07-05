@@ -8,6 +8,7 @@ from pathlib import Path
 import json
 
 from ..adapters.base import ChatAdapter
+from .dimensional import normalize_quiz
 from .prompt import PromptContext, render_prompt
 from .types import QAResult
 from .utils import parse_choice_json
@@ -62,7 +63,9 @@ async def run_quiz(
     quiz_json = quiz_path.read_text(encoding="utf-8")
     quiz = json.loads(quiz_json)
 
-    questions = quiz["questions"]
+    # Expand Likert (statement) items into concrete scale-point options so the
+    # text runner can administer dimensional benchmarks unchanged.
+    questions = normalize_quiz(quiz)["questions"]
 
     successful_adapters = []
     failed_adapters = []

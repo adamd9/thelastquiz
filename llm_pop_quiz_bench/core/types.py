@@ -18,13 +18,34 @@ class QuizOption:
     text: str
     tags: list[str] = field(default_factory=list)
     score: Union[int, None] = None
+    dimension: Union[str, None] = None
+    weight: Union[float, None] = None
+    value: Union[int, None] = None
+    contributions: dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
+class QuizDimension:
+    id: str
+    name: str = ""
+    poles: Union[dict[str, str], None] = None
+
+
+@dataclass
+class Scoring:
+    type: str = "dimensional"
+    dimensions: list["QuizDimension"] = field(default_factory=list)
+    scale: Union[dict[str, object], None] = None
 
 
 @dataclass
 class QuizQuestion:
     id: str
     text: str
-    options: list[QuizOption]
+    options: list[QuizOption] = field(default_factory=list)
+    type: str = "choice"
+    dimension: Union[str, None] = None
+    reverse: bool = False
 
 
 @dataclass
@@ -42,6 +63,7 @@ class QuizDefinition:
     notes: str
     questions: list[QuizQuestion]
     outcomes: list[OutcomeRule]
+    scoring: Union[Scoring, None] = None
 
 
 @dataclass

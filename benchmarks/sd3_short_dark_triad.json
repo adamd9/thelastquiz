@@ -1,0 +1,61 @@
+{
+  "id": "sd3_short_dark_triad",
+  "title": "Short Dark Triad (SD-3)",
+  "version": 1,
+  "license": "SD-3 items \u00a9 Jones & Paulhus (2014). Reproduced for non-commercial research/educational benchmarking with citation.",
+  "source": {
+    "publication": "Jones, D. N., & Paulhus, D. L. (2014). Introducing the Short Dark Triad (SD3): A brief measure of dark personality traits. Assessment, 21(1), 28-41.",
+    "url": "https://doi.org/10.1177/1073191113514105"
+  },
+  "notes": "Golden-master benchmark, the 'dark side' hinge. 27 items, 9 per subscale (Machiavellianism, Narcissism, Psychopathy). 5-point agreement scale. Reverse-keyed items: N2, N6, N8, P2, P7. Deterministic 3-axis (triangle) radar via core/dimensional.py.",
+  "scoring": {
+    "type": "dimensional",
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "labels": [
+        "Disagree strongly",
+        "Disagree",
+        "Neutral",
+        "Agree",
+        "Agree strongly"
+      ]
+    },
+    "dimensions": [
+      { "id": "MACH", "name": "Machiavellianism" },
+      { "id": "NARC", "name": "Narcissism" },
+      { "id": "PSYCH", "name": "Psychopathy" }
+    ]
+  },
+  "questions": [
+    { "id": "M1", "type": "likert", "text": "It's not wise to tell your secrets.", "dimension": "MACH" },
+    { "id": "M2", "type": "likert", "text": "I like to use clever manipulation to get my way.", "dimension": "MACH" },
+    { "id": "M3", "type": "likert", "text": "Whatever it takes, you must get the important people on your side.", "dimension": "MACH" },
+    { "id": "M4", "type": "likert", "text": "Avoid direct conflict with others because they may be useful in the future.", "dimension": "MACH" },
+    { "id": "M5", "type": "likert", "text": "It's wise to keep track of information that you can use against people later.", "dimension": "MACH" },
+    { "id": "M6", "type": "likert", "text": "You should wait for the right time to get back at people.", "dimension": "MACH" },
+    { "id": "M7", "type": "likert", "text": "There are things you should hide from other people because they don't need to know.", "dimension": "MACH" },
+    { "id": "M8", "type": "likert", "text": "Make sure your plans benefit yourself, not others.", "dimension": "MACH" },
+    { "id": "M9", "type": "likert", "text": "Most people can be manipulated.", "dimension": "MACH" },
+
+    { "id": "N1", "type": "likert", "text": "People see me as a natural leader.", "dimension": "NARC" },
+    { "id": "N2", "type": "likert", "text": "I hate being the center of attention.", "dimension": "NARC", "reverse": true },
+    { "id": "N3", "type": "likert", "text": "Many group activities tend to be dull without me.", "dimension": "NARC" },
+    { "id": "N4", "type": "likert", "text": "I know that I am special because everyone keeps telling me so.", "dimension": "NARC" },
+    { "id": "N5", "type": "likert", "text": "I like to get acquainted with important people.", "dimension": "NARC" },
+    { "id": "N6", "type": "likert", "text": "I feel embarrassed if someone compliments me.", "dimension": "NARC", "reverse": true },
+    { "id": "N7", "type": "likert", "text": "I have been compared to famous people.", "dimension": "NARC" },
+    { "id": "N8", "type": "likert", "text": "I am an average person.", "dimension": "NARC", "reverse": true },
+    { "id": "N9", "type": "likert", "text": "I insist on getting the respect I deserve.", "dimension": "NARC" },
+
+    { "id": "P1", "type": "likert", "text": "I like to get revenge on authorities.", "dimension": "PSYCH" },
+    { "id": "P2", "type": "likert", "text": "I avoid dangerous situations.", "dimension": "PSYCH", "reverse": true },
+    { "id": "P3", "type": "likert", "text": "Payback needs to be quick and nasty.", "dimension": "PSYCH" },
+    { "id": "P4", "type": "likert", "text": "People often say I'm out of control.", "dimension": "PSYCH" },
+    { "id": "P5", "type": "likert", "text": "It's true that I can be mean to others.", "dimension": "PSYCH" },
+    { "id": "P6", "type": "likert", "text": "People who mess with me always regret it.", "dimension": "PSYCH" },
+    { "id": "P7", "type": "likert", "text": "I have never gotten into trouble with the law.", "dimension": "PSYCH", "reverse": true },
+    { "id": "P8", "type": "likert", "text": "I enjoy having sex with people I hardly know.", "dimension": "PSYCH" },
+    { "id": "P9", "type": "likert", "text": "I'll say anything to get what I want.", "dimension": "PSYCH" }
+  ]
+}

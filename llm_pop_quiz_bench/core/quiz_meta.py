@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Any
 
+from .dimensional import get_dimensions, is_dimensional
+
 
 def _collect_outcome_rule_types(outcome: dict[str, Any]) -> set[str]:
     rule_types: set[str] = set()
@@ -92,6 +94,36 @@ def build_quiz_meta(quiz_def: dict[str, Any]) -> dict[str, Any]:
                 has_tags = True
             if isinstance(option.get("score"), (int, float)):
                 has_scores = True
+
+    if is_dimensional(quiz_def):
+        dims = get_dimensions(quiz_def)
+        dim_count = len(dims)
+        if dim_count >= 3:
+            hero_visual = "radar"
+        elif dim_count == 2:
+            hero_visual = "bars"
+        else:
+            hero_visual = "none"
+        return {
+            "quiz_type": "Dimensional",
+            "has_outcomes": bool(outcomes),
+            "outcome_count": len(outcomes),
+            "outcome_rule_types": [],
+            "choice_count": len(choice_ids) + anonymous_choices,
+            "has_tags": has_tags,
+            "has_scores": has_scores,
+            "affinity_dimensions": dim_count,
+            "hero_visual": hero_visual,
+            "dimensions": [
+                {
+                    "id": dimension["id"],
+                    "name": dimension.get("name", dimension["id"]),
+                    "poles": dimension.get("poles"),
+                }
+                for dimension in dims
+            ],
+            "scoring_type": "dimensional",
+        }
 
     rule_types: set[str] = set()
     for outcome in outcomes:

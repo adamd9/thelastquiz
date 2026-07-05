@@ -9,13 +9,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import json
-from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
-from ..core import reporter
+from ..core import benchmarks, reporter
 from ..core.model_config import model_config_loader
 from ..core.costs import estimate_run_cost, fetch_openrouter_pricing_map
 from ..core.openrouter import fetch_user_models, normalize_models, strip_prefix
@@ -265,6 +265,162 @@ def _report_only(run_id: str, runtime_root: Path) -> None:
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok"}
+
+
+def require_admin(request: Request) -> None:
+    """Gate admin/benchmark actions (single choke point for future user auth).
+
+    Auth-ready placeholder: if ``LLM_POP_QUIZ_ADMIN_TOKEN`` is set, callers must
+    send a matching ``X-Admin-Token`` header; when unset (local dev) access is
+    open. Replace this with an authenticated admin-user check once accounts land.
+    """
+    expected = os.environ.get("LLM_POP_QUIZ_ADMIN_TOKEN")
+    if not expected:
+        return
+    if request.headers.get("x-admin-token") != expected:
+        raise HTTPException(status_code=403, detail="Admin access required")
+
+
+class BenchmarkRunRequest(BaseModel):
+    models: list[str] | None = None
+    group: str | None = None
+    reps: int = 1
+
+
+@app.get("/api/rankings")
+def get_rankings() -> dict:
+    """Public rankings payload, computed live from stored benchmark outcomes."""
+    runtime_paths = get_runtime_paths()
+    conn = connect(runtime_paths.db_path)
+    try:
+        return benchmarks.build_rankings(conn)
+    finally:
+        conn.close()
+
+
+@app.get("/api/admin/benchmarks", dependencies=[Depends(require_admin)])
+def admin_list_benchmarks() -> dict:
+    runtime_paths = get_runtime_paths()
+    conn = connect(runtime_paths.db_path)
+    try:
+        return {"benchmarks": benchmarks.benchmark_coverage(conn)}
+    finally:
+        conn.close()
+
+
+@app.post("/api/admin/benchmarks/seed", dependencies=[Depends(require_admin)])
+def admin_seed_benchmarks() -> dict:
+    runtime_paths = get_runtime_paths()
+    conn = connect(runtime_paths.db_path)
+    try:
+        seeded = benchmarks.seed_benchmarks(conn)
+    finally:
+        conn.close()
+    return {"seeded": seeded}
+
+
+@app.get("/api/admin/benchmarks/runs", dependencies=[Depends(require_admin)])
+def admin_benchmark_runs() -> dict:
+    runtime_paths = get_runtime_paths()
+    _reap_stale_runs(runtime_paths)
+    db = connect(runtime_paths.db_path)
+    try:
+        ids = benchmarks.benchmark_ids()
+        runs = [run for run in db.fetch_runs() if run.get("quiz_id") in ids]
+    finally:
+        db.close()
+    return {"runs": runs}
+
+
+@app.post("/api/admin/benchmarks/{benchmark_id}/run", dependencies=[Depends(require_admin)])
+def admin_run_benchmark(
+    benchmark_id: str,
+    req: BenchmarkRunRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+) -> dict:
+    bench = benchmarks.get_benchmark(benchmark_id)
+    if not bench:
+        raise HTTPException(status_code=404, detail="Unknown benchmark")
+
+    use_mocks = os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() == "mock"
+    client_ip = _client_ip(request)
+
+    if req.models:
+        model_ids = [strip_prefix(model_id) for model_id in req.models]
+    elif req.group:
+        try:
+            model_ids = model_config_loader.model_groups[req.group]
+        except KeyError as exc:
+            raise HTTPException(status_code=400, detail=f"Unknown model group: {req.group}") from exc
+    else:
+        raise HTTPException(status_code=400, detail="Select at least one model or group")
+
+    if not model_ids:
+        raise HTTPException(status_code=400, detail="No models selected")
+    if not use_mocks and not os.environ.get("OPENROUTER_API_KEY"):
+        raise HTTPException(status_code=400, detail="OPENROUTER_API_KEY is required")
+
+    runtime_paths = get_runtime_paths()
+
+    # Seed the golden master into the DB + a runtime quiz file so the runner can
+    # execute it exactly like any other quiz.
+    quiz_json = json.dumps(bench, ensure_ascii=False, indent=2)
+    db = connect(runtime_paths.db_path)
+    db.upsert_quiz(bench, quiz_json)
+    db.close()
+    quiz_path = runtime_paths.quizzes_dir / f"{benchmark_id}.json"
+    quiz_path.write_text(quiz_json, encoding="utf-8")
+
+    reps = max(1, min(int(req.reps or 1), 5))
+    run_ids: list[str] = []
+    for rep in range(reps):
+        adapters = model_config_loader.create_adapters(model_ids, use_mocks)
+        if not adapters:
+            raise HTTPException(status_code=400, detail="No available models to run")
+        run_id = uuid.uuid4().hex
+        db = connect(runtime_paths.db_path)
+        db.insert_run(
+            run_id=run_id,
+            quiz_id=benchmark_id,
+            status="queued",
+            models=[adapter.id for adapter in adapters],
+            settings={"benchmark": True, "benchmark_id": benchmark_id, "rep": rep},
+        )
+        db.insert_audit(
+            event="benchmark_run_created",
+            ip=client_ip,
+            run_id=run_id,
+            quiz_id=benchmark_id,
+            models=[adapter.id for adapter in adapters],
+            detail={"rep": rep, "reps": reps},
+        )
+        db.close()
+        # Benchmarks skip per-run markdown/charts; rankings render from aggregates.
+        background_tasks.add_task(
+            _run_and_report, quiz_path, adapters, run_id, runtime_paths.root, False
+        )
+        run_ids.append(run_id)
+
+    return {"benchmark_id": benchmark_id, "models": model_ids, "reps": reps, "run_ids": run_ids}
+
+
+@app.get("/rankings")
+def rankings_page() -> FileResponse:
+    """Standalone public rankings site (reads /api/rankings)."""
+    path = WEB_ROOT / "rankings.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Rankings page not found")
+    return FileResponse(path)
+
+
+@app.get("/admin")
+def admin_page() -> FileResponse:
+    """Admin console for running/rerunning benchmarks."""
+    path = WEB_ROOT / "admin.html"
+    if not path.exists():
+        raise HTTPException(status_code=404, detail="Admin page not found")
+    return FileResponse(path)
 
 
 @app.get("/")

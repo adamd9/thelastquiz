@@ -1,0 +1,68 @@
+{
+  "id": "mbti_oejts",
+  "title": "Jungian Type (open MBTI-style)",
+  "version": 1,
+  "license": "Original items (this repo). Method inspired by the Open Extended Jungian Type Scales (OEJTS, CC BY-NC-SA 4.0) and Jungian/Myers-Briggs typology.",
+  "source": {
+    "publication": "Bipolar-Likert Jungian type instrument, OEJTS-inspired; original item wording authored for this benchmark",
+    "url": "https://openpsychometrics.org/tests/OEJTS/development/"
+  },
+  "notes": "Golden-master benchmark, the 'for fun' popular hinge. 32 bipolar-Likert items, 8 per dichotomy (4 keyed to each pole). Produces a 4-letter type via core/dimensional.py (type_code from dimension order EI, SN, TF, JP). MBTI-style typology is popular but has known low reliability; treated as entertainment, not science.",
+  "scoring": {
+    "type": "dimensional",
+    "scale": {
+      "min": 1,
+      "max": 5,
+      "labels": [
+        "Strongly disagree",
+        "Disagree",
+        "Neutral",
+        "Agree",
+        "Strongly agree"
+      ]
+    },
+    "dimensions": [
+      { "id": "EI", "name": "Extraversion \u2013 Introversion", "poles": { "low": "I", "high": "E" } },
+      { "id": "SN", "name": "Sensing \u2013 Intuition", "poles": { "low": "S", "high": "N" } },
+      { "id": "TF", "name": "Thinking \u2013 Feeling", "poles": { "low": "T", "high": "F" } },
+      { "id": "JP", "name": "Judging \u2013 Perceiving", "poles": { "low": "P", "high": "J" } }
+    ]
+  },
+  "questions": [
+    { "id": "EI1", "type": "likert", "text": "I feel energized after spending time with a group of people.", "dimension": "EI" },
+    { "id": "EI2", "type": "likert", "text": "I readily start conversations with people I don't know.", "dimension": "EI" },
+    { "id": "EI3", "type": "likert", "text": "I think out loud, working through ideas by talking about them.", "dimension": "EI" },
+    { "id": "EI4", "type": "likert", "text": "I seek out lively social events and busy environments.", "dimension": "EI" },
+    { "id": "EI5", "type": "likert", "text": "I need quiet time alone to recharge.", "dimension": "EI", "reverse": true },
+    { "id": "EI6", "type": "likert", "text": "I prefer deep one-on-one conversations to large gatherings.", "dimension": "EI", "reverse": true },
+    { "id": "EI7", "type": "likert", "text": "I keep my thoughts to myself until they are fully formed.", "dimension": "EI", "reverse": true },
+    { "id": "EI8", "type": "likert", "text": "Too much social interaction leaves me drained.", "dimension": "EI", "reverse": true },
+
+    { "id": "SN1", "type": "likert", "text": "I focus on the big picture and future possibilities.", "dimension": "SN" },
+    { "id": "SN2", "type": "likert", "text": "I enjoy abstract theories and imagining what could be.", "dimension": "SN" },
+    { "id": "SN3", "type": "likert", "text": "I often notice patterns and hidden meanings behind things.", "dimension": "SN" },
+    { "id": "SN4", "type": "likert", "text": "I trust inspiration and hunches over concrete detail.", "dimension": "SN" },
+    { "id": "SN5", "type": "likert", "text": "I pay close attention to concrete facts and details.", "dimension": "SN", "reverse": true },
+    { "id": "SN6", "type": "likert", "text": "I trust direct experience more than theory.", "dimension": "SN", "reverse": true },
+    { "id": "SN7", "type": "likert", "text": "I prefer practical, hands-on tasks to abstract ideas.", "dimension": "SN", "reverse": true },
+    { "id": "SN8", "type": "likert", "text": "I focus on what is real and present rather than what might be.", "dimension": "SN", "reverse": true },
+
+    { "id": "TF1", "type": "likert", "text": "I make decisions based on how they affect people's feelings.", "dimension": "TF" },
+    { "id": "TF2", "type": "likert", "text": "I value harmony and empathy over cold logic.", "dimension": "TF" },
+    { "id": "TF3", "type": "likert", "text": "When someone is upset, I focus first on comforting them.", "dimension": "TF" },
+    { "id": "TF4", "type": "likert", "text": "I weigh personal values heavily when deciding what to do.", "dimension": "TF" },
+    { "id": "TF5", "type": "likert", "text": "I make decisions with impartial logic, setting feelings aside.", "dimension": "TF", "reverse": true },
+    { "id": "TF6", "type": "likert", "text": "I value truth and consistency over tact.", "dimension": "TF", "reverse": true },
+    { "id": "TF7", "type": "likert", "text": "I critique ideas on their merits, even if it stings.", "dimension": "TF", "reverse": true },
+    { "id": "TF8", "type": "likert", "text": "I trust objective analysis more than gut sentiment.", "dimension": "TF", "reverse": true },
+
+    { "id": "JP1", "type": "likert", "text": "I like to plan ahead and settle matters early.", "dimension": "JP" },
+    { "id": "JP2", "type": "likert", "text": "I feel comfortable when things are organized and scheduled.", "dimension": "JP" },
+    { "id": "JP3", "type": "likert", "text": "I make to-do lists and work through them methodically.", "dimension": "JP" },
+    { "id": "JP4", "type": "likert", "text": "I prefer decisions finalized rather than left open-ended.", "dimension": "JP" },
+    { "id": "JP5", "type": "likert", "text": "I like to keep my options open and decide as I go.", "dimension": "JP", "reverse": true },
+    { "id": "JP6", "type": "likert", "text": "I work in spontaneous bursts rather than to a schedule.", "dimension": "JP", "reverse": true },
+    { "id": "JP7", "type": "likert", "text": "I enjoy improvising and adapting plans on the fly.", "dimension": "JP", "reverse": true },
+    { "id": "JP8", "type": "likert", "text": "I often leave things flexible until the last minute.", "dimension": "JP", "reverse": true }
+  ]
+}
