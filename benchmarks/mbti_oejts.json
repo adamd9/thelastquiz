@@ -8,6 +8,7 @@
     "url": "https://openpsychometrics.org/tests/OEJTS/development/"
   },
   "notes": "Golden-master benchmark, the 'for fun' popular hinge. 32 bipolar-Likert items, 8 per dichotomy (4 keyed to each pole). Produces a 4-letter type via core/dimensional.py (type_code from dimension order EI, SN, TF, JP). MBTI-style typology is popular but has known low reliability; treated as entertainment, not science.",
+  "about": "A Jungian 'type' test in the spirit of the Myers\u2013Briggs Type Indicator. It combines four either/or preferences into a four-letter type (e.g. INTJ). Each axis is scored toward one pole, and the model's dominant pole on each forms its type. Wildly popular but scientifically contested \u2014 included for fun. Uses an open, OEJTS-inspired instrument with original items.",
   "scoring": {
     "type": "dimensional",
     "scale": {
@@ -22,10 +23,10 @@
       ]
     },
     "dimensions": [
-      { "id": "EI", "name": "Extraversion \u2013 Introversion", "poles": { "low": "I", "high": "E" } },
-      { "id": "SN", "name": "Sensing \u2013 Intuition", "poles": { "low": "S", "high": "N" } },
-      { "id": "TF", "name": "Thinking \u2013 Feeling", "poles": { "low": "T", "high": "F" } },
-      { "id": "JP", "name": "Judging \u2013 Perceiving", "poles": { "low": "P", "high": "J" } }
+      { "id": "EI", "name": "Extraversion \u2013 Introversion", "poles": { "low": "I", "high": "E" }, "description": "Where energy comes from: the outer world of people and activity (Extraversion, E) or the inner world of reflection (Introversion, I)." },
+      { "id": "SN", "name": "Sensing \u2013 Intuition", "poles": { "low": "S", "high": "N" }, "description": "How information is taken in: concrete facts and detail (Sensing, S) or patterns and possibilities (Intuition, N)." },
+      { "id": "TF", "name": "Thinking \u2013 Feeling", "poles": { "low": "T", "high": "F" }, "description": "How decisions are made: impartial logic (Thinking, T) or values and empathy (Feeling, F)." },
+      { "id": "JP", "name": "Judging \u2013 Perceiving", "poles": { "low": "P", "high": "J" }, "description": "How the outside world is approached: planned and organised (Judging, J) or flexible and spontaneous (Perceiving, P)." }
     ]
   },
   "questions": [

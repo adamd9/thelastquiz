@@ -1,10 +1,7 @@
 __pycache__/
 
 .env
-results_mock
-results
 runtime-data/
-.my_mock_test_text.md
 venv/
 .venv/
 .playwright-cli/

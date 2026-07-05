@@ -177,7 +177,7 @@ def quiz_run(quiz: Path, models: str = None) -> None:
 
 @app.command("quiz:demo")
 def quiz_demo() -> None:
-    quiz_run(Path("quizzes/sample_ninja_turtles.json"), models="openai/gpt-4o")
+    quiz_run(Path("benchmarks/big_five_ipip50.json"), models="openai/gpt-4o")
 
 
 @app.command("quiz:convert")

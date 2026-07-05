@@ -35,8 +35,11 @@ def _append_db_log(message: str) -> None:
         rotate_log_if_needed(log_path)
         with log_path.open("a", encoding="utf-8") as handle:
             handle.write(f"[{timestamp}] {message}\n")
-        # Also print to console for immediate visibility
-        print(f"[DB] {message}")
+        # Echo to console only when explicitly requested. Every request opens a
+        # connection, so unconditional printing floods stdout with one line per
+        # request; the full history is always kept in database.log.
+        if os.environ.get("LLM_POP_QUIZ_DB_VERBOSE"):
+            print(f"[DB] {message}")
     except Exception as e:
         # Fail silently if logging fails - don't break the connection
         print(f"[DB] Warning: Failed to write to database log: {e}")

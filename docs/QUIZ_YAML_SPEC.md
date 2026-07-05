@@ -1,6 +1,6 @@
 # Quiz YAML Format
 
-This project stores each quiz definition in a YAML file. The expected schema is inspired by `quizzes/sample_ninja_turtles.yaml` and the build specification. A quiz file contains the following top-level keys:
+This project stores each quiz definition in a YAML file. The expected schema is inspired by the committed benchmark definitions in `benchmarks/` and the build specification. A quiz file contains the following top-level keys:
 
 - `id` – a slug style identifier for the quiz.
 - `title` – the human readable quiz title.

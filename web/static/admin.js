@@ -1,9 +1,14 @@
-/* The Last Quiz — benchmark admin console (dependency-free).
+import { buildModelGroups } from "/static/utils.js";
+
+/* The Last Quiz — benchmark admin console (ES module, same pattern as app.js).
  * Talks to /api/admin/benchmarks* (auth-ready: sends X-Admin-Token if set) and
- * /api/models. Benchmark runs update the public /rankings page live. */
+ * /api/models. Curated model groups mirror the main app via utils.js
+ * buildModelGroups, so there is one consistent grouping everywhere. */
 
 const TOKEN_KEY = "tlq_admin_token";
 let selectedModels = new Set();
+let curatedGroups = {};
+let modelNames = {};
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
@@ -38,37 +43,102 @@ async function api(path, opts = {}) {
 
 async function loadModels() {
   const note = document.getElementById("models-note");
+  const container = document.getElementById("models");
+  const groupSel = document.getElementById("group");
+  let models = [];
   try {
     const data = await api("/api/models");
-    const container = document.getElementById("models");
-    container.innerHTML = "";
-    const models = data.models || [];
-    for (const m of models) {
-      const id = m.id;
-      const label = document.createElement("label");
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.value = id;
-      cb.addEventListener("change", () => {
-        cb.checked ? selectedModels.add(id) : selectedModels.delete(id);
-      });
-      const span = document.createElement("span");
-      span.textContent = m.name || id;
-      label.appendChild(cb);
-      label.appendChild(span);
-      container.appendChild(label);
-    }
-    const groupSel = document.getElementById("group");
-    for (const g of Object.keys(data.groups || {})) {
-      const opt = document.createElement("option");
-      opt.value = g;
-      opt.textContent = g;
-      groupSel.appendChild(opt);
-    }
-    note.textContent = `${models.length} models available.`;
+    models = data.models || [];
   } catch (e) {
     note.textContent = "Could not load models: " + e.message;
+    return;
   }
+
+  // Curated groups first — the most-used control shouldn't wait on the full
+  // per-model checkbox render below. Same grouping as the main app.
+  groupSel.querySelectorAll("option:not([value=''])").forEach((o) => o.remove());
+  curatedGroups = {};
+  try {
+    for (const g of buildModelGroups(models)) {
+      curatedGroups[g.id] = g.modelIds;
+      const opt = document.createElement("option");
+      opt.value = g.id;
+      opt.textContent = `${g.label} (${g.modelIds.length})`;
+      groupSel.appendChild(opt);
+    }
+  } catch (err) {
+    console.error("Curated model groups failed to build:", err);
+  }
+
+  // Then the individual model checkboxes.
+  container.innerHTML = "";
+  modelNames = {};
+  for (const m of models) {
+    const id = m.id;
+    modelNames[id] = m.name || id;
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = id;
+    cb.addEventListener("change", () => {
+      cb.checked ? selectedModels.add(id) : selectedModels.delete(id);
+      // A manual edit means the selection no longer matches a named group.
+      groupSel.value = "";
+      updateSelectionNote();
+    });
+    const span = document.createElement("span");
+    span.textContent = m.name || id;
+    label.appendChild(cb);
+    label.appendChild(span);
+    container.appendChild(label);
+  }
+
+  // Selecting a group ticks the matching checkboxes so the effect is visible.
+  groupSel.addEventListener("change", applyGroupSelection);
+  updateSelectionNote();
+}
+
+// Reflect the current selection in the note under the model list. The admin
+// console has no cap, so we name the picks (and truncate a very long list).
+function updateSelectionNote() {
+  const note = document.getElementById("models-note");
+  const total = document.querySelectorAll("#models input[type='checkbox']").length;
+  const groupCount = Object.keys(curatedGroups).length;
+  const ids = [...selectedModels];
+  if (!ids.length) {
+    note.textContent = `${total} models available · ${groupCount} curated groups. None selected yet.`;
+    return;
+  }
+  const names = ids.map((id) => modelNames[id] || id);
+  const CAP = 15;
+  const shown = names.slice(0, CAP).join(", ");
+  const extra = names.length > CAP ? ` + ${names.length - CAP} more` : "";
+  note.textContent = `${ids.length} selected: ${shown}${extra}`;
+}
+
+// Apply the chosen group: tick exactly its models, clear the rest, and keep
+// selectedModels in sync so Run uses the same set the user can see.
+function applyGroupSelection() {
+  const groupSel = document.getElementById("group");
+  const gid = groupSel.value;
+  if (!gid) {
+    updateSelectionNote();
+    return;
+  }
+  const ids = new Set(curatedGroups[gid] || []);
+  selectedModels = new Set();
+  const boxes = document.querySelectorAll("#models input[type='checkbox']");
+  let firstChecked = null;
+  boxes.forEach((cb) => {
+    const on = ids.has(cb.value);
+    cb.checked = on;
+    if (on) {
+      selectedModels.add(cb.value);
+      if (!firstChecked) firstChecked = cb;
+    }
+  });
+  updateSelectionNote();
+  if (firstChecked) firstChecked.scrollIntoView({ block: "nearest" });
 }
 
 async function loadBenchmarks() {
@@ -98,18 +168,16 @@ async function loadBenchmarks() {
 }
 
 async function runBenchmark(benchmarkId, btn) {
-  const group = document.getElementById("group").value;
   const reps = parseInt(document.getElementById("reps").value, 10) || 1;
   const body = { reps };
-  if (group) {
-    body.group = group;
-  } else {
-    body.models = [...selectedModels];
-    if (!body.models.length) {
-      toast("Select at least one model or a group first.");
-      return;
-    }
+  // selectedModels is kept in sync with both the checkboxes and the group
+  // dropdown, so it is the single source of truth for what to run.
+  const modelIds = [...selectedModels];
+  if (!modelIds.length) {
+    toast("Select a group or tick at least one model first.");
+    return;
   }
+  body.models = modelIds;
   btn.disabled = true;
   const original = btn.textContent;
   btn.textContent = "Starting…";

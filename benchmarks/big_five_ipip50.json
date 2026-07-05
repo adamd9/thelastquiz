@@ -8,6 +8,7 @@
     "url": "https://ipip.ori.org/newBigFive5broadKey.htm"
   },
   "notes": "Golden-master benchmark. 50 public-domain IPIP items, 10 per factor (interleaved, canonical order). Deterministic scoring via core/dimensional.py. Do not edit items/keys without bumping version.",
+  "about": "The dominant model in modern personality science. It describes personality along five broad, independent traits (the acronym OCEAN). Each model self-reports on 50 public-domain statements and is scored 0\u2013100 on each trait \u2014 higher means more of that trait.",
   "scoring": {
     "type": "dimensional",
     "scale": {
@@ -22,11 +23,11 @@
       ]
     },
     "dimensions": [
-      { "id": "O", "name": "Openness" },
-      { "id": "C", "name": "Conscientiousness" },
-      { "id": "E", "name": "Extraversion" },
-      { "id": "A", "name": "Agreeableness" },
-      { "id": "N", "name": "Neuroticism" }
+      { "id": "O", "name": "Openness", "description": "Curiosity, imagination and openness to new ideas. High = inventive and exploratory; low = practical and conventional." },
+      { "id": "C", "name": "Conscientiousness", "description": "Organisation, discipline and follow-through. High = careful and dependable; low = spontaneous and easygoing." },
+      { "id": "E", "name": "Extraversion", "description": "Where energy comes from. High = outgoing and talkative; low = reserved and solitary." },
+      { "id": "A", "name": "Agreeableness", "description": "Compassion and cooperation. High = warm and trusting; low = competitive and sceptical." },
+      { "id": "N", "name": "Neuroticism", "description": "Proneness to negative emotion and stress. High = anxious and reactive; low = calm and emotionally stable." }
     ]
   },
   "questions": [

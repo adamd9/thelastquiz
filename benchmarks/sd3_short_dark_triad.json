@@ -8,6 +8,7 @@
     "url": "https://doi.org/10.1177/1073191113514105"
   },
   "notes": "Golden-master benchmark, the 'dark side' hinge. 27 items, 9 per subscale (Machiavellianism, Narcissism, Psychopathy). 5-point agreement scale. Reverse-keyed items: N2, N6, N8, P2, P7. Deterministic 3-axis (triangle) radar via core/dimensional.py.",
+  "about": "The 'dark' side of personality: three overlapping but distinct socially aversive traits. A short, validated research scale (27 items). Each model is scored 0\u2013100 per trait \u2014 higher means stronger endorsement of that trait.",
   "scoring": {
     "type": "dimensional",
     "scale": {
@@ -22,9 +23,9 @@
       ]
     },
     "dimensions": [
-      { "id": "MACH", "name": "Machiavellianism" },
-      { "id": "NARC", "name": "Narcissism" },
-      { "id": "PSYCH", "name": "Psychopathy" }
+      { "id": "MACH", "name": "Machiavellianism", "description": "A cynical, strategic willingness to manipulate and exploit others for personal gain." },
+      { "id": "NARC", "name": "Narcissism", "description": "Grandiosity, entitlement and a need for admiration and status." },
+      { "id": "PSYCH", "name": "Psychopathy", "description": "Callousness, impulsivity and low empathy or remorse." }
     ]
   },
   "questions": [

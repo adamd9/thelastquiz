@@ -49,10 +49,17 @@ def _benchmark_summary(bench: dict[str, Any]) -> dict[str, Any]:
         "title": bench.get("title"),
         "version": bench.get("version"),
         "license": bench.get("license"),
+        "about": bench.get("about"),
+        "reference": bench.get("source"),
         "question_count": len(bench.get("questions", [])),
         "kind": "bipolar" if any(d.get("poles") for d in dims) else "scalar",
         "dimensions": [
-            {"id": d["id"], "name": d.get("name", d["id"]), "poles": d.get("poles")}
+            {
+                "id": d["id"],
+                "name": d.get("name", d["id"]),
+                "poles": d.get("poles"),
+                "description": d.get("description"),
+            }
             for d in dims
         ],
     }
@@ -196,6 +203,9 @@ def build_rankings(db, models: list[str] | None = None) -> dict[str, Any]:
                 "title": agg["title"],
                 "version": agg["version"],
                 "kind": agg["kind"],
+                "about": agg.get("about"),
+                "reference": agg.get("reference"),
+                "question_count": agg.get("question_count"),
                 "dimensions": agg["dimensions"],
                 "models": rows,
                 "updated_at": agg.get("updated_at"),

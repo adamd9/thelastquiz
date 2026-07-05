@@ -2,6 +2,10 @@ import { fetchJSON } from "../api.js";
 import { state, loadModelSelection, notifyModelSelectionChanged, setCurrentStep } from "../state.js";
 import { buildModelGroups, escapeHtml, getQuizTypeLabel } from "../utils.js";
 
+// Normal users can compare up to this many models per run (keeps runs fast and
+// affordable). The admin benchmark console has no such cap.
+const MAX_MODELS = 10;
+
 class ModelPicker extends HTMLElement {
   constructor() {
     super();
@@ -122,11 +126,10 @@ class ModelPicker extends HTMLElement {
           state.selectedModels.clear();
         }
         if (btn.dataset.action === "select-visible") {
-          this.getFilteredModels().forEach((model) => {
-            if (model.available) {
-              state.selectedModels.add(model.id);
-            }
-          });
+          for (const model of this.getFilteredModels()) {
+            if (state.selectedModels.size >= MAX_MODELS) break;
+            if (model.available) state.selectedModels.add(model.id);
+          }
         }
         notifyModelSelectionChanged();
         this.renderGroups();
@@ -182,7 +185,7 @@ class ModelPicker extends HTMLElement {
         if (this.isGroupActive(group)) {
           state.selectedModels.clear();
         } else {
-          state.selectedModels = new Set(group.modelIds);
+          state.selectedModels = new Set(group.modelIds.slice(0, MAX_MODELS));
         }
         notifyModelSelectionChanged();
         this.renderGroups();
@@ -206,19 +209,22 @@ class ModelPicker extends HTMLElement {
     const list = this.querySelector("[data-model-list]");
     if (!list) return;
     const filteredModels = this.getFilteredModels();
+    const atLimit = state.selectedModels.size >= MAX_MODELS;
     list.innerHTML = filteredModels
       .map((model) => {
         const completionPrice = Number(model.pricing?.completion);
         const priceLabel = Number.isFinite(completionPrice)
           ? `$${(completionPrice * 1_000_000).toFixed(2)} / 1M`
           : "n/a";
+        const selected = state.selectedModels.has(model.id);
+        const disabled = !model.available || (atLimit && !selected);
         return `
         <label class="list-item model-card">
           <input
             type="checkbox"
             value="${model.id}"
-            ${model.available ? "" : "disabled"}
-            ${state.selectedModels.has(model.id) ? "checked" : ""}
+            ${disabled ? "disabled" : ""}
+            ${selected ? "checked" : ""}
           />
           <div class="model-meta">
             <strong class="model-title">${model.name || model.id}</strong>
@@ -233,6 +239,10 @@ class ModelPicker extends HTMLElement {
     this.querySelectorAll("[data-model-list] input[type=checkbox][value]").forEach((input) => {
       input.addEventListener("change", () => {
         if (input.checked) {
+          if (state.selectedModels.size >= MAX_MODELS) {
+            input.checked = false; // hard cap for normal users
+            return;
+          }
           state.selectedModels.add(input.value);
         } else {
           state.selectedModels.delete(input.value);
@@ -240,8 +250,21 @@ class ModelPicker extends HTMLElement {
         notifyModelSelectionChanged();
         this.updateSelectionSummary();
         this.renderGroups();
+        this.refreshLimitState();
         this.syncNext();
       });
+    });
+  }
+
+  // Toggle the disabled state of unchecked, available models once the cap is
+  // reached, without re-rendering the whole list (keeps scroll position).
+  refreshLimitState() {
+    const atLimit = state.selectedModels.size >= MAX_MODELS;
+    const lookup = new Map(state.models.map((model) => [model.id, model]));
+    this.querySelectorAll("[data-model-list] input[type=checkbox][value]").forEach((input) => {
+      const model = lookup.get(input.value);
+      const available = model ? model.available : false;
+      input.disabled = !available || (atLimit && !state.selectedModels.has(input.value));
     });
   }
 
@@ -255,7 +278,7 @@ class ModelPicker extends HTMLElement {
     const selectedIds = [...state.selectedModels];
     selectionBadge.textContent = String(selectedIds.length);
     selectionCount.textContent = selectedIds.length
-      ? `${selectedIds.length} selected`
+      ? `${selectedIds.length} of ${MAX_MODELS} selected${selectedIds.length >= MAX_MODELS ? " \u2014 limit reached" : ""}`
       : "None selected";
     selectionList.innerHTML = selectedIds.length
       ? selectedIds
