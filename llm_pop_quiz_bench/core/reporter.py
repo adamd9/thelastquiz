@@ -856,6 +856,7 @@ def generate_markdown_report(run_id: str, runtime_dir: Path | None = None) -> No
             db.insert_asset(run_id, "csv_outcomes", outcome_csv_path)
 
         outcomes = compute_model_outcomes(qdf, quiz_def)
+        db.replace_run_outcomes(run_id, quiz_id, outcomes)
         md_lines = [f"# {quiz_def['title']}", f"Source: {quiz_def['source']['url']}"]
         md_lines.append("\n## Outcomes")
         md_lines.append(

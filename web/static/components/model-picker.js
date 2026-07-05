@@ -1,16 +1,22 @@
 import { fetchJSON } from "../api.js";
 import { state, loadModelSelection, notifyModelSelectionChanged, setCurrentStep } from "../state.js";
+import { buildModelGroups, escapeHtml, getQuizTypeLabel } from "../utils.js";
 
 class ModelPicker extends HTMLElement {
   constructor() {
     super();
     this.filterText = "";
     this.showAvailableOnly = false;
+    this.showAll = false;
   }
 
   connectedCallback() {
     loadModelSelection();
     this.load();
+    // Re-render when the selected quiz changes so the quiz-context banner stays accurate.
+    document.addEventListener("quiz:updated", () => {
+      if (this.isConnected) this.render();
+    });
   }
 
   async load() {
@@ -24,76 +30,77 @@ class ModelPicker extends HTMLElement {
     if (state.selectedGroup && !state.groups[state.selectedGroup]) {
       state.selectedGroup = "";
     }
+    // Default first-time visitors to "The classics" set.
+    if (state.selectedModels.size === 0 && !state.selectedGroup) {
+      const classics = buildModelGroups(state.models).find((g) => g.id === "classics");
+      if (classics) {
+        state.selectedModels = new Set(classics.modelIds);
+        notifyModelSelectionChanged();
+      }
+    }
     this.render();
   }
 
   render() {
-    const groupOptions = Object.keys(state.groups)
-      .map((group) => `<option value="${group}">${group}</option>`)
-      .join("");
-    const selectedIds = [...state.selectedModels];
     this.innerHTML = `
       <div class="model-picker-grid">
         <div class="panel">
           <div class="panel-header">
             <div class="panel-title">
-              <h2>Model Console</h2>
-              <div class="panel-subtitle">Pick a group or cherry-pick models.</div>
+              <h2>Pick your models</h2>
+              <div class="panel-subtitle">Choose a ready-made set to compare — or browse every model.</div>
             </div>
-            <span class="badge">Step 3</span>
+            <span class="badge">Step 2</span>
           </div>
-          <div>
-            <label>Model group</label>
-            <select id="groupSelect">
-              <option value="">(none)</option>
-              ${groupOptions}
-            </select>
-          </div>
-          <div class="toolbar">
-            <input type="text" placeholder="Filter models..." value="${this.filterText}" />
-            <label class="tag">
-              <input type="checkbox" ${this.showAvailableOnly ? "checked" : ""} />
-              available only
-            </label>
+          ${
+            state.quiz
+              ? `<div class="quiz-context">
+                   <div>
+                     <div class="quiz-context-label">Your quiz</div>
+                     <div class="quiz-context-title">${escapeHtml(state.quiz.title || "Untitled quiz")}</div>
+                   </div>
+                   <div class="quiz-context-meta">${escapeHtml(getQuizTypeLabel(state.quiz, state.quizMeta))} · ${(state.quiz.questions || []).length} questions</div>
+                 </div>`
+              : `<div class="quiz-context warn">No quiz selected yet — add or reuse one first.</div>`
+          }
+          <div class="model-groups" data-groups></div>
+          <button class="link-toggle" data-toggle-all>${this.showAll ? "Hide full model list" : "Browse all models"}</button>
+          <div class="advanced-models ${this.showAll ? "" : "hidden"}">
+            <div class="toolbar">
+              <input type="text" placeholder="Filter models..." value="${this.filterText}" />
+              <label class="tag">
+                <input type="checkbox" ${this.showAvailableOnly ? "checked" : ""} />
+                available only
+              </label>
+            </div>
+            <div class="actions">
+              <button class="secondary" data-action="select-visible">Select visible</button>
+              <button class="secondary" data-action="clear">Clear selection</button>
+            </div>
+            <div class="list scroll list-grid" data-model-list></div>
+            <div class="hint">Tip: filter to a short list, then “Select visible”.</div>
           </div>
           <div class="actions">
-            <button class="secondary" data-action="select-visible">Select visible</button>
-            <button class="secondary" data-action="clear">Clear selection</button>
-            <button data-next>Next</button>
+            <button data-next ${state.selectedModels.size ? "" : "disabled"}>Next →</button>
           </div>
-          <div class="list scroll list-grid" data-model-list></div>
-          <div class="hint">Tip: filter to a short list, then select visible.</div>
         </div>
         <div class="panel selection-panel">
           <div class="panel-header">
             <div class="panel-title">
-              <h2>Selected models</h2>
-              <div class="panel-subtitle">Review your picks before running.</div>
+              <h2>Your picks</h2>
+              <div class="panel-subtitle">These models will take your quiz.</div>
             </div>
-            <span class="badge">${selectedIds.length}</span>
+            <span class="badge">${state.selectedModels.size}</span>
           </div>
           <div class="selection-count"></div>
           <ul class="selection-list"></ul>
         </div>
       </div>
     `;
+    this.renderGroups();
     this.updateModelList();
     this.updateSelectionSummary();
-    const groupSelect = this.querySelector("#groupSelect");
-    if (groupSelect) {
-      groupSelect.value = state.selectedGroup || "";
-      groupSelect.addEventListener("change", (event) => {
-        state.selectedGroup = event.target.value;
-        console.log("[model-picker] group changed", {
-          group: state.selectedGroup,
-          models: state.models.length,
-          groupIds: (state.groups[state.selectedGroup] || []).length,
-        });
-        notifyModelSelectionChanged();
-        this.updateModelList();
-      });
-    }
-    this.querySelector("input[type=text]")?.addEventListener("input", (event) => {
+    this.querySelector(".advanced-models input[type=text]")?.addEventListener("input", (event) => {
       this.filterText = event.target.value.toLowerCase();
       this.updateModelList();
     });
@@ -104,6 +111,11 @@ class ModelPicker extends HTMLElement {
         this.updateModelList();
       });
     }
+    this.querySelector("[data-toggle-all]")?.addEventListener("click", (event) => {
+      this.showAll = !this.showAll;
+      this.querySelector(".advanced-models")?.classList.toggle("hidden", !this.showAll);
+      event.target.textContent = this.showAll ? "Hide full model list" : "Browse all models";
+    });
     this.querySelectorAll("button[data-action]").forEach((btn) => {
       btn.addEventListener("click", () => {
         if (btn.dataset.action === "clear") {
@@ -117,21 +129,72 @@ class ModelPicker extends HTMLElement {
           });
         }
         notifyModelSelectionChanged();
+        this.renderGroups();
         this.updateSelectionSummary();
         this.updateModelList();
+        this.syncNext();
       });
     });
     this.querySelector("button[data-next]")?.addEventListener("click", () => {
+      if (state.selectedModels.size === 0) return;
       setCurrentStep(4);
     });
   }
 
+  syncNext() {
+    const next = this.querySelector("button[data-next]");
+    if (next) next.disabled = state.selectedModels.size === 0;
+  }
+
+  isGroupActive(group) {
+    return (
+      state.selectedModels.size === group.modelIds.length &&
+      group.modelIds.every((id) => state.selectedModels.has(id))
+    );
+  }
+
+  renderGroups() {
+    const el = this.querySelector("[data-groups]");
+    if (!el) return;
+    const groups = buildModelGroups(state.models);
+    if (!groups.length) {
+      el.innerHTML = `<div class="status">Browse all models below to choose.</div>`;
+      return;
+    }
+    el.innerHTML = groups
+      .map((g) => {
+        const active = this.isGroupActive(g);
+        return `
+        <button class="group-card ${active ? "active" : ""}" data-group="${g.id}">
+          <div class="group-card-top">
+            <span class="group-card-label">${g.label}</span>
+            <span class="group-card-count">${g.modelIds.length} models</span>
+          </div>
+          <div class="group-card-desc">${g.description}</div>
+          <div class="group-card-egs">${g.examples.join(" · ")}</div>
+        </button>`;
+      })
+      .join("");
+    el.querySelectorAll("[data-group]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const group = groups.find((x) => x.id === btn.dataset.group);
+        if (!group) return;
+        if (this.isGroupActive(group)) {
+          state.selectedModels.clear();
+        } else {
+          state.selectedModels = new Set(group.modelIds);
+        }
+        notifyModelSelectionChanged();
+        this.renderGroups();
+        this.updateSelectionSummary();
+        this.updateModelList();
+        this.syncNext();
+      });
+    });
+  }
+
   getFilteredModels() {
-    const groupIds = state.selectedGroup
-      ? new Set(state.groups[state.selectedGroup] || [])
-      : null;
     return state.models.filter((model) => {
-      if (groupIds && !groupIds.has(model.id)) return false;
       if (this.showAvailableOnly && !model.available) return false;
       if (!this.filterText) return true;
       const haystack = `${model.name || ""} ${model.id} ${model.description || ""}`.toLowerCase();
@@ -176,6 +239,8 @@ class ModelPicker extends HTMLElement {
         }
         notifyModelSelectionChanged();
         this.updateSelectionSummary();
+        this.renderGroups();
+        this.syncNext();
       });
     });
   }

@@ -115,3 +115,48 @@ class DatabaseInterface(ABC):
     def delete_quiz(self, quiz_id: str) -> list[str]:
         """Delete a quiz and return IDs of deleted runs."""
         pass
+
+    @abstractmethod
+    def insert_audit(
+        self,
+        *,
+        event: str,
+        ip: str | None = None,
+        run_id: str | None = None,
+        quiz_id: str | None = None,
+        models: list[str] | None = None,
+        cost_usd: float | None = None,
+        detail: dict | None = None,
+    ) -> None:
+        """Append an audit-log entry."""
+        pass
+
+    @abstractmethod
+    def count_events_for_ip_since(self, ip: str, event: str, since_iso: str) -> int:
+        """Count audit events for an IP since a timestamp."""
+        pass
+
+    @abstractmethod
+    def sum_cost_for_ip_since(self, ip: str, since_iso: str) -> float:
+        """Sum recorded cost for an IP since a timestamp."""
+        pass
+
+    @abstractmethod
+    def fetch_ip_for_run(self, run_id: str) -> str | None:
+        """Return the earliest recorded IP associated with a run."""
+        pass
+
+    @abstractmethod
+    def replace_run_outcomes(
+        self,
+        run_id: str,
+        quiz_id: str,
+        outcomes: Iterable[dict],
+    ) -> None:
+        """Replace stored per-model outcomes for a run."""
+        pass
+
+    @abstractmethod
+    def fetch_run_outcomes(self, run_id: str) -> list[dict]:
+        """Fetch stored per-model outcomes for a run."""
+        pass

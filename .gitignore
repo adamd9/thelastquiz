@@ -6,3 +6,6 @@ results
 runtime-data/
 .my_mock_test_text.md
 venv/
+.venv/
+.playwright-cli/
+.DS_Store

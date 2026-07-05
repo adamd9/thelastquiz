@@ -104,3 +104,51 @@ class SQLiteDatabase(DatabaseInterface):
     def delete_quiz(self, quiz_id: str) -> list[str]:
         """Delete a quiz and return IDs of deleted runs."""
         return sqlite_store.delete_quiz(self.conn, quiz_id)
+
+    def insert_audit(
+        self,
+        *,
+        event: str,
+        ip: str | None = None,
+        run_id: str | None = None,
+        quiz_id: str | None = None,
+        models: list[str] | None = None,
+        cost_usd: float | None = None,
+        detail: dict | None = None,
+    ) -> None:
+        """Append an audit-log entry."""
+        sqlite_store.insert_audit(
+            self.conn,
+            event=event,
+            ip=ip,
+            run_id=run_id,
+            quiz_id=quiz_id,
+            models=models,
+            cost_usd=cost_usd,
+            detail=detail,
+        )
+
+    def count_events_for_ip_since(self, ip: str, event: str, since_iso: str) -> int:
+        """Count audit events for an IP since a timestamp."""
+        return sqlite_store.count_events_for_ip_since(self.conn, ip, event, since_iso)
+
+    def sum_cost_for_ip_since(self, ip: str, since_iso: str) -> float:
+        """Sum recorded cost for an IP since a timestamp."""
+        return sqlite_store.sum_cost_for_ip_since(self.conn, ip, since_iso)
+
+    def fetch_ip_for_run(self, run_id: str) -> str | None:
+        """Return the earliest recorded IP associated with a run."""
+        return sqlite_store.fetch_ip_for_run(self.conn, run_id)
+
+    def replace_run_outcomes(
+        self,
+        run_id: str,
+        quiz_id: str,
+        outcomes: Iterable[dict],
+    ) -> None:
+        """Replace stored per-model outcomes for a run."""
+        sqlite_store.replace_run_outcomes(self.conn, run_id, quiz_id, outcomes)
+
+    def fetch_run_outcomes(self, run_id: str) -> list[dict]:
+        """Fetch stored per-model outcomes for a run."""
+        return sqlite_store.fetch_run_outcomes(self.conn, run_id)

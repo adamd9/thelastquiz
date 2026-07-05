@@ -60,6 +60,32 @@ class MarkdownViewer extends HTMLElement {
     this.render();
   }
 
+  async shareReport() {
+    const title = this.asset?.title || "Quiz result";
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title, text: title, url });
+        return;
+      }
+    } catch (err) {
+      if (err && err.name === "AbortError") return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      this.copyNotice = "Link copied.";
+    } catch (err) {
+      this.copyNotice = "Copy failed.";
+    }
+    this.render();
+    if (this.copyNotice === "Link copied.") {
+      setTimeout(() => {
+        this.copyNotice = "";
+        this.render();
+      }, 1500);
+    }
+  }
+
   async copyToClipboard() {
     if (!this.markdown) return;
     try {
@@ -119,6 +145,7 @@ class MarkdownViewer extends HTMLElement {
               ${this.copyNotice ? `<div class="status">${escapeHtml(this.copyNotice)}</div>` : ""}
             </div>
             <div class="markdown-actions">
+              <button data-action="share">Share</button>
               <button class="secondary" data-action="copy" ${!this.markdown ? "disabled" : ""}>Copy</button>
               ${
                 downloadUrl
@@ -139,6 +166,7 @@ class MarkdownViewer extends HTMLElement {
       btn.addEventListener("click", () => this.close());
     });
     this.querySelector("[data-action='copy']")?.addEventListener("click", () => this.copyToClipboard());
+    this.querySelector("[data-action='share']")?.addEventListener("click", () => this.shareReport());
   }
 }
 

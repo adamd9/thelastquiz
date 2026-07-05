@@ -18,9 +18,11 @@ export const state = {
   selectedRun: null,
   selectedRunData: null,
   selectedRunQuizMeta: null,
+  selectedRunQuiz: null,
   selectedRunQuizId: null,
   runResults: [],
   runResultsSummary: null,
+  runOutcomes: [],
   assets: [],
   runLog: "",
   runLogExists: false,
@@ -77,6 +79,7 @@ export function updateStepVisibility() {
   });
   const stepper = document.querySelector("stepper-nav");
   if (stepper) {
-    stepper.style.display = state.currentStep === 0 ? "none" : "";
+    // Hide the wizard stepper on the dashboard (0) and the off-flow library (2).
+    stepper.style.display = state.currentStep === 0 || state.currentStep === 2 ? "none" : "";
   }
 }

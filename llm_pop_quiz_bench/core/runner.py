@@ -100,11 +100,23 @@ async def run_quiz(
                     params = _get_model_params(adapter)
                     
                     start = time.perf_counter()
-                    resp = await adapter.send(messages, params=params)
+                    resp = await asyncio.wait_for(
+                        adapter.send(messages, params=params), timeout=120
+                    )
                     latency_ms = int((time.perf_counter() - start) * 1000)
-                    data = parse_choice_json(resp["text"])
+                    raw_text = resp.get("text") if isinstance(resp, dict) else None
+                    data = parse_choice_json(raw_text)
                     if not data:
-                        data = {"choice": "", "reason": "", "additional_thoughts": "", "refused": True}
+                        # No parseable choice JSON. This is typically a refusal —
+                        # e.g. the model declines an inappropriate question — so we
+                        # keep whatever it actually said as the explanation.
+                        refusal_text = (raw_text or "").strip()
+                        data = {
+                            "choice": "",
+                            "reason": refusal_text or "The model returned no answer.",
+                            "additional_thoughts": "",
+                            "refused": True,
+                        }
                     rec = QAResult(
                         question_id=q["id"],
                         choice=data.get("choice", ""),

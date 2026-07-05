@@ -34,6 +34,42 @@ def _infer_quiz_type(outcomes: list[dict[str, Any]], has_tags: bool, has_scores:
     return "Mostly letter"
 
 
+def _affinity_dimensions(quiz_type: str, outcomes: list[dict[str, Any]]) -> int:
+    """Count distinct outcome 'dimensions' that choices can map onto.
+
+    Only meaningful for quizzes where answers accumulate toward a small set of
+    named outcomes (mostly-letter / tag-based). Quizzes without such a mapping
+    (e.g. a per-item "Fuck, Marry, Kill") return 0 and get no affinity visual.
+    """
+    keys: set[str] = set()
+    for outcome in outcomes:
+        condition = outcome.get("condition") if isinstance(outcome.get("condition"), dict) else {}
+        if quiz_type == "Mostly letter":
+            value = condition.get("mostly") or outcome.get("mostly")
+        elif quiz_type == "Tag-based":
+            value = condition.get("mostlyTag") or outcome.get("mostlyTag")
+        else:
+            value = None
+        if value not in (None, "", []):
+            keys.add(str(value).strip().lower())
+    return len(keys)
+
+
+def _classify_hero_visual(quiz_type: str, dimensions: int) -> str:
+    """Pick the appropriate results 'hero' visual for this quiz, at parse time.
+
+    - radar: 3+ affinity dimensions (triangle/quad/… spider chart)
+    - bars:  exactly 2 dimensions (a radar would be degenerate)
+    - none:  everything else (score-based, or no outcome mapping like FMK)
+    """
+    if quiz_type in ("Mostly letter", "Tag-based"):
+        if dimensions >= 3:
+            return "radar"
+        if dimensions == 2:
+            return "bars"
+    return "none"
+
+
 def build_quiz_meta(quiz_def: dict[str, Any]) -> dict[str, Any]:
     questions = quiz_def.get("questions") or []
     outcomes = quiz_def.get("outcomes") or []
@@ -63,6 +99,8 @@ def build_quiz_meta(quiz_def: dict[str, Any]) -> dict[str, Any]:
 
     quiz_type = _infer_quiz_type(outcomes, has_tags, has_scores)
     choice_count = len(choice_ids) + anonymous_choices
+    affinity_dimensions = _affinity_dimensions(quiz_type, outcomes)
+    hero_visual = _classify_hero_visual(quiz_type, affinity_dimensions)
 
     return {
         "quiz_type": quiz_type,
@@ -72,4 +110,6 @@ def build_quiz_meta(quiz_def: dict[str, Any]) -> dict[str, Any]:
         "choice_count": choice_count,
         "has_tags": has_tags,
         "has_scores": has_scores,
+        "affinity_dimensions": affinity_dimensions,
+        "hero_visual": hero_visual,
     }

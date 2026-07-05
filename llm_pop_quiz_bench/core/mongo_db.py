@@ -32,6 +32,8 @@ class MongoDatabase(DatabaseInterface):
         self.runs: Collection = self.db["runs"]
         self.results: Collection = self.db["results"]
         self.assets: Collection = self.db["assets"]
+        self.audit: Collection = self.db["audit"]
+        self.outcomes: Collection = self.db["outcomes"]
         
         # Create indexes for better performance
         self._ensure_indexes()
@@ -44,6 +46,9 @@ class MongoDatabase(DatabaseInterface):
         self.runs.create_index("created_at")
         self.results.create_index([("run_id", 1), ("model_id", 1)])
         self.assets.create_index("run_id")
+        self.audit.create_index("ip")
+        self.audit.create_index("run_id")
+        self.outcomes.create_index("run_id")
 
     def close(self) -> None:
         """Close database connection."""
@@ -285,3 +290,90 @@ class MongoDatabase(DatabaseInterface):
         self.quizzes.delete_one({"quiz_id": quiz_id})
         
         return run_ids
+
+    def insert_audit(
+        self,
+        *,
+        event: str,
+        ip: str | None = None,
+        run_id: str | None = None,
+        quiz_id: str | None = None,
+        models: list[str] | None = None,
+        cost_usd: float | None = None,
+        detail: dict | None = None,
+    ) -> None:
+        """Append an audit-log entry."""
+        doc = {
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "ip": ip,
+            "event": event,
+            "run_id": run_id,
+            "quiz_id": quiz_id,
+            "models": models or [],
+            "cost_usd": cost_usd,
+            "detail": detail or {},
+        }
+        self.audit.insert_one(doc)
+
+    def count_events_for_ip_since(self, ip: str, event: str, since_iso: str) -> int:
+        """Count audit events for an IP since a timestamp."""
+        return self.audit.count_documents({
+            "ip": ip,
+            "event": event,
+            "created_at": {"$gte": since_iso},
+        })
+
+    def sum_cost_for_ip_since(self, ip: str, since_iso: str) -> float:
+        """Sum recorded cost for an IP since a timestamp."""
+        cursor = self.audit.aggregate([
+            {"$match": {
+                "ip": ip,
+                "cost_usd": {"$ne": None},
+                "created_at": {"$gte": since_iso},
+            }},
+            {"$group": {"_id": None, "total": {"$sum": "$cost_usd"}}},
+        ])
+        for doc in cursor:
+            return float(doc.get("total") or 0.0)
+        return 0.0
+
+    def fetch_ip_for_run(self, run_id: str) -> str | None:
+        """Return the earliest recorded IP associated with a run."""
+        doc = self.audit.find_one(
+            {"run_id": run_id, "ip": {"$ne": None}},
+            {"ip": 1, "_id": 0},
+            sort=[("created_at", 1)],
+        )
+        return doc.get("ip") if doc else None
+
+    def replace_run_outcomes(
+        self,
+        run_id: str,
+        quiz_id: str,
+        outcomes: Iterable[dict],
+    ) -> None:
+        """Replace stored per-model outcomes for a run."""
+        self.outcomes.delete_many({"run_id": run_id})
+        created_at = datetime.now(timezone.utc).isoformat()
+        docs = []
+        for outcome in outcomes:
+            model_id = outcome.get("model_id")
+            if not model_id:
+                continue
+            docs.append({
+                "run_id": run_id,
+                "quiz_id": quiz_id,
+                "model_id": str(model_id),
+                "outcome": str(outcome.get("outcome", "")),
+                "created_at": created_at,
+            })
+        if docs:
+            self.outcomes.insert_many(docs)
+
+    def fetch_run_outcomes(self, run_id: str) -> list[dict]:
+        """Fetch stored per-model outcomes for a run."""
+        cursor = self.outcomes.find(
+            {"run_id": run_id},
+            {"model_id": 1, "outcome": 1, "_id": 0},
+        ).sort("created_at", 1)
+        return [{"model_id": d.get("model_id"), "outcome": d.get("outcome")} for d in cursor]

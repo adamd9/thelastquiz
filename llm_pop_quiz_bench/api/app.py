@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import os
 import shutil
+import time
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -20,12 +21,21 @@ from ..core.costs import estimate_run_cost, fetch_openrouter_pricing_map
 from ..core.openrouter import fetch_user_models, normalize_models, strip_prefix
 from ..core.quiz_meta import build_quiz_meta
 from ..core.quiz_converter import convert_to_quiz
+from ..core.quotas import check_request_quota, load_quota_config
 from ..core.runtime_data import build_runtime_paths, get_runtime_paths
 from ..core.runner import run_sync
 from ..core.logging_utils import rotate_log_if_needed
 from ..core.db_factory import connect
 
 app = FastAPI()
+
+
+@app.middleware("http")
+async def add_no_cache_headers(request: Request, call_next):
+    """Prevent stale cached assets during active development/iteration."""
+    response = await call_next(request)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return response
 
 
 @app.exception_handler(RequestValidationError)
@@ -129,6 +139,86 @@ def _build_raw_preview(raw_payload: dict | None) -> dict | None:
     return None
 
 
+def _client_ip(request: Request) -> str | None:
+    """Best-effort client IP, honouring a single proxy hop if present."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        first = forwarded.split(",")[0].strip()
+        if first:
+            return first
+    if request.client:
+        return request.client.host
+    return None
+
+
+def _record_run_cost(run_id: str, runtime_root: Path) -> None:
+    """Compute the run's estimated cost and append an audit entry (best effort)."""
+    try:
+        runtime_paths = build_runtime_paths(runtime_root)
+        db = connect(runtime_paths.db_path)
+        rows = db.fetch_results(run_id)
+        run = db.fetch_run(run_id)
+        ip = db.fetch_ip_for_run(run_id)
+        cost_summary = None
+        if rows:
+            try:
+                pricing_map = fetch_openrouter_pricing_map()
+                cost_summary = estimate_run_cost(rows, pricing_map)
+            except Exception:
+                cost_summary = None
+        cost_value = None
+        if cost_summary and isinstance(cost_summary.get("total"), (int, float)):
+            cost_value = float(cost_summary["total"])
+        db.insert_audit(
+            event="run_completed",
+            ip=ip,
+            run_id=run_id,
+            quiz_id=run.get("quiz_id") if run else None,
+            models=run.get("models") if run else None,
+            cost_usd=cost_value,
+            detail={"status": run.get("status") if run else None},
+        )
+        db.close()
+    except Exception:
+        # Auditing must never break the run pipeline.
+        return
+
+
+def _reap_stale_runs(runtime_paths, inactivity_seconds: int = 300) -> None:
+    """Fail runs whose log has gone quiet — a crashed or hung background task.
+
+    Uses the run log's last-modified time as a liveness signal: active runs write
+    to it continuously (per model/question), so a long silence means it's stuck.
+    """
+    try:
+        db = connect(runtime_paths.db_path)
+        try:
+            runs = db.fetch_runs()
+            now = time.time()
+            for run in runs:
+                if run.get("status") in ("completed", "failed"):
+                    continue
+                log_path = runtime_paths.logs_dir / f"{run['run_id']}.log"
+                last = None
+                try:
+                    if log_path.exists():
+                        last = log_path.stat().st_mtime
+                except OSError:
+                    last = None
+                if last is None:
+                    try:
+                        last = datetime.fromisoformat(run["created_at"]).timestamp()
+                    except (ValueError, KeyError, TypeError):
+                        last = now
+                if now - last > inactivity_seconds:
+                    db.update_run_status(run["run_id"], "failed")
+                    _append_server_log(log_path, "Run marked failed after inactivity timeout.")
+        finally:
+            db.close()
+    except Exception:
+        return
+
+
 def _run_and_report(
     quiz_path: Path,
     adapters: list,
@@ -152,6 +242,7 @@ def _run_and_report(
         db = connect(runtime_paths.db_path)
         db.update_run_status(run_id, "completed")
         db.close()
+    _record_run_cost(run_id, runtime_root)
 
 
 def _report_only(run_id: str, runtime_root: Path) -> None:
@@ -427,9 +518,14 @@ async def reprocess_quiz(
 
 
 @app.post("/api/runs")
-def create_run(req: RunRequest, background_tasks: BackgroundTasks) -> dict:
+def create_run(
+    req: RunRequest,
+    background_tasks: BackgroundTasks,
+    request: Request,
+) -> dict:
     runtime_paths = get_runtime_paths()
     use_mocks = os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() == "mock"
+    client_ip = _client_ip(request)
 
     db = connect(runtime_paths.db_path)
     try:
@@ -463,13 +559,48 @@ def create_run(req: RunRequest, background_tasks: BackgroundTasks) -> dict:
     if not adapters:
         raise HTTPException(status_code=400, detail="No available models to run")
 
+    quota_model_ids = [adapter.id for adapter in adapters]
+
+    # Enforce lightweight, opt-in usage quotas before spending anything.
+    quota_config = load_quota_config()
+    if quota_config.enabled:
+        pricing_map = None
+        if quota_config.max_model_price_per_m and not use_mocks:
+            try:
+                pricing_map = fetch_openrouter_pricing_map()
+            except Exception:
+                pricing_map = None
+        db = connect(runtime_paths.db_path)
+        decision = check_request_quota(
+            db, client_ip, quota_model_ids, pricing_map, quota_config
+        )
+        if not decision.allowed:
+            db.insert_audit(
+                event="run_blocked",
+                ip=client_ip,
+                quiz_id=req.quiz_id,
+                models=quota_model_ids,
+                detail={"reason": decision.reason},
+            )
+            db.close()
+            raise HTTPException(status_code=429, detail=decision.reason)
+        db.close()
+
     run_id = uuid.uuid4().hex
     db = connect(runtime_paths.db_path)
     db.insert_run(run_id=run_id,
         quiz_id=req.quiz_id,
         status="queued",
-        models=[adapter.id for adapter in adapters],
+        models=quota_model_ids,
         settings={"group": req.group} if req.group else None,
+    )
+    db.insert_audit(
+        event="run_created",
+        ip=client_ip,
+        run_id=run_id,
+        quiz_id=req.quiz_id,
+        models=quota_model_ids,
+        detail={"group": req.group} if req.group else None,
     )
     db.close()
     background_tasks.add_task(
@@ -486,6 +617,7 @@ def create_run(req: RunRequest, background_tasks: BackgroundTasks) -> dict:
 @app.get("/api/runs")
 def list_runs() -> dict:
     runtime_paths = get_runtime_paths()
+    _reap_stale_runs(runtime_paths)
     db = connect(runtime_paths.db_path)
     runs = db.fetch_runs()
     db.close()
@@ -495,6 +627,7 @@ def list_runs() -> dict:
 @app.get("/api/runs/{run_id}")
 def get_run(run_id: str) -> dict:
     runtime_paths = get_runtime_paths()
+    _reap_stale_runs(runtime_paths)
     db = connect(runtime_paths.db_path)
     run = db.fetch_run(run_id)
     assets = db.fetch_assets(run_id)
@@ -558,10 +691,15 @@ def get_run_results(run_id: str) -> dict:
     runtime_paths = get_runtime_paths()
     db = connect(runtime_paths.db_path)
     rows = db.fetch_results(run_id)
+    outcomes = db.fetch_run_outcomes(run_id)
     db.close()
     pricing_map = fetch_openrouter_pricing_map()
     cost_summary = estimate_run_cost(rows, pricing_map) if rows else None
-    return {"results": rows, "summary": {"cost": cost_summary} if cost_summary else None}
+    return {
+        "results": rows,
+        "outcomes": outcomes,
+        "summary": {"cost": cost_summary} if cost_summary else None,
+    }
 
 
 @app.get("/api/runs/{run_id}/log")

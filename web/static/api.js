@@ -19,14 +19,7 @@ export async function refreshQuizzes() {
   const data = await fetchJSON("/api/quizzes");
   state.quizzes = data.quizzes || [];
   document.dispatchEvent(new CustomEvent("quizzes:updated"));
-  const quizIds = new Set(state.quizzes.map((quiz) => quiz.quiz_id));
-  const hasActiveQuiz = state.quiz?.id && quizIds.has(state.quiz.id);
-  if (!hasActiveQuiz && state.quizzes.length > 0) {
-    await loadQuiz(state.quizzes[0].quiz_id);
-    document.dispatchEvent(new CustomEvent("quiz:updated"));
-  }
 }
-
 export async function loadQuiz(quizId) {
   const data = await fetchJSON(`/api/quizzes/${quizId}`);
   state.quiz = data.quiz;
@@ -51,6 +44,7 @@ export async function loadRunDetails(runId, includeLog = false) {
   state.assets = runData.assets || [];
   state.runResults = resultsData.results || [];
   state.runResultsSummary = resultsData.summary || null;
+  state.runOutcomes = resultsData.outcomes || [];
   state.runError = null;
   if (logData) {
     state.runLog = logData.log || "";
@@ -60,9 +54,11 @@ export async function loadRunDetails(runId, includeLog = false) {
     try {
       const quizData = await fetchJSON(`/api/quizzes/${runData.run.quiz_id}`);
       state.selectedRunQuizMeta = quizData.quiz_meta || null;
+      state.selectedRunQuiz = quizData.quiz || null;
       state.selectedRunQuizId = runData.run.quiz_id;
     } catch (err) {
       state.selectedRunQuizMeta = null;
+      state.selectedRunQuiz = null;
       state.selectedRunQuizId = null;
     }
   }

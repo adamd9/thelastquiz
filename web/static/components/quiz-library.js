@@ -1,6 +1,6 @@
 import { fetchJSON, loadQuiz, refreshQuizzes } from "../api.js";
 import { state, setCurrentStep } from "../state.js";
-import { formatDate, renderQuizPreview } from "../utils.js";
+import { escapeHtml, formatRelativeTime, renderQuizPreview } from "../utils.js";
 
 class QuizLibrary extends HTMLElement {
   constructor() {
@@ -33,9 +33,9 @@ class QuizLibrary extends HTMLElement {
     this.setStatus("Loading quiz...");
     try {
       await loadQuiz(quizId);
-      this.setStatus(`Loaded quiz: ${quizId}`);
       document.dispatchEvent(new CustomEvent("quiz:updated"));
-      this.render();
+      // Chosen a past quiz — jump straight into picking models.
+      setCurrentStep(3);
     } catch (err) {
       this.setStatus(`Error: ${err.message}`);
     }
@@ -125,27 +125,34 @@ class QuizLibrary extends HTMLElement {
     const filter = this.filterText;
     const activeQuizId = String(state.quiz?.id ?? state.quiz?.quiz_id ?? "");
     const quizzes = state.quizzes.filter((quiz) => {
-      if (!filter) return true;
-      const haystack = `${quiz.quiz_id} ${quiz.title || ""}`.toLowerCase();
-      return haystack.includes(filter);
+      if (filter) {
+        const haystack = `${quiz.title || ""}`.toLowerCase();
+        if (!haystack.includes(filter)) return false;
+      }
+      return true;
     });
-    const items = quizzes
+    const seenTitles = new Set();
+    const dedupedQuizzes = quizzes.filter((quiz) => {
+      const key = (quiz.title || quiz.quiz_id).trim().toLowerCase();
+      if (seenTitles.has(key)) return false;
+      seenTitles.add(key);
+      return true;
+    });
+    const items = dedupedQuizzes
       .map((quiz) => {
         const isActive = activeQuizId === quiz.quiz_id;
-        const rawBadge = quiz.raw_available ? '<span class="tag">raw stored</span>' : "";
-        const uploadedAt = formatDate(quiz.created_at) || "unknown";
+        const source = quiz.source?.publication || quiz.source?.source || "";
+        const addedAt = formatRelativeTime(quiz.created_at);
         return `
         <div class="list-item ${isActive ? "active" : ""}">
           <div>
-            <strong>${quiz.title || quiz.quiz_id}</strong>
-            <div class="status">ID: ${quiz.quiz_id} ${rawBadge}</div>
-            <div class="status">Source: ${quiz.source?.source || "unknown"}</div>
-            <div class="status">Uploaded: ${uploadedAt}</div>
+            <strong>${escapeHtml(quiz.title || "Untitled quiz")}</strong>
+            <div class="status">${source ? escapeHtml(source) + " · " : ""}Added ${escapeHtml(addedAt)}</div>
           </div>
           <div class="actions">
             <button class="secondary" data-preview="${quiz.quiz_id}">View</button>
-            <button class="secondary" data-quiz="${quiz.quiz_id}">
-              ${isActive ? "Selected" : "Use this quiz"}
+            <button data-quiz="${quiz.quiz_id}">
+              ${isActive ? "Selected ✓" : "Use this"}
             </button>
             <button class="danger" data-delete="${quiz.quiz_id}">Delete</button>
           </div>
@@ -183,8 +190,8 @@ class QuizLibrary extends HTMLElement {
       <div class="panel">
         <div class="panel-header">
           <div class="panel-title">
-            <h2>Quiz Library</h2>
-            <div class="panel-subtitle">Reuse saved quizzes for new runs.</div>
+            <h2>Reuse a past quiz</h2>
+            <div class="panel-subtitle">Run a quiz you've already added against a new set of models.</div>
           </div>
           <span class="badge">Step 2</span>
         </div>
@@ -204,9 +211,9 @@ class QuizLibrary extends HTMLElement {
           }
         </div>
         ${statusMessage}
-        <div class="status">Active quiz: ${activeQuizId || "none"}</div>
+        <div class="status">Using: ${escapeHtml(state.quiz?.title || "nothing yet")}</div>
         <div class="actions">
-          <button class="secondary" data-next>Next</button>
+          <button data-next>Pick models →</button>
         </div>
       </div>
     `;

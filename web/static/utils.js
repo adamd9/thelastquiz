@@ -1,9 +1,339 @@
 import { state } from "./state.js";
 
+// Curated, plain-English sets of models built from whatever is available right
+// now (so it stays correct for any future model list). Each group returns the
+// model ids that match. Empty groups are dropped by the caller.
+export function buildModelGroups(models) {
+  const available = (models || []).filter((m) => m.available);
+  const exclude = /(image|embed|tts|audio|whisper|vision|moderation|rerank|guard)/i;
+  const chat = available.filter((m) => !exclude.test(m.id));
+  const idl = (m) => m.id.toLowerCase();
+  const price = (m) => {
+    const c = Number(m.pricing?.completion);
+    return Number.isFinite(c) ? c : null;
+  };
+  const uniq = (arr) => [...new Map(arr.map((m) => [m.id, m])).values()];
+  const ids = (arr, n) => uniq(arr).slice(0, n).map((m) => m.id);
+  const names = (arr, n) => uniq(arr).slice(0, n).map((m) => prettifyModelId(m.id));
+
+  const groups = [];
+  const add = (id, label, description, list, limit = 5) => {
+    const picked = ids(list, limit);
+    if (picked.length >= 2) {
+      groups.push({ id, label, description, modelIds: picked, examples: names(list, 3) });
+    }
+  };
+
+  // Pick the first available model matching each needle, in priority order,
+  // preferring the canonical base model over mini/search/preview variants.
+  const variantPenalty = /(mini|nano|lite|search|preview|audio|realtime|vision|thinking|reasoning|:free|distill)/;
+  const pickByNeedles = (needles) => {
+    const out = [];
+    const used = new Set();
+    for (const needle of needles) {
+      const candidates = chat.filter((m) => !used.has(m.id) && idl(m).includes(needle));
+      if (!candidates.length) continue;
+      candidates.sort((a, b) => {
+        const scoreOf = (m) => {
+          const tail = idl(m).split("/").pop();
+          let s = tail.length;
+          if (tail === needle) s -= 1000;
+          else if (tail.startsWith(needle)) s -= 100;
+          if (variantPenalty.test(tail) && !variantPenalty.test(needle)) s += 200;
+          return s;
+        };
+        return scoreOf(a) - scoreOf(b);
+      });
+      out.push(candidates[0]);
+      used.add(candidates[0].id);
+    }
+    return out;
+  };
+
+  // "The classics" — the famous, in-the-zeitgeist names people recognise.
+  // One flagship per household-name brand (GPT, DeepSeek, Claude, Gemini, Grok,
+  // Llama…), picked from whatever is currently available.
+  add(
+    "classics",
+    "The classics",
+    "The famous models everyone's talking about.",
+    pickByNeedles([
+      "gpt-4o",
+      "deepseek",
+      "claude-sonnet",
+      "gemini-2.5-pro",
+      "grok",
+      "llama-3.3",
+      "gemini-3-pro",
+      "claude-opus",
+      "gemini",
+      "gpt-5",
+      "llama-4",
+      "llama-3.1-70b",
+      "qwen3",
+      "mistral-large",
+    ]),
+    6
+  );
+
+  const frontierRe =
+    /(gpt-5|gpt-4\.1|gpt-4o(?!-mini)|(^|\/)o[134]\b|o3|o4|claude.*(opus|sonnet)|claude-3\.7|gemini-(2\.5|3)[.\- ]?pro|grok-[34]|deepseek-r1|deepseek.*(v3|chat-v3)|llama-3\.1-405|mistral-large|qwen.*max)/;
+  add(
+    "frontier",
+    "Frontier models",
+    "The most capable flagship model from each major lab.",
+    chat.filter((m) => frontierRe.test(idl(m))),
+    6
+  );
+
+  const ossRe =
+    /^(meta-llama|mistralai|deepseek|qwen|google\/gemma|microsoft\/phi|nvidia|nousresearch|teknium|01-ai|databricks|allenai|cognitivecomputations)/;
+  const ossProprietary = /(qwen.*max|mistral-(large|medium)|codestral)/; // API-only tiers
+  const oss = chat
+    .filter((m) => ossRe.test(idl(m)) && !ossProprietary.test(idl(m)))
+    .sort((a, b) => (price(b) || 0) - (price(a) || 0));
+  add("oss", "Best open source", "Top open-weight models you could self-host.", oss, 6);
+
+  const priced = chat.filter((m) => price(m) !== null && price(m) > 0);
+  add(
+    "cheapest",
+    "Cheapest",
+    "Lowest cost per token — great for a quick, low-stakes run.",
+    [...priced].sort((a, b) => price(a) - price(b)),
+    6
+  );
+  add(
+    "premium",
+    "Most expensive",
+    "The priciest, top-tier models — for a no-expense-spared comparison.",
+    [...priced].sort((a, b) => price(b) - price(a)),
+    5
+  );
+
+  // Match refusal-light / RP-focused models by id only (descriptions often
+  // mention these names in comparisons, which would cause false positives).
+  const unrestrictedRe =
+    /(uncensored|abliterat|dolphin|mythomax|venice|unfiltered|no[-_ ]?guard|lumimaid|rocinante|cydonia|hermes|nous-)/;
+  add(
+    "unrestricted",
+    "Unrestricted",
+    "Models with fewer safety guardrails — often the most surprising answers.",
+    chat.filter((m) => unrestrictedRe.test(idl(m))),
+    6
+  );
+
+  return groups;
+}
+
 export function formatDate(iso) {
   if (!iso) return "";
   const date = new Date(iso);
   return date.toLocaleString();
+}
+
+// Human-friendly elapsed time in ms, e.g. "12s", "2m 5s", "1h 3m".
+export function formatDuration(ms) {
+  if (!Number.isFinite(ms) || ms < 0) return "";
+  const totalSeconds = Math.round(ms / 1000);
+  if (totalSeconds < 60) return `${totalSeconds}s`;
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes < 60) return seconds ? `${minutes}m ${seconds}s` : `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const remMinutes = minutes % 60;
+  return remMinutes ? `${hours}h ${remMinutes}m` : `${hours}h`;
+}
+
+export function formatRelativeTime(iso) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffMs = Date.now() - then;
+  const mins = Math.round(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min${mins === 1 ? "" : "s"} ago`;
+  const hours = Math.round(mins / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+  const days = Math.round(hours / 24);
+  if (days < 7) return `${days} day${days === 1 ? "" : "s"} ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+// Turn "google/gemini-2.5-flash-lite" into "Gemini 2.5 Flash Lite" for display.
+export function prettifyModelId(modelId) {
+  if (!modelId) return "";
+  const tail = String(modelId).split("/").pop() || String(modelId);
+  return tail
+    .replace(/[-_]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (ch) => ch.toUpperCase());
+}
+
+// Magazine quizzes phrase results in the second person ("You're a Peace Lily"),
+// but here the MODEL is the one taking the quiz — so we reframe the outcome as
+// the model's own personality ("<model> is a Peace Lily").
+export function outcomeAsIdentity(outcome) {
+  return String(outcome || "")
+    .replace(/^\s*you(?:['’]re| are)\s+/i, "")
+    .trim();
+}
+
+// Look up the flavour text for a computed outcome (e.g. "calm, low-key, quietly
+// beautiful") from the quiz definition, matching on result/text/id.
+export function findOutcomeDescription(quiz, outcomeText) {
+  if (!quiz || !Array.isArray(quiz.outcomes)) return "";
+  const norm = (value) => String(value || "").trim().toLowerCase();
+  const target = norm(outcomeText);
+  if (!target) return "";
+  const match = quiz.outcomes.find(
+    (o) => norm(o.result) === target || norm(o.text) === target || norm(o.id) === target
+  );
+  return match?.description || "";
+}
+
+// Build a per-question view of the survey: every option, plus which models
+// picked it (with their reasoning). Works for one model or many.
+export function buildAnswerSummary(quiz, results) {
+  if (!quiz || !Array.isArray(quiz.questions)) return [];
+  const byQuestion = new Map();
+  (results || []).forEach((row) => {
+    if (!byQuestion.has(row.question_id)) byQuestion.set(row.question_id, []);
+    byQuestion.get(row.question_id).push(row);
+  });
+  return quiz.questions.map((question, index) => {
+    const rows = byQuestion.get(question.id) || [];
+    const optionDefs = question.options || [];
+    const optionIds = new Set(optionDefs.map((o) => String(o.id).toLowerCase()));
+    const options = optionDefs.map((option) => {
+      const pickedBy = rows
+        .filter(
+          (row) =>
+            !row.refused &&
+            String(row.choice).toLowerCase() === String(option.id).toLowerCase()
+        )
+        .map((row) => ({ modelId: row.model_id, reason: row.reason || "" }));
+      return { id: option.id, text: option.text || "", pickedBy };
+    });
+    const refusedBy = rows
+      .filter((row) => row.refused)
+      .map((row) => ({
+        modelId: row.model_id,
+        reason: row.reason || "",
+        thoughts: row.additional_thoughts || "",
+      }));
+    const unmatched = rows
+      .filter(
+        (row) =>
+          !row.refused && !optionIds.has(String(row.choice).toLowerCase())
+      )
+      .map((row) => ({ modelId: row.model_id, choice: row.choice, reason: row.reason || "" }));
+    return {
+      index: index + 1,
+      questionId: question.id,
+      questionText: question.text || "",
+      options,
+      refusedBy,
+      unmatched,
+    };
+  });
+}
+
+// Group models by the outcome they landed on, most-common first. Powers the
+// multi-model results view ("a Peace Lily — Gemini, Claude").
+export function groupOutcomes(outcomes) {
+  const map = new Map();
+  (outcomes || []).forEach((entry) => {
+    const key = entry.outcome || "";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key).push(entry.model_id);
+  });
+  return [...map.entries()]
+    .map(([outcome, models]) => ({ outcome, models }))
+    .sort((a, b) => b.models.length - a.models.length);
+}
+
+// Compute how strongly each model leans toward each possible outcome — the
+// "affinity" of a personality quiz. Only meaningful when choices map to
+// outcomes (mostly-letter or tag-based); returns null otherwise (e.g. scores).
+export function buildAffinity(quiz, quizMeta, results) {
+  if (!quiz || !Array.isArray(quiz.outcomes) || !quiz.outcomes.length) return null;
+  const type = quizMeta?.quiz_type || "";
+  const models = [...new Set((results || []).map((r) => r.model_id))];
+  if (!models.length) return null;
+
+  const outcomeLabel = (o) => outcomeAsIdentity(o.result || o.text || o.id || "");
+
+  const buildFor = (keyFor) => {
+    const keyToOutcome = new Map();
+    const order = [];
+    quiz.outcomes.forEach((o) => {
+      const key = keyFor(o);
+      if (key == null || key === "") return;
+      const label = outcomeLabel(o);
+      keyToOutcome.set(String(key).toLowerCase(), label);
+      if (!order.includes(label)) order.push(label);
+    });
+    return { keyToOutcome, order };
+  };
+
+  const finalize = (tallyRow) =>
+    models.map((modelId) => {
+      const rows = results.filter((r) => r.model_id === modelId && !r.refused);
+      const counts = new Map(mapping.order.map((l) => [l, 0]));
+      let total = 0;
+      rows.forEach((r) => {
+        tallyRow(r, (label) => {
+          if (counts.has(label)) {
+            counts.set(label, counts.get(label) + 1);
+            total += 1;
+          }
+        });
+      });
+      if (!total) return { modelId, segments: [] };
+      const segments = mapping.order.map((label) => ({
+        label,
+        pct: Math.round((counts.get(label) / total) * 100),
+        count: counts.get(label),
+      }));
+      const max = Math.max(...segments.map((s) => s.pct));
+      segments.forEach((s) => {
+        s.isTop = s.pct === max && s.pct > 0;
+      });
+      return { modelId, segments };
+    });
+
+  let mapping;
+  if (type === "Mostly letter") {
+    mapping = buildFor((o) => o.condition?.mostly ?? o.mostly);
+    if (!mapping.keyToOutcome.size) return null;
+    const perModel = finalize((r, add) => {
+      const label = mapping.keyToOutcome.get(String(r.choice).toLowerCase());
+      if (label) add(label);
+    });
+    return { type: "mostly", perModel };
+  }
+
+  if (type === "Tag-based") {
+    mapping = buildFor((o) => o.condition?.mostlyTag ?? o.mostlyTag);
+    if (!mapping.keyToOutcome.size) return null;
+    const optionTags = new Map();
+    (quiz.questions || []).forEach((q) => {
+      (q.options || []).forEach((op) => {
+        optionTags.set(`${q.id}::${String(op.id).toLowerCase()}`, op.tags || []);
+      });
+    });
+    const perModel = finalize((r, add) => {
+      const tags = optionTags.get(`${r.question_id}::${String(r.choice).toLowerCase()}`) || [];
+      tags.forEach((t) => {
+        const label = mapping.keyToOutcome.get(String(t).toLowerCase());
+        if (label) add(label);
+      });
+    });
+    return { type: "tag", perModel };
+  }
+
+  return null;
 }
 
 const ASSET_LABELS = {
@@ -657,7 +987,7 @@ export function renderQuizPreview(
   const jsonBlock = quizJson
     ? `
       <details class=\"yaml-preview\">
-        <summary>View JSON</summary>
+        <summary>Advanced: view quiz data</summary>
         <pre class=\"preview\">${quizJson}</pre>
       </details>
     `
@@ -673,12 +1003,9 @@ export function renderQuizPreview(
     : "";
 
   const metaRows = [
-    ["Quiz ID", quiz.id || ""],
-    ["Type", getQuizTypeLabel(quiz, quizMeta)],
-    ["Scoring", getScoringSummary(quiz, quizMeta)],
+    ["Quiz type", getQuizTypeLabel(quiz, quizMeta)],
+    ["Possible results", getScoringSummary(quiz, quizMeta)],
     ["Notes", quiz.notes || "—"],
-    ["Conversion feedback", quiz.conversion_feedback || "—"],
-    ["Raw backup", rawPayload ? `${rawPayload.type || "stored"}` : "Not stored"],
   ]
     .map(
       ([label, value]) => `
