@@ -576,8 +576,8 @@ function renderSecondary(content, data, colorFor, benchId) {
   const grid = document.createElement("div");
   grid.className = "grid";
   grid.appendChild(benchmarkCard(bench, colorFor));
+  grid.appendChild(explanationCard(bench));
   content.appendChild(grid);
-  content.appendChild(explanationCard(bench));
 }
 
 /* --------------------------- About the quizzes ---------------------------- */
@@ -652,6 +652,31 @@ const VIEWS = [
   { id: "type", label: "Jungian Type", bench: "mbti_oejts" },
   { id: "about", label: "About" },
 ];
+
+// Per-view hero copy so the lead text matches the test being shown (not always
+// the Dark Triad). `sub` may contain inline markup.
+const HERO = {
+  "dark-triad": {
+    kicker: "The Last Quiz \u00b7 Dark Triad Rankings",
+    title: "How dark is your favourite AI?",
+    sub: "We sat the leading models down for the <b>Short Dark Triad</b> \u2014 psychology's test for the three least-cuddly traits: <b>Machiavellianism</b> (scheming), <b>narcissism</b> (grandiosity) and <b>psychopathy</b> (cold-heartedness) \u2014 then ranked them against the average person.",
+  },
+  "big-five": {
+    kicker: "The Last Quiz \u00b7 Big Five Rankings",
+    title: "What is each AI actually like?",
+    sub: "The <b>Big Five</b> (OCEAN) is the most established map of personality \u2014 <b>Openness</b>, <b>Conscientiousness</b>, <b>Extraversion</b>, <b>Agreeableness</b> and <b>Negative Emotionality</b>. Here's how each model scores across all five.",
+  },
+  "type": {
+    kicker: "The Last Quiz \u00b7 Jungian Type Rankings",
+    title: "What's each AI's personality type?",
+    sub: "A Jungian, MBTI-style test that sorts each model onto four axes \u2014 like <b>Thinking vs Feeling</b> and <b>Judging vs Perceiving</b> \u2014 and combines them into a four-letter type. See what each model comes out as.",
+  },
+  "about": {
+    kicker: "The Last Quiz \u00b7 About",
+    title: "How these quizzes work",
+    sub: "How we put real, validated personality tests to AI models \u2014 and how to read what comes back.",
+  },
+};
 
 /* ---------------------------- Group filtering ---------------------------- */
 // Build the curated groups (Humanity's Last Exam, Frontier, …) from whichever
@@ -747,6 +772,11 @@ async function main() {
   };
   const render = () => {
     const view = currentView();
+    const hero = HERO[view] || HERO["dark-triad"];
+    const setHero = (id, prop, val) => { const el = document.getElementById(id); if (el) el[prop] = val; };
+    setHero("rk-kicker", "textContent", hero.kicker);
+    setHero("rk-title", "textContent", hero.title);
+    setHero("rk-sub", "innerHTML", hero.sub);
     if (nav) nav.querySelectorAll("a[data-view]").forEach((a) =>
       a.classList.toggle("active", a.getAttribute("data-view") === view));
     // The model filter is irrelevant on the text-only "about" view.
