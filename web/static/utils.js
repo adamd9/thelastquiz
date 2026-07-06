@@ -133,6 +133,29 @@ export function groupOutcomes(outcomes) {
     .sort((a, b) => b.models.length - a.models.length);
 }
 
+// Per-model completeness for a run. A model is "complete" only when it produced
+// a real answer to EVERY question — a model is either fully in or fully out.
+// Partial results are technical failures (timeouts, refusals, out-of-credits),
+// so incomplete models are flagged and kept out of the rankings.
+// `modelIds` is the run's full model roster (so a model that failed with zero
+// stored results still shows up as 0/total, not silently missing).
+export function buildModelCompleteness(modelIds, quiz, results) {
+  const total = Array.isArray(quiz?.questions) ? quiz.questions.length : 0;
+  const answered = new Map();
+  (modelIds || []).forEach((id) => answered.set(id, 0));
+  (results || []).forEach((row) => {
+    if (!answered.has(row.model_id)) answered.set(row.model_id, 0);
+    const hasChoice = row.choice != null && String(row.choice) !== "";
+    if (!row.refused && hasChoice) {
+      answered.set(row.model_id, answered.get(row.model_id) + 1);
+    }
+  });
+  return [...answered.keys()].map((modelId) => {
+    const count = answered.get(modelId);
+    return { modelId, answered: count, total, complete: total > 0 && count >= total };
+  });
+}
+
 // Compute how strongly each model leans toward each possible outcome — the
 // "affinity" of a personality quiz. Only meaningful when choices map to
 // outcomes (mostly-letter or tag-based); returns null otherwise (e.g. scores).

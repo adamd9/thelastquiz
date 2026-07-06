@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import os
+import secrets
 import shutil
 import time
 import uuid
@@ -335,7 +336,8 @@ def require_admin(request: Request) -> None:
     expected = os.environ.get("LLM_POP_QUIZ_ADMIN_TOKEN")
     if not expected:
         return
-    if request.headers.get("x-admin-token") != expected:
+    provided = request.headers.get("x-admin-token") or ""
+    if not secrets.compare_digest(provided, expected):
         raise HTTPException(status_code=403, detail="Admin access required")
 
 

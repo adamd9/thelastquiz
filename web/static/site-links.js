@@ -1,5 +1,5 @@
 /* Cross-links between the public rankings site and the app. Any
- * <a data-dest="app|rankings|admin"> is rewritten for the current host:
+ * <a data-dest="app|rankings|admin|home"> is rewritten for the current host:
  *   - In production the bare apex ((the)?lastquiz.net) serves the rankings and
  *     app.<apex> serves the app + admin, so links resolve to the right host
  *     (e.g. on the apex, "Run your own quiz" -> https://app.thelastquiz.net/).
@@ -18,16 +18,19 @@
   function destUrl(dest) {
     var loc = window.location;
     // Production hosts: the bare apex ((the)?lastquiz.net) serves the public
-    // rankings; app.<apex> serves the app + admin. A rankings.<apex> host (if
-    // present) is treated the same. Everything else uses path-based routing.
+    // homepage at / and the detailed rankings at /rankings; app.<apex> serves
+    // the app + admin. A rankings.<apex> host (if present) is treated the same.
+    // Everything else uses path-based routing.
     var prod = loc.hostname.match(/^(?:(?:app|rankings)\.)?((?:the)?lastquiz\.net)$/i);
     if (prod) {
-      var rankings = loc.protocol + "//" + prod[1] + "/";
+      var apex = loc.protocol + "//" + prod[1] + "/";
       var app = loc.protocol + "//app." + prod[1] + "/";
-      if (dest === "rankings") return rankings;
+      if (dest === "home") return apex;
+      if (dest === "rankings") return apex + "rankings";
       if (dest === "admin") return app + "admin";
       return app;
     }
+    if (dest === "home") return "/";
     if (dest === "rankings") return "/rankings";
     if (dest === "admin") return "/admin";
     return "/";

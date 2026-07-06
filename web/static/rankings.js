@@ -732,6 +732,7 @@ async function main() {
   const nav = document.querySelector(".rk-nav");
   if (nav) {
     nav.innerHTML =
+      '<a href="/" data-dest="home">Home</a>' +
       VIEWS.map((v) => `<a href="#${v.id}" data-view="${v.id}">${v.label}</a>`).join("") +
       '<a href="/" data-dest="app">Make your own</a>' +
       '<a href="/admin" data-dest="admin">Admin</a>';

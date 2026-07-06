@@ -181,6 +181,28 @@ async def run_quiz(
                         # (which reads log mtime) never fails an active run.
                         _touch_liveness(log_path)
                 db.insert_results(run_id, quiz["id"], adapter.id, model_records)
+                # A model is either fully in or fully out: a run is only valid
+                # for a model if it produced a real answer to EVERY question.
+                # Timeouts, unparseable replies and out-of-credit errors leave
+                # items with an empty choice (refused=True); such a model failed
+                # to produce a full result and must be surfaced as failed rather
+                # than quietly "completed" — its partial data is excluded from
+                # the rankings.
+                answered = sum(
+                    1
+                    for r in model_records
+                    if not r.get("refused") and (r.get("choice") not in (None, ""))
+                )
+                total = len(questions)
+                if answered < total:
+                    missing = total - answered
+                    _append_log(
+                        log_path,
+                        f"Model {adapter.id} produced an incomplete result: "
+                        f"answered {answered}/{total} ({missing} missing). "
+                        "Marking as failed.",
+                    )
+                    return (adapter, f"Incomplete result: answered {answered}/{total} questions")
                 _append_log(log_path, f"Model {adapter.id} completed successfully")
                 return (adapter, None)
             except Exception as e:

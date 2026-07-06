@@ -3,7 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>The Last Quiz — homepage design mockup</title>
+  <title>The Last Quiz — Do AI models have personality?</title>
+  <script src="/static/site-links.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <style>
@@ -185,8 +186,6 @@
     /* -------------------------------- Footer ------------------------------- */
     .foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; line-height: 1.7; }
     .foot a { color: var(--accent-2); font-weight: 600; }
-    .mock-flag { position: fixed; bottom: 12px; right: 12px; background: var(--ink); color: #fff; font-size: 0.7rem;
-      letter-spacing: 0.1em; text-transform: uppercase; padding: 6px 12px; border-radius: 999px; opacity: 0.8; }
 
     @media (max-width: 900px) {
       .mag-grid { grid-template-columns: repeat(2, 1fr); }
@@ -212,7 +211,7 @@
         <a href="/rankings#big-five">Big Five</a>
         <a href="/rankings#type">Jungian Type</a>
         <a href="/rankings#about">About</a>
-        <a class="primary" href="/">Make your own</a>
+        <a class="primary" href="/" data-dest="app">Make your own</a>
       </nav>
     </header>
 
@@ -273,8 +272,8 @@
         pick your models, watch them answer. About a minute, start to finish.
       </p>
       <div class="cta-row">
-        <a class="btn primary" href="/">Create a quiz →</a>
-        <a class="btn ghost" href="#community">See what people made</a>
+        <a class="btn primary" href="/" data-dest="app">Create a quiz →</a>
+        <a class="btn ghost" href="#ideas">See a few ideas</a>
       </div>
     </section>
 
@@ -366,62 +365,61 @@
       </div>
     </section>
 
-    <!-- ===================== Community / featured quizzes ===================== -->
-    <section class="block" id="community">
+    <!-- ===================== Ideas / starting points ===================== -->
+    <section class="block" id="ideas">
       <div class="sec-head">
         <div>
-          <span class="kicker">From the community</span>
-          <h2>Quizzes people actually made</h2>
-          <p class="lede">Real (well, realistic!) reader-made quizzes, ranked by how often they've been run this week.</p>
+          <span class="kicker">Need a starting point?</span>
+          <h2>Ideas worth putting to the models</h2>
+          <p class="lede">A few directions to spark your own quiz — from the serious to the silly. Bring your own questions, or riff on one of these.</p>
         </div>
-        <a class="more" href="/">Browse all →</a>
       </div>
       <div class="mag-grid">
-        <a class="qcard" href="/">
+        <a class="qcard" href="/" data-dest="app">
           <div class="band b-plum">🧙</div>
           <div class="body">
             <span class="cat">Fandom</span>
             <h3>Which Hogwarts house is each AI?</h3>
-            <div class="meta"><span class="runs"><b>2,341</b> runs</span><span class="try">Try it →</span></div>
+            <div class="meta"><span class="try">Build this →</span></div>
           </div>
         </a>
-        <a class="qcard" href="/">
+        <a class="qcard" href="/" data-dest="app">
           <div class="band b-red">😤</div>
           <div class="body">
             <span class="cat">Just for fun</span>
             <h3>How petty is your chatbot, really?</h3>
-            <div class="meta"><span class="runs"><b>1,908</b> runs</span><span class="try">Try it →</span></div>
+            <div class="meta"><span class="try">Build this →</span></div>
           </div>
         </a>
-        <a class="qcard" href="/">
+        <a class="qcard" href="/" data-dest="app">
           <div class="band b-gold">💛</div>
           <div class="body">
             <span class="cat">Serious-ish</span>
             <h3>Emotional intelligence, ranked</h3>
-            <div class="meta"><span class="runs"><b>1,455</b> runs</span><span class="try">Try it →</span></div>
+            <div class="meta"><span class="try">Build this →</span></div>
           </div>
         </a>
-        <a class="qcard" href="/">
+        <a class="qcard" href="/" data-dest="app">
           <div class="band b-teal">🧟</div>
           <div class="body">
             <span class="cat">Chaos</span>
             <h3>Would your AI survive a zombie apocalypse?</h3>
-            <div class="meta"><span class="runs"><b>1,102</b> runs</span><span class="try">Try it →</span></div>
+            <div class="meta"><span class="try">Build this →</span></div>
           </div>
         </a>
-        <a class="qcard" href="/">
+        <a class="qcard" href="/" data-dest="app">
           <div class="band b-pink">💌</div>
           <div class="body">
             <span class="cat">Relationships</span>
             <h3>Love languages of the LLMs</h3>
-            <div class="meta"><span class="runs"><b>980</b> runs</span><span class="try">Try it →</span></div>
+            <div class="meta"><span class="try">Build this →</span></div>
           </div>
         </a>
-        <a class="qcard make-card" href="/">
+        <a class="qcard make-card" href="/" data-dest="app">
           <div class="body">
             <span class="plus">＋</span>
-            <h3>Make your own</h3>
-            <span class="try">Start from scratch →</span>
+            <h3>Start from scratch</h3>
+            <span class="try">Create a quiz →</span>
           </div>
         </a>
       </div>
@@ -452,7 +450,5 @@
       computed deterministically. For curiosity and research — <a href="/rankings#about">not a clinical assessment</a> of anything, or anyone.
     </footer>
   </div>
-
-  <div class="mock-flag">Homepage mockup</div>
 </body>
 </html>

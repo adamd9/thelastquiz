@@ -37,12 +37,13 @@ cp -R "$web/static" "$dist/rankings/static"
 cp "$web/index.html" "$dist/app/index.html"
 cp "$web/admin.html" "$dist/app/admin.html"
 
-# --- Public rankings (rankings.<domain>): rankings.html IS the site root ---
-# Same reasoning as the app bundle: no _redirects file. index.html is served at
-# /, rankings.json is served as a real asset, and Pages' built-in SPA fallback
-# (no 404.html) covers any unknown path. The old "/* /index.html 200" rule was
-# ignored by Pages anyway (infinite-loop detection) and only produced a warning.
-cp "$web/rankings.html" "$dist/rankings/index.html"
+# --- Public site (rankings.<domain> / apex): home.html IS the root ---
+# home.html is served at /, and rankings.html is served at the clean URL
+# /rankings (Cloudflare Pages serves a file named rankings.html at /rankings,
+# exactly like admin.html at /admin). No _redirects file: rankings.json is a
+# real asset and Pages' built-in SPA fallback (no 404.html) covers unknown paths.
+cp "$web/home.html" "$dist/rankings/index.html"
+cp "$web/rankings.html" "$dist/rankings/rankings.html"
 
 # Snapshot the rankings into the bundle so the public page is served entirely
 # from Cloudflare's CDN (no backend call per visit). Refreshed on every deploy;

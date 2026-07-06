@@ -5,6 +5,7 @@ import {
   buildAnswerSummary,
   buildAssetGroups,
   buildExpectedAssetTypes,
+  buildModelCompleteness,
   buildModelGroups,
   escapeHtml,
   findOutcomeDescription,
@@ -725,6 +726,24 @@ class RunPanel extends HTMLElement {
     const modelList = modelCount
       ? runData.models.map((model) => escapeHtml(prettifyModelId(model))).join(", ")
       : "No models recorded.";
+    // Once a run is finished, flag any model that failed to answer every
+    // question. Such a model is "out" — its partial data is excluded from the
+    // rankings — and that must be clear from the run.
+    const isActiveStatus = status && !TERMINAL_STATUSES.includes(status);
+    const incomplete = isActiveStatus
+      ? []
+      : buildModelCompleteness(
+          runData?.models || [],
+          state.selectedRunQuiz,
+          state.runResults || []
+        ).filter((m) => m.total > 0 && !m.complete);
+    const incompleteLabel = incomplete.length
+      ? incomplete
+          .map(
+            (m) => `${escapeHtml(prettifyModelId(m.modelId))} (${m.answered}/${m.total})`
+          )
+          .join(", ")
+      : "";
     const costSummary = state.runResultsSummary?.cost;
     const costValue = costSummary?.total;
     const missingPricing = costSummary?.missing_pricing || [];
@@ -749,11 +768,16 @@ class RunPanel extends HTMLElement {
         durSig = "done";
       }
     }
-    const sig = JSON.stringify({ status, modelList, costLabel, missingLabel, durSig, err: state.runError || "" });
+    const sig = JSON.stringify({ status, modelList, costLabel, missingLabel, durSig, err: state.runError || "", incompleteLabel });
     if (sig === this._sigMeta) return;
     this._sigMeta = sig;
     region.innerHTML = `
       <div class="status status-wrap">Models (${modelCount}): ${modelList}</div>
+      ${
+        incomplete.length
+          ? `<div class="status status-wrap status-incomplete">Incomplete — excluded from rankings (answered fewer than all questions): ${incompleteLabel}</div>`
+          : ""
+      }
       ${costSummary ? `<div class="status">Est. cost: ${costLabel}${missingLabel}</div>` : ""}
       ${durationLine ? `<div class="status">${durationLine}</div>` : ""}
       ${state.runError ? `<div class="status">${escapeHtml(state.runError)}</div>` : ""}

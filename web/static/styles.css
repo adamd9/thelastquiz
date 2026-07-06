@@ -548,6 +548,11 @@ pre {
   color: #b83b2f;
 }
 
+.status-incomplete {
+  color: #b83b2f;
+  font-weight: 600;
+}
+
 .model-card {
   grid-template-columns: 18px 1fr;
   align-items: start;

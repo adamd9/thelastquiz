@@ -104,8 +104,10 @@ def _completed_runs(db, benchmark_id: str) -> list[dict[str, Any]]:
 def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
     """Aggregate a benchmark's completed runs into per-model profiles.
 
-    Each model's shown profile comes from its LATEST completed run (a rerun
-    supersedes the old one — no averaging).
+    Each model's shown profile comes from its LATEST *fully answered* run (a
+    rerun supersedes the old one — no averaging). Runs where the model did not
+    answer every question are treated as technical failures and excluded (see
+    the completeness gate below), so they never reach the rankings.
     """
     bench = get_benchmark(benchmark_id)
     if not bench:
@@ -126,7 +128,14 @@ def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
             rows_by_model.setdefault(row["model_id"], []).append(row)
         for model_id, rows in rows_by_model.items():
             result = score_dimensional(bench, rows)
-            if result.answered == 0:
+            # A partial run is a technical failure, not a valid personality
+            # profile: unanswered items come from timeouts / unparseable
+            # responses (stored with an empty ``choice`` + ``refused=True``).
+            # Because normalization spans the WHOLE instrument, every missing
+            # answer drags each dimension toward zero, so partial runs would
+            # otherwise pollute the rankings with near-zero scores. Only surface
+            # a model once it has fully answered the questionnaire in a run.
+            if result.total_questions == 0 or result.answered < result.total_questions:
                 continue
             per_model_runs.setdefault(model_id, []).append((created, result.profile))
 
