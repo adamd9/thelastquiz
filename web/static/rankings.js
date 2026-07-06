@@ -541,8 +541,7 @@ function renderDarkTriad(content, data, colorFor) {
   if (!sd3 || !sd3.models || !sd3.models.length) {
     const note = document.createElement("div");
     note.className = "empty";
-    note.innerHTML = "No Dark Triad runs yet \u2014 an admin can run the benchmark from the " +
-      '<a href="' + (window.__destUrl ? window.__destUrl("admin") : "/admin") + '">admin console</a>.';
+    note.textContent = "No Dark Triad runs yet \u2014 check back soon.";
     content.appendChild(note);
     return;
   }
@@ -651,7 +650,7 @@ const VIEWS = [
   { id: "dark-triad", label: "Dark Triad", bench: SD3_ID },
   { id: "big-five", label: "Big Five", bench: "big_five_ipip50" },
   { id: "type", label: "Jungian Type", bench: "mbti_oejts" },
-  { id: "about", label: "About the quizzes" },
+  { id: "about", label: "About" },
 ];
 
 /* ---------------------------- Group filtering ---------------------------- */

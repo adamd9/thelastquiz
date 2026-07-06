@@ -49,13 +49,15 @@
       <p class="muted">Run the golden-master benchmarks against models. Rankings update live from the database of outcomes.</p>
 
       <div class="panel">
-        <label for="token">Admin token <span class="muted">(only needed if the server sets LLM_POP_QUIZ_ADMIN_TOKEN)</span></label>
+        <label for="token">Admin token</label>
         <div class="row">
-          <input type="text" id="token" placeholder="X-Admin-Token (leave blank in local dev)" />
-          <button class="btn secondary" id="save-token">Save</button>
+          <input type="password" id="token" placeholder="Paste your admin token to unlock" />
+          <button class="btn secondary" id="save-token">Unlock</button>
         </div>
+        <div class="note" id="gate-msg">Enter your admin token to continue.</div>
       </div>
 
+      <div id="admin-content" hidden>
       <div class="panel">
         <div class="row" style="justify-content:space-between;">
           <div>
@@ -92,9 +94,10 @@
           <tbody id="runs"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody>
         </table>
       </div>
+      </div>
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=7"></script>
+    <script type="module" src="/static/admin.js?v=8"></script>
   </body>
 </html>

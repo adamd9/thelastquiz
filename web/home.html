@@ -36,27 +36,19 @@
       text-transform: uppercase; color: var(--accent);
     }
 
-    /* ------------------------------- Masthead ------------------------------ */
+    /* -------------- Masthead (matches the shared app header) --------------- */
     .masthead {
-      display: flex; align-items: center; justify-content: space-between; gap: 18px;
-      padding: 20px 0 16px; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+      display: flex; align-items: center; justify-content: space-between; gap: 20px;
+      padding: 22px 0 18px; flex-wrap: wrap;
     }
-    .brand { display: flex; align-items: center; gap: 10px; font-family: "Fraunces", serif; font-weight: 700; font-size: 1.5rem; }
-    .brand .mark { font-size: 1.5rem; line-height: 1; }
-    .brand small { display: block; font-family: "Space Grotesk"; font-weight: 600; font-size: 0.62rem;
-      letter-spacing: 0.22em; text-transform: uppercase; color: var(--muted); }
-    .mast-nav { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-    .mast-nav a { color: var(--ink); font-weight: 600; font-size: 0.92rem; padding: 8px 13px; border-radius: 11px; border: 1px solid transparent; }
-    .mast-nav a:hover { border-color: var(--border); background: var(--panel); }
-    .mast-nav a.primary { background: var(--accent); color: #fff; box-shadow: var(--shadow-sm); }
-    .mast-nav a.primary:hover { filter: brightness(1.05); border-color: transparent; }
-
-    /* ------------------------------ Issue line ----------------------------- */
-    .issue-line {
-      display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;
-      font-size: 0.72rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted);
-      padding: 12px 0 0;
-    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-logo { width: 44px; height: 44px; border-radius: 12px; box-shadow: var(--shadow); background: #fff; object-fit: cover; }
+    .brand-kicker { margin: 0 0 3px; font-weight: 600; font-size: 0.7rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent-2); }
+    .brand-title { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.15rem; letter-spacing: 0.01em; }
+    .mast-nav { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .mast-nav a { color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.92rem; white-space: nowrap;
+      padding: 8px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--panel); }
+    .mast-nav a:hover { border-color: var(--accent); }
 
     /* --------------------------------- Hero -------------------------------- */
     .hero { padding: 26px 0 8px; }
@@ -201,9 +193,12 @@
 
     <!-- ============================= Masthead ============================= -->
     <header class="masthead">
-      <a class="brand" href="#">
-        <span class="mark">🃏</span>
-        <span>The Last Quiz<small>Personality tests for machines</small></span>
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/logo.png" alt="The Last Quiz logo" />
+        <div>
+          <p class="brand-kicker">The Last Quiz</p>
+          <div class="brand-title">Do AI models have personality?</div>
+        </div>
       </a>
       <nav class="mast-nav">
         <a href="/">Home</a>
@@ -211,7 +206,7 @@
         <a href="/rankings#big-five">Big Five</a>
         <a href="/rankings#type">Jungian Type</a>
         <a href="/rankings#about">About</a>
-        <a class="primary" href="/" data-dest="app">Make your own</a>
+        <a href="/" data-dest="app">Make your own</a>
       </nav>
     </header>
 

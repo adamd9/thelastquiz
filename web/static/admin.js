@@ -43,6 +43,30 @@ async function api(path, opts = {}) {
   return res.json();
 }
 
+// Gate: reveal the console only after an admin-scoped request succeeds. The
+// server returns 403 for a missing/wrong token (and 200 when open in local
+// dev), so a probe of /api/admin/benchmarks is a reliable authorization check.
+async function unlock() {
+  const content = document.getElementById("admin-content");
+  const gate = document.getElementById("gate-msg");
+  try {
+    await api("/api/admin/benchmarks");
+  } catch (e) {
+    content.hidden = true;
+    gate.hidden = false;
+    gate.textContent = getToken()
+      ? "That token was rejected. Check it and try again."
+      : "Enter your admin token to continue.";
+    return false;
+  }
+  gate.hidden = true;
+  content.hidden = false;
+  loadModels();
+  loadBenchmarks();
+  loadRuns();
+  return true;
+}
+
 async function loadModels() {
   const note = document.getElementById("models-note");
   const container = document.getElementById("models");
@@ -229,11 +253,12 @@ async function loadRuns() {
 function init() {
   const tokenInput = document.getElementById("token");
   tokenInput.value = getToken();
-  document.getElementById("save-token").addEventListener("click", () => {
+  document.getElementById("save-token").addEventListener("click", async () => {
     localStorage.setItem(TOKEN_KEY, tokenInput.value.trim());
-    toast("Token saved.");
-    loadBenchmarks();
-    loadRuns();
+    if (await unlock()) toast("Unlocked.");
+  });
+  tokenInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("save-token").click();
   });
   document.getElementById("refresh-runs").addEventListener("click", loadRuns);
 
@@ -246,10 +271,12 @@ function init() {
     });
   }
 
-  loadModels();
-  loadBenchmarks();
-  loadRuns();
-  setInterval(loadRuns, 5000);
+  // Nothing is shown until an admin probe succeeds. Auto-attempt with any
+  // stored token (or an open local-dev server) on load.
+  unlock();
+  setInterval(() => {
+    if (!document.getElementById("admin-content").hidden) loadRuns();
+  }, 5000);
 }
 
 init();
