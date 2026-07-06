@@ -120,11 +120,6 @@ def cleanup_stale_runs() -> None:
     runtime_paths = get_runtime_paths()
     db = connect(runtime_paths.db_path)
     run_ids = db.mark_stale_runs_failed()
-    try:
-        benchmarks.backfill_official_runs(db)
-    except Exception:
-        # Backfill is best-effort provenance tagging; never block startup.
-        pass
     db.close()
     if run_ids:
         for run_id in run_ids:
@@ -840,11 +835,16 @@ def create_run(
 
     run_id = uuid.uuid4().hex
     db = connect(runtime_paths.db_path)
+    # Tag runs from the open app path as ``public`` so they never feed the
+    # public rankings (which only aggregate official benchmark runs).
+    run_settings = {"public": True}
+    if req.group:
+        run_settings["group"] = req.group
     db.insert_run(run_id=run_id,
         quiz_id=req.quiz_id,
         status="queued",
         models=quota_model_ids,
-        settings={"group": req.group} if req.group else None,
+        settings=run_settings,
     )
     db.insert_audit(
         event="run_created",
