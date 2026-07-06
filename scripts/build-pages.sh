@@ -22,18 +22,27 @@ cp -R "$web/static" "$dist/app/static"
 cp -R "$web/static" "$dist/rankings/static"
 
 # --- App SPA (app.<domain>) ---
+# No _redirects file on purpose. Cloudflare Pages' native routing already does
+# exactly what we need, and a hand-rolled _redirects here caused an
+# ERR_TOO_MANY_REDIRECTS loop on /admin:
+#   * Pages serves admin.html at the clean URL /admin and 308-redirects
+#     /admin.html -> /admin. An explicit "/admin /admin.html 200" proxy fought
+#     that auto-redirect (/admin -> /admin.html -> 308 /admin -> ... forever).
+#   * A "/* /index.html 200" SPA proxy self-loops too (Pages strips /index -> /
+#     -> matches /* again); modern wrangler flags it as an infinite loop.
+# Instead we rely on Pages' documented defaults: route matching serves
+# admin.html at /admin and real assets at /static/*, while the built-in SPA
+# fallback (active because there is no top-level 404.html) serves index.html for
+# unmatched client routes (/create-run, /run/<id>, ...).
 cp "$web/index.html" "$dist/app/index.html"
 cp "$web/admin.html" "$dist/app/admin.html"
-cat > "$dist/app/_redirects" <<'EOF'
-/admin   /admin.html   200
-/*       /index.html   200
-EOF
 
 # --- Public rankings (rankings.<domain>): rankings.html IS the site root ---
+# Same reasoning as the app bundle: no _redirects file. index.html is served at
+# /, rankings.json is served as a real asset, and Pages' built-in SPA fallback
+# (no 404.html) covers any unknown path. The old "/* /index.html 200" rule was
+# ignored by Pages anyway (infinite-loop detection) and only produced a warning.
 cp "$web/rankings.html" "$dist/rankings/index.html"
-cat > "$dist/rankings/_redirects" <<'EOF'
-/*   /index.html   200
-EOF
 
 # Snapshot the rankings into the bundle so the public page is served entirely
 # from Cloudflare's CDN (no backend call per visit). Refreshed on every deploy;
