@@ -20,6 +20,24 @@
       .rankings-page .subhead { color: var(--muted); max-width: 640px; font-size: 1.02rem; }
       .rankings-page .rk-updated { color: var(--muted); font-size: 0.82rem; margin-top: 12px; }
 
+      /* Curated group filter (Humanity's Last Exam, Frontier, …): narrows a
+         large field down to a meaningful subset so we don't render 100 models. */
+      .rankings-page .rk-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 -6px; }
+      .rankings-page .rk-filter-label { color: var(--muted); font-size: 0.82rem; font-weight: 600; margin-right: 2px; }
+      .rankings-page .rk-chip {
+        font: inherit; font-size: 0.84rem; font-weight: 600; color: var(--ink);
+        background: var(--panel); border: 1px solid var(--border); border-radius: 999px;
+        padding: 6px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
+        transition: border-color .12s ease, background .12s ease, color .12s ease;
+      }
+      .rankings-page .rk-chip:hover { border-color: var(--accent); }
+      .rankings-page .rk-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .rankings-page .rk-chip-n {
+        font-size: 0.72rem; font-variant-numeric: tabular-nums; color: var(--muted);
+        background: rgba(0,0,0,0.06); border-radius: 999px; padding: 1px 7px; line-height: 1.5;
+      }
+      .rankings-page .rk-chip.active .rk-chip-n { color: #fff; background: rgba(255,255,255,0.22); }
+
       .rankings-page .rk-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; }
       .rankings-page .rk-legend .item { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.82rem; }
       .rankings-page .rk-legend .sw { width: 14px; height: 14px; border-radius: 4px; }
@@ -79,6 +97,15 @@
       .rankings-page .gloss .desc { color: var(--muted); font-size: 0.86rem; }
       .rankings-page .ref { display: inline-block; margin-top: 12px; color: var(--accent-2); text-decoration: none; font-weight: 600; font-size: 0.8rem; }
       .rankings-page .ref:hover { text-decoration: underline; }
+
+      /* "About the quizzes" explainer view. */
+      .rankings-page .card.about { max-width: 860px; }
+      .rankings-page .card.about h3 { font-size: 1.04rem; margin: 20px 0 4px; }
+      .rankings-page .card.about .about-lede { font-size: 1.02rem; color: var(--muted); margin-top: 2px; }
+      .rankings-page .card.about ul { margin: 8px 0 0; padding-left: 20px; color: var(--ink); font-size: 0.92rem; line-height: 1.6; }
+      .rankings-page .card.about ul li { margin: 5px 0; }
+      .rankings-page .card.about ul.about-norms { list-style: none; padding-left: 0; display: flex; flex-wrap: wrap; gap: 8px 14px; margin-top: 10px; }
+      .rankings-page .card.about ul.about-norms li { background: rgba(15,92,120,0.06); border-radius: 8px; padding: 5px 12px; font-variant-numeric: tabular-nums; }
 
       .rankings-page .cta {
         background: linear-gradient(120deg, #fff2e6, #fce9d6);
@@ -174,6 +201,7 @@
       </section>
 
       <div class="rk-legend" id="legend"></div>
+      <div class="rk-filter" id="filter" hidden></div>
       <div id="content"></div>
 
       <div class="cta">
@@ -187,6 +215,6 @@
       <footer class="rk-footer" id="footer"></footer>
     </main>
     <script src="/static/site-links.js"></script>
-    <script src="/static/rankings.js?v=11"></script>
+    <script type="module" src="/static/rankings.js?v=14"></script>
   </body>
 </html>

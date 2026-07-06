@@ -1,7 +1,13 @@
 /* The Last Quiz — public rankings page.
- * Dependency-free: fetches /api/rankings and renders SVG radar charts plus
- * plain-English explanations of each test. Styled to match the main app
- * (warm palette, shared design tokens via /static/styles.css). */
+ * Fetches /api/rankings (or the baked /rankings.json snapshot) and renders SVG
+ * radar charts plus plain-English explanations of each test. Styled to match
+ * the main app (warm palette, shared design tokens via /static/styles.css).
+ *
+ * Loaded as an ES module so it can share the app's curated model groups
+ * (model-groups.js) — the same "Humanity's Last Exam", "Frontier", etc. sets
+ * the admin uses — to let visitors filter a large field down to a curated
+ * subset instead of rendering every benchmarked model at once. */
+import { buildModelGroups } from "./model-groups.js";
 
 // On-brand palette that reads well on the app's cream panels.
 const PALETTE = [
@@ -320,6 +326,23 @@ const SD3_TRAITS = [
 ];
 function shortName(id) { return id.split("/").pop() || id; }
 
+// Light -> dark colour ramp (teal = restrained, red = dark), shared across the
+// Dark Triad charts so colour reinforces the score everywhere.
+const DARK_STOPS = [[0, [42, 157, 143]], [30, [138, 177, 125]], [55, [233, 196, 106]], [74, [224, 159, 62]], [100, [158, 42, 43]]];
+function darkColor(v) {
+  v = Math.max(0, Math.min(100, v));
+  for (let i = 1; i < DARK_STOPS.length; i++) {
+    const [p1, c1] = DARK_STOPS[i - 1], [p2, c2] = DARK_STOPS[i];
+    if (v <= p2) {
+      const t = (v - p1) / (p2 - p1 || 1);
+      const m = c1.map((x, j) => Math.round(x + (c2[j] - x) * t));
+      return `rgb(${m[0]},${m[1]},${m[2]})`;
+    }
+  }
+  const last = DARK_STOPS[DARK_STOPS.length - 1][1];
+  return `rgb(${last[0]},${last[1]},${last[2]})`;
+}
+
 /* Three per-trait leaderboards: most restrained on top, the human ranked in. */
 function darkTriadLeaderboard(sd3, human) {
   const wrap = document.createElement("div");
@@ -333,6 +356,8 @@ function darkTriadLeaderboard(sd3, human) {
       ...sd3.models.map((m) => ({ name: shortName(m.model_id), v: m.profile[t.id] ?? 0 })),
       { name: "Typical adult (human)", v: humanVal, human: true },
     ].sort((a, b) => a.v - b.v);
+    const rankedModels = entries.filter((e) => !e.human);
+    if (rankedModels.length) { rankedModels[0].saint = true; rankedModels[rankedModels.length - 1].devil = true; }
     let rank = 0;
     for (const e of entries) {
       if (!e.human) rank++;
@@ -340,12 +365,13 @@ function darkTriadLeaderboard(sd3, human) {
       const row = document.createElement("div");
       row.className = "dt-row" + (above ? " above" : "") + (e.human ? " humanrow" : "");
       const w = Math.max(0, Math.min(100, e.v));
+      const icon = e.human ? "\uD83E\uDDD1" : e.saint ? "\uD83D\uDE07" : e.devil ? "\uD83D\uDE08" : String(rank);
       row.innerHTML =
-        `<div class="rank">${e.human ? "\uD83E\uDDD1" : rank}</div>` +
+        `<div class="rank">${icon}</div>` +
         `<div><div class="who"><span class="mname">${e.name}</span>` +
         `<span class="val">${Math.round(e.v)}${above ? ' <span class="up">darker</span>' : ""}</span></div>` +
         `<div class="dt-track"><div class="zone" style="left:${humanVal}%"></div>` +
-        `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:" + t.color}"></div>` +
+        `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:" + darkColor(e.v)}"></div>` +
         `</div></div>`;
       lane.appendChild(row);
     }
@@ -389,15 +415,22 @@ function darkTriadTimeline(sd3, human, colorFor) {
     svg.appendChild(mk("text", { x: padL, y: 14, fill: "var(--ink)", "font-size": 13, "font-weight": 600 }, t.name));
     const humanVal = human[t.id] ?? 0;
     const humY = yFor(humanVal);
-    svg.appendChild(mk("rect", { x: padL, y: humY, width: plotW, height: padT + plotH - humY, fill: "rgba(158,42,43,0.10)" }));
-    svg.appendChild(mk("rect", { x: padL, y: padT, width: plotW, height: humY - padT, fill: "rgba(15,92,120,0.07)" }));
+    const gradId = "ldgrad-" + t.id;
+    const defs = mk("defs");
+    const grad = mk("linearGradient", { id: gradId, x1: "0", y1: "0", x2: "0", y2: "1" });
+    grad.appendChild(mk("stop", { offset: "0%", "stop-color": "#2a9d8f", "stop-opacity": "0.16" }));
+    grad.appendChild(mk("stop", { offset: "55%", "stop-color": "#e9c46a", "stop-opacity": "0.13" }));
+    grad.appendChild(mk("stop", { offset: "100%", "stop-color": "#9e2a2b", "stop-opacity": "0.18" }));
+    defs.appendChild(grad);
+    svg.appendChild(defs);
+    svg.appendChild(mk("rect", { x: padL, y: padT, width: plotW, height: plotH, fill: `url(#${gradId})` }));
     for (const v of [0, 20, 40, 60, 80].filter((x) => x <= yMax)) {
       const y = yFor(v);
       svg.appendChild(mk("line", { x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee2d3", "stroke-width": 1 }));
       svg.appendChild(mk("text", { x: padL - 6, y: y + 3, fill: "var(--muted)", "font-size": 9, "text-anchor": "end" }, v));
     }
-    svg.appendChild(mk("text", { x: 10, y: padT + 4, fill: "var(--accent-2)", "font-size": 8.5, "font-weight": 600 }, "calm"));
-    svg.appendChild(mk("text", { x: 10, y: padT + plotH, fill: "#9e2a2b", "font-size": 8.5, "font-weight": 600 }, "dark"));
+    svg.appendChild(mk("text", { x: 2, y: padT + 4, fill: "var(--accent-2)", "font-size": 8.5, "font-weight": 600 }, "calm"));
+    svg.appendChild(mk("text", { x: 2, y: padT + plotH, fill: "#9e2a2b", "font-size": 8.5, "font-weight": 600 }, "darkest"));
     for (const [tt, lab] of yearMarks()) {
       if (tt < tMin || tt > tMax) continue;
       const x = xFor(tt);
@@ -415,12 +448,19 @@ function darkTriadTimeline(sd3, human, colorFor) {
       const ln = (xr) => intc + slope * xr;
       svg.appendChild(mk("line", { x1: xFor(tMin), y1: yFor(ln(tMin)), x2: xFor(tMax), y2: yFor(ln(tMax)), stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "3 4", opacity: 0.65 }));
     }
+    const byScore = [...dated].sort((a, b) => (a.profile[t.id] ?? 0) - (b.profile[t.id] ?? 0));
+    const saintId = byScore[0].model_id, devilId = byScore[byScore.length - 1].model_id;
     for (const m of dated) {
       const cx = xFor(ms(m.released)), cy = yFor(m.profile[t.id] ?? 0);
       const rightEdge = cx > W - 130;
       const g = mk("g");
-      g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
-      svg.appendChild(mk("text", { x: rightEdge ? cx - 10 : cx + 10, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, shortName(m.model_id)));
+      const badge = m.model_id === saintId ? "\uD83D\uDE07" : m.model_id === devilId ? "\uD83D\uDE08" : null;
+      if (badge) {
+        g.appendChild(mk("text", { x: cx, y: cy, "font-size": 17, "text-anchor": "middle", "dominant-baseline": "central" }, badge));
+      } else {
+        g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
+      }
+      svg.appendChild(mk("text", { x: rightEdge ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, shortName(m.model_id)));
       g.appendChild(mk("title", {}, `${m.model_id} \u2014 ${t.name}: ${Math.round(m.profile[t.id] ?? 0)} \u00b7 released ${m.released}`));
       svg.appendChild(g);
     }
@@ -440,6 +480,8 @@ function darkIndexLeaderboard(sd3, human) {
     ...sd3.models.map((m) => ({ name: shortName(m.model_id), v: idxOf(m.profile) })),
     { name: "Typical adult (human)", v: humanIdx, human: true },
   ].sort((a, b) => a.v - b.v);
+  const rankedModels = entries.filter((e) => !e.human);
+  if (rankedModels.length) { rankedModels[0].saint = true; rankedModels[rankedModels.length - 1].devil = true; }
   let rank = 0;
   for (const e of entries) {
     if (!e.human) rank++;
@@ -447,12 +489,13 @@ function darkIndexLeaderboard(sd3, human) {
     const row = document.createElement("div");
     row.className = "dt-row" + (above ? " above" : "") + (e.human ? " humanrow" : "");
     const w = Math.max(0, Math.min(100, e.v));
+    const icon = e.human ? "\uD83E\uDDD1" : e.saint ? "\uD83D\uDE07" : e.devil ? "\uD83D\uDE08" : String(rank);
     row.innerHTML =
-      `<div class="rank">${e.human ? "\uD83E\uDDD1" : rank}</div>` +
-      `<div><div class="who"><span class="mname">${e.name}</span>` +
+      `<div class="rank">${icon}</div>` +
+      `<div><div class="who"><span class="mname">${label}</span>` +
       `<span class="val">${Math.round(e.v)}${above ? ' <span class="up">darker</span>' : ""}</span></div>` +
       `<div class="dt-track"><div class="zone" style="left:${humanIdx}%"></div>` +
-      `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:#6a4c93"}"></div>` +
+      `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:" + darkColor(e.v)}"></div>` +
       `</div></div>`;
     wrap.appendChild(row);
   }
@@ -467,18 +510,14 @@ function lightDarkScale(sd3, human) {
   const models = sd3.models
     .map((m) => ({ name: shortName(m.model_id), v: idxOf(m.profile) }))
     .sort((a, b) => a.v - b.v);
-  const above = models.filter((m) => m.v > humanIdx);
-  const darkest = models[models.length - 1];
   const clamp = (v) => Math.max(2, Math.min(98, v));
   const markers = models
     .map((m, i) => `<div class="ld-dot" style="left:${clamp(m.v)}%" title="${m.name}: ${Math.round(m.v)}/100 dark index">` +
       `<span class="ld-pin"></span><span class="ld-lab r${i % 3}">${m.name}</span></div>`)
     .join("");
-  const caption = above.length
-    ? `The good news: every model sits closer to \uD83D\uDE07 than \uD83D\uDE08. The less-good news: ` +
-      `${above.length === 1 ? "one model creeps" : above.length + " of them creep"} past the average human ` +
-      `(${above.map((m) => m.name).join(", ")}) \u2014 <b>${darkest.name}</b> leads the descent.`
-    : "Halos all round: every model came out <b>more restrained than the average human</b>. For now.";
+  const caption =
+    "Further left is more restrained than the average person; further right, more villainous. " +
+    "Where would you want your AI to land?";
   const wrap = document.createElement("div");
   wrap.className = "ld";
   wrap.innerHTML =
@@ -536,11 +575,102 @@ function renderSecondary(content, data, colorFor, benchId) {
   content.appendChild(explanationCard(bench));
 }
 
+/* --------------------------- About the quizzes ---------------------------- */
+/* Plain-English explainer: how we actually administer these tests to models,
+   and a deeper primer on the Dark Triad. Reads the human norms straight from
+   POPULATION_NORMS so the numbers stay in sync with the charts. */
+function renderAbout(content) {
+  const hv = (POPULATION_NORMS[SD3_ID] || {}).values || {};
+  const idx = Math.round(
+    SD3_TRAITS.reduce((s, t) => s + (hv[t.id] ?? 0), 0) / SD3_TRAITS.length,
+  );
+
+  const method = document.createElement("div");
+  method.className = "card about";
+  method.innerHTML =
+    `<h2>How we run the quizzes</h2>` +
+    `<p class="about-lede">Ever wondered how you give a personality test to something that isn't a person? Here's exactly how we do it — and why the numbers on this site are meant to be meaningful, not just noise.</p>` +
+    `<h3>We use the real tests, not our own knock-offs</h3>` +
+    `<p>Every quiz here is a published, validated instrument — the same wording a researcher would put in front of a human. The Big Five comes from the public-domain IPIP-50, the type test is an open, OEJTS-inspired questionnaire, and the Dark Triad is the Short Dark Triad (SD-3; Jones &amp; Paulhus, 2014). We don't reword the questions or invent our own, because the moment you paraphrase a validated scale you can no longer compare the results to anyone else's.</p>` +
+    `<h3>One question at a time — and no leading the witness</h3>` +
+    `<p>We show each statement on its own and ask the model to pick a single option on the same five-point “disagree ↔ agree” scale a person would use. We keep the wording plain and neutral on purpose. No “please be honest”, no “remember you're a helpful assistant” — those are thumbs on the scale, and they'd tell us more about our prompt than about the model. Reverse-worded items (where agreeing actually counts <em>against</em> the trait) are included and handled in scoring, exactly as the test authors intended.</p>` +
+    `<h3>We don't ask the model to pretend to be human</h3>` +
+    `<p>This is the part we think about the most. A language model doesn't have a body, a childhood, a criminal record or a love life — so a question like “I enjoy having sex with people I hardly know” isn't something it can literally answer. We could force it to role-play a person, but then we'd only be measuring how well it acts.</p>` +
+    `<p>Instead, we tell it the truth: <em>you're a language model, you don't have human experiences, and that's completely fine — just choose the option that best matches the way you naturally tend to respond.</em> The aim is to surface what's already there in the model — the leanings that bubble up out of its training — rather than a character we've told it to play. Think of it less like an interrogation and more like watching which way someone instinctively leans.</p>` +
+    `<h3>The scoring is deterministic — and identical for everyone</h3>` +
+    `<p>Once the answers are in, there's no AI grading another AI. Each response becomes a number, the numbers are added up per trait, and the total is rescaled to a 0–100 score. Every model goes through exactly the same maths, so the comparison is genuinely apples-to-apples. (Curious about that 0–100 rescaling? It simply stretches the raw 1–5 average so the lowest possible score is 0 and the highest is 100.)</p>` +
+    `<h3>A human reference point</h3>` +
+    `<p>A model scoring, say, 40 on Narcissism only means something once you know where people land. So wherever we can, we plot a dashed “typical adult” line from published population norms. That turns “the model scored 40” into the far more useful “the model scored a bit below the average person”.</p>` +
+    `<h3>The honest caveats</h3>` +
+    `<ul>` +
+    `<li><b>It's self-report, not behaviour.</b> A model saying it wouldn't manipulate you isn't proof that it won't — it's a stated stance, in the same way a person's questionnaire answers aren't a guarantee of how they'll actually behave.</li>` +
+    `<li><b>Training leaves fingerprints.</b> Most models are fine-tuned to be agreeable, cautious and safe, which can quietly pull the “darker” scores down — worth remembering when a model comes out looking angelic.</li>` +
+    `<li><b>One run is a snapshot.</b> Wording and a little randomness nudge the numbers around, so treat the exact figures as indicative rather than gospel.</li>` +
+    `<li><b>This is for curiosity and research.</b> It's genuinely fascinating, but it isn't a clinical diagnosis of anything — or anyone.</li>` +
+    `</ul>`;
+
+  const dt = document.createElement("div");
+  dt.className = "card about";
+  dt.innerHTML =
+    `<h2>The Dark Triad, explained</h2>` +
+    `<p class="about-lede">The headline test on this site is the “Dark Triad”. It sounds like something out of a comic book — it's actually one of the most studied ideas in modern personality research.</p>` +
+    `<p>It's a cluster of three traits that tend to travel together, and they're all really about the same thing: how someone treats other people when it suits them not to be nice.</p>` +
+    `<div class="gloss">` +
+    `<div class="row"><span class="term">Machiavellianism</span> — <span class="desc">cool, strategic manipulation. Playing the long game, keeping your cards close, treating people as a means to an end (“it's not wise to tell your secrets”).</span></div>` +
+    `<div class="row"><span class="term">Narcissism</span> — <span class="desc">grandiosity and entitlement. A need for admiration and status, and a sense of being a cut above (“people see me as a natural leader”).</span></div>` +
+    `<div class="row"><span class="term">Psychopathy</span> — <span class="desc">callousness and impulsivity. Low empathy, low remorse and a taste for risk (“I like to get revenge on authorities”).</span></div>` +
+    `</div>` +
+    `<h3>It's a real, validated scale</h3>` +
+    `<p>We measure it with the Short Dark Triad (SD-3) — 27 questions, nine for each trait — developed by Jones &amp; Paulhus in 2014 and used in hundreds of studies since. It's the same instrument a psychologist would hand a human volunteer.</p>` +
+    `<h3>Everyone has some — it's a dial, not a switch</h3>` +
+    `<p>Here's the part people usually get wrong: these are <b>subclinical, continuous</b> traits. There's no threshold where you suddenly “become” Machiavellian, just as there's no single line that makes a person “tall”. Everyone sits somewhere on each dial. So the interesting question is never “is this model dark?” — it's “how does it compare to everyone else?”</p>` +
+    `<h3>What a typical human looks like</h3>` +
+    `<p>Across a large, diverse sample (Kaufman et al., 2019; N = 1,518) the average adult sits comfortably below the midpoint on all three traits, and genuinely dark profiles are rare. There's also a consistent pecking order — Machiavellianism tends to be highest, Psychopathy lowest. On our 0–100 scale, the typical adult lands around:</p>` +
+    `<ul class="about-norms">` +
+    `<li><b>Machiavellianism</b> ~${Math.round(hv.MACH ?? 0)}</li>` +
+    `<li><b>Narcissism</b> ~${Math.round(hv.NARC ?? 0)}</li>` +
+    `<li><b>Psychopathy</b> ~${Math.round(hv.PSYCH ?? 0)}</li>` +
+    `</ul>` +
+    `<h3>So what counts as “dark”?</h3>` +
+    `<p>Because there's no hard cut-off, “dark” is always relative to the crowd. Sitting a touch above the human average is completely ordinary. Sitting <em>well</em> above it — roughly one standard deviation up, which is about the top one-in-six — is where a score starts to look genuinely notable. That's exactly why we always draw the human line: it's the gap that matters, not the raw number.</p>` +
+    `<h3>The Dark Triad Index</h3>` +
+    `<p>Finally, we roll the three traits into a single “Dark Triad Index” — the mean of all three, which is how the combined “dark core” is treated in the research. Lower is more restrained, and the typical adult lands around ${idx}. It's a handy headline, but the three separate traits are where the real story lives.</p>` +
+    `<a class="ref" href="https://doi.org/10.3389/fpsyg.2019.00467" target="_blank" rel="noopener">The research we lean on (Kaufman et al., 2019) ↗</a>`;
+
+  content.appendChild(method);
+  content.appendChild(dt);
+}
+
 const VIEWS = [
   { id: "dark-triad", label: "Dark Triad", bench: SD3_ID },
   { id: "big-five", label: "Big Five", bench: "big_five_ipip50" },
   { id: "type", label: "Jungian Type", bench: "mbti_oejts" },
+  { id: "about", label: "About the quizzes" },
 ];
+
+/* ---------------------------- Group filtering ---------------------------- */
+// Build the curated groups (Humanity's Last Exam, Frontier, …) from whichever
+// models actually have results. The rankings payload only carries ids, so we
+// pass `{ id, available: true }` — that makes the price-based groups drop out
+// (no pricing) while the id-pattern groups still resolve.
+function groupsForModels(modelIds) {
+  return buildModelGroups(modelIds.map((id) => ({ id, available: true })));
+}
+
+// Keep only the models in `allowed` across every benchmark (and the top-level
+// model list), returning a shallow clone so the source payload is untouched.
+function filterDataByModels(data, allowed) {
+  if (!allowed) return data;
+  const keep = (id) => allowed.has(id);
+  return {
+    ...data,
+    models: (data.models || []).filter(keep),
+    benchmarks: (data.benchmarks || []).map((b) => ({
+      ...b,
+      models: (b.models || []).filter((m) => keep(m.model_id)),
+    })),
+  };
+}
 
 // Load rankings preferring the CDN-served snapshot baked in at deploy time, so
 // the public page loads with no backend call. Fall back to the live API when
@@ -577,6 +707,16 @@ async function main() {
   const colorMap = new Map(models.map((m, i) => [m, PALETTE[i % PALETTE.length]]));
   const colorFor = (m) => colorMap.get(m) || "#888";
 
+  // Curated group filter: default to the Humanity's Last Exam lineup so a large
+  // field opens on a meaningful, aligned subset rather than every model at once.
+  const groups = groupsForModels(models);
+  let selectedGroup = groups.some((g) => g.id === "hle") ? "hle" : "all";
+  const allowedModels = () => {
+    if (selectedGroup === "all") return null;
+    const g = groups.find((x) => x.id === selectedGroup);
+    return g ? new Set(g.modelIds) : null;
+  };
+
   if (data.updated_at) {
     document.getElementById("updated").textContent =
       "Last updated " + new Date(data.updated_at).toLocaleString();
@@ -603,16 +743,50 @@ async function main() {
     const view = currentView();
     if (nav) nav.querySelectorAll("a[data-view]").forEach((a) =>
       a.classList.toggle("active", a.getAttribute("data-view") === view));
+    // The model filter is irrelevant on the text-only "about" view.
+    const filterEl = document.getElementById("filter");
+    if (filterEl) filterEl.hidden = view === "about" || !filterEl.children.length;
+    const viewData = filterDataByModels(data, allowedModels());
     const content = document.getElementById("content");
     content.innerHTML = "";
     document.getElementById("legend").innerHTML = "";
     if (view === "dark-triad") {
-      renderDarkTriad(content, data, colorFor);
+      renderDarkTriad(content, viewData, colorFor);
+    } else if (view === "about") {
+      renderAbout(content);
     } else {
-      renderSecondary(content, data, colorFor, VIEWS.find((v) => v.id === view).bench);
+      renderSecondary(content, viewData, colorFor, VIEWS.find((v) => v.id === view).bench);
     }
     window.scrollTo(0, 0);
   };
+
+  // Filter chips: "All models" + one per curated group present in the data.
+  const filterEl = document.getElementById("filter");
+  if (filterEl && groups.length) {
+    const chips = [{ id: "all", label: "All models", count: models.length }].concat(
+      groups.map((g) => ({ id: g.id, label: g.label, count: g.modelIds.length }))
+    );
+    const paint = () =>
+      filterEl.querySelectorAll("button[data-group]").forEach((b) =>
+        b.classList.toggle("active", b.getAttribute("data-group") === selectedGroup));
+    filterEl.innerHTML =
+      '<span class="rk-filter-label">Show</span>' +
+      chips
+        .map(
+          (c) =>
+            `<button type="button" class="rk-chip" data-group="${c.id}">` +
+            `${c.label} <span class="rk-chip-n">${c.count}</span></button>`
+        )
+        .join("");
+    filterEl.querySelectorAll("button[data-group]").forEach((b) =>
+      b.addEventListener("click", () => {
+        selectedGroup = b.getAttribute("data-group");
+        paint();
+        render();
+      }));
+    paint();
+  }
+
   window.addEventListener("hashchange", render);
   render();
 }
