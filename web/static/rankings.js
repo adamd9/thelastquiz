@@ -336,10 +336,25 @@ function renderExplanations(benchmarks) {
   content.appendChild(section);
 }
 
+// Load rankings preferring the CDN-served snapshot baked in at deploy time, so
+// the public page loads with no backend call. Fall back to the live API when
+// the snapshot is absent (local dev, or a build that couldn't reach the API).
+async function loadRankings() {
+  try {
+    const r = await fetch("/rankings.json");
+    if (r.ok && (r.headers.get("content-type") || "").includes("json")) {
+      return await r.json();
+    }
+  } catch (_) {
+    /* fall through to the live API */
+  }
+  return (await fetch((window.API_BASE || "") + "/api/rankings")).json();
+}
+
 async function main() {
   let data;
   try {
-    data = await (await fetch((window.API_BASE || "") + "/api/rankings")).json();
+    data = await loadRankings();
   } catch (e) {
     document.getElementById("content").innerHTML =
       '<div class="empty">Could not load rankings.</div>';

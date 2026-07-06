@@ -35,6 +35,24 @@ cat > "$dist/rankings/_redirects" <<'EOF'
 /*   /index.html   200
 EOF
 
+# Snapshot the rankings into the bundle so the public page is served entirely
+# from Cloudflare's CDN (no backend call per visit). Refreshed on every deploy;
+# the page falls back to the live API if this snapshot is missing.
+api="${RANKINGS_API_BASE:-https://thelastquiz.drop37.com}"
+if curl -fsS --max-time 25 "$api/api/rankings" -o "$dist/rankings/rankings.json"; then
+  echo "  snapshot: dist/rankings/rankings.json ($(wc -c <"$dist/rankings/rankings.json" | tr -d ' ') bytes)"
+else
+  rm -f "$dist/rankings/rankings.json"
+  echo "  snapshot: WARNING could not reach $api/api/rankings; page will use the live API"
+fi
+
+# Cache policy for the snapshot: browsers cache briefly then revalidate against
+# the CDN (never the backend); new deploys purge the edge cache so data updates.
+cat > "$dist/rankings/_headers" <<'EOF'
+/rankings.json
+  Cache-Control: public, max-age=60, stale-while-revalidate=86400
+EOF
+
 # Optional favicon passthrough.
 for d in "$dist/app" "$dist/rankings"; do
   [ -f "$web/favicon.ico" ] && cp "$web/favicon.ico" "$d/favicon.ico" || true
