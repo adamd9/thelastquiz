@@ -10,6 +10,9 @@ const TOKEN_KEY = "tlq_admin_token";
 let selectedModels = new Set();
 let curatedGroups = {};
 let modelNames = {};
+// Run ids whose failure/skip detail is currently expanded. Tracked so a
+// background refresh re-renders them still open instead of snapping shut.
+const expandedRuns = new Set();
 
 function getToken() {
   return localStorage.getItem(TOKEN_KEY) || "";
@@ -246,6 +249,10 @@ async function loadRuns() {
   try {
     const data = await api("/api/admin/benchmarks/runs");
     const runs = data.runs || [];
+    // Drop expanded-state for runs no longer shown, so a vanished row can't
+    // keep the auto-refresh paused indefinitely.
+    const visible = new Set(runs.slice(0, 25).map((r) => r.run_id));
+    for (const id of [...expandedRuns]) if (!visible.has(id)) expandedRuns.delete(id);
     if (!runs.length) {
       tbody.innerHTML = '<tr><td colspan="5" class="muted">No benchmark runs yet.</td></tr>';
       return;
@@ -299,8 +306,10 @@ function renderRunRow(tbody, r) {
   tbody.appendChild(tr);
 
   if (!hasDetail) return;
+  const runId = r.run_id;
   const detailTr = document.createElement("tr");
-  detailTr.hidden = true;
+  const startOpen = expandedRuns.has(runId);
+  detailTr.hidden = !startOpen;
   const failRows = failed
     .map(
       (m) =>
@@ -326,8 +335,12 @@ function renderRunRow(tbody, r) {
   tbody.appendChild(detailTr);
 
   const caret = tr.querySelector(".caret");
+  if (caret && startOpen) caret.textContent = "▾";
   tr.addEventListener("click", () => {
+    const opening = detailTr.hidden;
     detailTr.hidden = !detailTr.hidden;
+    if (opening) expandedRuns.add(runId);
+    else expandedRuns.delete(runId);
     if (caret) caret.textContent = detailTr.hidden ? "▸" : "▾";
   });
 }
@@ -377,7 +390,14 @@ function init() {
   // stored token (or an open local-dev server) on load.
   unlock();
   setInterval(() => {
-    if (!document.getElementById("admin-content").hidden) loadRuns();
+    if (document.getElementById("admin-content").hidden) return;
+    // Don't rebuild the table while a failure detail is expanded (the user is
+    // likely reading or copying it) or while text is selected — a re-render
+    // would collapse the row and drop the selection mid-copy.
+    if (expandedRuns.size > 0) return;
+    const sel = window.getSelection && window.getSelection();
+    if (sel && !sel.isCollapsed) return;
+    loadRuns();
   }, 5000);
 }
 
