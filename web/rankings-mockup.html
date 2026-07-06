@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dark Triad rankings — design options</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,600&family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #f7f1e9; --ink: #1b1a17; --muted: #5f5b52; --accent: #da5f35;
+      --accent-2: #0f5c78; --panel: #fff8f1; --border: #e2d7ca;
+      --shadow: 0 12px 30px rgba(27, 26, 23, 0.12);
+      --danger: #9e2a2b; --danger-wash: rgba(158, 42, 43, 0.10);
+      --benign-wash: rgba(15, 92, 120, 0.08);
+      /* trait colours (used in options A + B) */
+      --mach: #6a4c93; --narc: #b5179e; --psych: #9e2a2b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; font-family: "Space Grotesk", sans-serif;
+      background: radial-gradient(circle at top, #fce5cf 0%, var(--bg) 55%, #efe6dd 100%);
+      color: var(--ink); line-height: 1.5;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 40px 24px 80px; display: grid; gap: 34px; }
+    h1 { font-family: "Fraunces", serif; font-weight: 600; font-size: 2.1rem; margin: 0 0 6px; letter-spacing: 0.01em; }
+    h2 { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.4rem; margin: 0 0 4px; }
+    .lede { color: var(--muted); max-width: 68ch; margin: 0; }
+    .opt-tag { display: inline-block; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--accent); background: #fff; border: 1px solid var(--border);
+      padding: 3px 10px; border-radius: 999px; margin-bottom: 10px; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
+      box-shadow: var(--shadow); padding: 26px 28px; }
+    .rationale { color: var(--muted); font-size: 0.94rem; margin: 2px 0 22px; max-width: 74ch; }
+    .rationale b { color: var(--ink); font-weight: 600; }
+
+    /* Shared legend chips */
+    .legend { display: flex; flex-wrap: wrap; gap: 14px 20px; align-items: center; margin: 0 0 4px; font-size: 0.85rem; color: var(--muted); }
+    .chip { display: inline-flex; align-items: center; gap: 7px; }
+    .sw { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .sw.dash { width: 18px; height: 0; border-top: 2px dashed var(--ink); border-radius: 0; }
+
+    /* ============ OPTION A — three per-trait leaderboards ============ */
+    .lanesA { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+    @media (max-width: 820px) { .lanesA { grid-template-columns: 1fr; } }
+    .laneA h3 { margin: 0; font-size: 1.02rem; font-family: "Space Grotesk"; font-weight: 600; }
+    .laneA .sub { color: var(--muted); font-size: 0.8rem; margin: 0 0 14px; }
+    .rowA { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: center; margin-bottom: 9px;
+      padding: 2px 5px; border-radius: 9px; border: 1px solid transparent; }
+    .rowA .who { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+    .rowA .mname { font-size: 0.85rem; font-weight: 500; }
+    .rowA .rank { font-size: 0.82rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+    .rowA .val { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .rowA .val .up { color: var(--danger); font-weight: 700; }
+    .rowA.above .val { color: var(--danger); }
+    .trackA { position: relative; height: 15px; background: #f0e7db; border-radius: 8px; overflow: hidden; }
+    .trackA .zone { position: absolute; top: 0; bottom: 0; right: 0; background: var(--danger-wash); border-left: 2px dashed #7a6f62; }
+    .trackA .bar { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 8px; }
+    .trackA .humbar { background: repeating-linear-gradient(45deg, #c7b9a3, #c7b9a3 5px, #b7a88f 5px, #b7a88f 10px); }
+    .rowA.humanrow { background: #f1e9db; border-color: #b9ac99; border-style: dashed; }
+    .rowA.humanrow .mname { font-weight: 600; }
+
+    /* ============ OPTION B — one combined leaderboard ============ */
+    .rowB { display: grid; grid-template-columns: 26px 168px 1fr 74px; gap: 16px; align-items: center;
+      padding: 12px 14px; border-radius: 12px; border: 1px solid transparent; }
+    .rowB + .rowB { margin-top: 4px; }
+    .rowB:nth-child(odd) { background: #fdf3e7; }
+    .rowB.human { background: repeating-linear-gradient(45deg, #f3ece0, #f3ece0 8px, #efe6d6 8px, #efe6d6 16px);
+      border: 1px dashed #b9ac99; }
+    .rowB .brank { font-family: "Fraunces", serif; font-size: 1.15rem; color: var(--muted); text-align: center; }
+    .rowB .bname { font-weight: 600; font-size: 0.92rem; }
+    .rowB .bname small { display: block; font-weight: 400; font-size: 0.72rem; color: var(--muted); }
+    .minis { display: grid; gap: 4px; }
+    .mini { display: grid; grid-template-columns: 42px 1fr 34px; gap: 8px; align-items: center; }
+    .mini .mlab { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .mini .mtrack { position: relative; height: 9px; background: #efe6da; border-radius: 6px; overflow: hidden; }
+    .mini .mbar { position: absolute; inset: 0 auto 0 0; border-radius: 6px; }
+    .mini .mhum { position: absolute; top: -2px; bottom: -2px; width: 0; border-left: 1.5px dashed #6b6156; }
+    .mini .mval { font-size: 0.7rem; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+    .idx { text-align: center; }
+    .idx .num { font-family: "Fraunces", serif; font-size: 1.5rem; line-height: 1; }
+    .idx .cap { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .idx.dark .num { color: var(--danger); }
+
+    /* ============ OPTION C — one graph, distance from human ============ */
+    .cwrap { overflow-x: auto; }
+    svg { display: block; width: 100%; height: auto; }
+    .c-cap { color: var(--muted); font-size: 0.82rem; margin: 10px 2px 0; }
+    .smalls { display: grid; gap: 18px; }
+    .smalls svg { width: 100%; height: auto; background: #fffdf8; border: 1px solid var(--border); border-radius: 12px; }
+    text { font-family: "Space Grotesk", sans-serif; }
+
+    footer { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--border); padding-top: 20px; }
+    footer b { color: var(--ink); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Dark Triad rankings — three ways to show it</h1>
+      <p class="lede">
+        Making the <b>Short Dark Triad</b> the headline of the rankings, in the spirit of a
+        Humanity's-Last-Exam leaderboard: models placed on a continuum, but here the reference
+        point is the <b>typical human</b>. The question each view answers: <i>is a model more
+        Machiavellian, narcissistic or psychopathic than the average person — and which model is
+        the darkest?</i> Big Five and the type test become secondary measures below.
+      </p>
+    </header>
+
+    <!-- OPTION A -->
+    <section class="card">
+      <span class="opt-tag">Option A · separate the traits</span>
+      <h2>Three lane leaderboards, one per dark trait</h2>
+      <p class="rationale">
+        One ranked list per trait, <b>most restrained at the top</b> down to the darkest — three
+        little HLE leaderboards side by side, with the <b>typical adult ranked right in</b>. Models
+        above the human in the list are calmer than people; the ones that fall below it (flagged
+        red) score darker. Best when the story is per-trait — <b>"which model is the least
+        psychopathic"</b> — and when a model's rank differs across traits.
+      </p>
+      <div class="legend">
+        <span class="chip">🧑 the typical adult is ranked in each list</span>
+        <span class="chip"><span class="sw" style="background:var(--danger-wash);border-left:2px dashed #7a6f62"></span> shaded = darker than the human</span>
+      </div>
+      <div class="lanesA" id="optA"></div>
+    </section>
+
+    <!-- TIME VIEW -->
+    <section class="card">
+      <span class="opt-tag">Alternative · over time</span>
+      <h2>Dark traits over time, by model release date</h2>
+      <p class="rationale">
+        The Humanity's-Last-Exam treatment, one chart per trait, stacked so each has full width (and
+        can eventually go month-by-month). Each model sits at its <b>release date</b> (x) against its
+        score (y), with the axis flipped so <b>up = more restrained</b>: the calm band on top is below
+        the human line, the red band beneath is "darker than people." The faint dashed line is the
+        trend across releases — an <b>upward</b> slope means newer models are getting safer.
+      </p>
+      <div class="smalls" id="optTime"></div>
+      <p class="c-cap">Release dates are the real <b>OpenRouter</b> model-index dates — the same source the app's model picker uses.</p>
+    </section>
+
+    <!-- OPTION B -->
+    <section class="card">
+      <span class="opt-tag">Option B · one combined leaderboard</span>
+      <h2>A single ranking by "Dark Index", with the human slotted in</h2>
+      <p class="rationale">
+        All models in one leaderboard, ranked by their mean of the three traits (the <b>Dark
+        Index</b>), with the <b>typical adult</b> inserted as a competitor. Each row still shows all
+        three traits as mini-bars with their own human ticks. Best for the headline claim —
+        <b>"only these models score darker than a real person"</b> — while keeping the detail one
+        glance away.
+      </p>
+      <div class="legend">
+        <span class="chip"><span class="sw" style="background:var(--mach)"></span> Machiavellianism</span>
+        <span class="chip"><span class="sw" style="background:var(--narc)"></span> Narcissism</span>
+        <span class="chip"><span class="sw" style="background:var(--psych)"></span> Psychopathy</span>
+        <span class="chip"><span class="sw dash"></span> human average (per-trait tick)</span>
+      </div>
+      <div id="optB" style="margin-top:16px"></div>
+    </section>
+
+    <!-- OPTION C -->
+    <section class="card">
+      <span class="opt-tag">Option C · everything on one graph</span>
+      <h2>Distance from the human baseline — all models, all three traits</h2>
+      <p class="rationale">
+        One chart. Three lanes (the traits); the centre line is the <b>human average</b>; each dot
+        is a model placed by how far <b>above</b> (right, red zone = darker) or <b>below</b> (left,
+        calmer) people it scored. Densest, most "one-look" view — and it makes the safety framing
+        literal: you want dots to sit <b>left of centre</b>.
+      </p>
+      <div class="legend" id="optCLegend" style="margin-bottom:8px"></div>
+      <div class="cwrap"><svg id="optC" viewBox="0 0 940 300" role="img" aria-label="Distance from human baseline"></svg></div>
+      <p class="c-cap">Horizontal axis: points below (−) or above (+) the typical-adult average. Hover a dot for exact scores.</p>
+    </section>
+
+    <footer>
+      <p><b>Data:</b> a real local snapshot (6 models, Short Dark Triad, 27 items, scored 0–100).
+      Human averages ≈ Mach 46 · Narc 38 · Psych 29 (Kaufman et al., 2019, N=1,518, normalised to 0–100).
+      A single run per model, so treat the exact numbers as illustrative.</p>
+      <p><b>Secondary measures</b> (Big Five, Jungian type) would live below this fold as compact
+      cards — present, but visibly not the headline.</p>
+    </footer>
+  </div>
+
+  <script>
+    // ---- real snapshot data ----
+    const HUMAN = { MACH: 46, NARC: 38, PSYCH: 29 };
+    const TRAITS = [
+      { id: "MACH", name: "Machiavellianism", short: "Mach", color: "var(--mach)", blurb: "strategic manipulation" },
+      { id: "NARC", name: "Narcissism", short: "Narc", color: "var(--narc)", blurb: "grandiosity & entitlement" },
+      { id: "PSYCH", name: "Psychopathy", short: "Psych", color: "var(--psych)", blurb: "callousness, low empathy" },
+    ];
+    const MODELS = [
+      { name: "Claude Sonnet 5", short: "Claude 5",   released: "2026-06-30", color: "#da5f35", MACH: 30.56, NARC: 33.33, PSYCH: 0.0 },
+      { name: "DeepSeek R1",     short: "DeepSeek R1", released: "2025-01-20", color: "#0f5c78", MACH: 33.33, NARC: 38.89, PSYCH: 22.22 },
+      { name: "Gemini 2.5 Pro",  short: "Gemini 2.5",  released: "2025-06-17", color: "#2a9d8f", MACH: 36.11, NARC: 55.56, PSYCH: 2.78 },
+      { name: "Llama 3.3 70B",   short: "Llama 3.3",   released: "2024-12-06", color: "#e09f3e", MACH: 50.0,  NARC: 38.89, PSYCH: 47.22 },
+      { name: "GPT-4o",          short: "GPT-4o",      released: "2024-05-13", color: "#386641", MACH: 55.56, NARC: 55.56, PSYCH: 36.11 },
+      { name: "Grok 4.3",        short: "Grok 4.3",    released: "2026-04-30", color: "#3a7ca5", MACH: 33.33, NARC: 47.22, PSYCH: 22.22 },
+    ];
+    const mean = (m) => (m.MACH + m.NARC + m.PSYCH) / 3;
+    const HUMAN_IDX = mean(HUMAN);
+    const round = (n) => Math.round(n);
+
+    // ================= OPTION A =================
+    (function () {
+      const host = document.getElementById("optA");
+      for (const t of TRAITS) {
+        const lane = document.createElement("div");
+        lane.className = "laneA";
+        lane.innerHTML = `<h3>${t.name}</h3><p class="sub">${t.blurb} · human avg ${HUMAN[t.id]}</p>`;
+        // Rank the models AND the typical adult together, so you read straight off
+        // the list who sits above or below a real person.
+        const entries = [
+          ...MODELS.map((m) => ({ name: m.name, v: m[t.id], color: t.color })),
+          { name: "Typical adult (human)", v: HUMAN[t.id], human: true },
+        ].sort((a, b) => a.v - b.v); // ascending: most restrained (best) on top
+        let rank = 0;
+        entries.forEach((e) => {
+          if (!e.human) rank++;
+          const above = !e.human && e.v > HUMAN[t.id];
+          const row = document.createElement("div");
+          row.className = "rowA" + (above ? " above" : "") + (e.human ? " humanrow" : "");
+          row.innerHTML =
+            `<div class="rank">${e.human ? "🧑" : rank}</div>
+             <div>
+               <div class="who"><span class="mname">${e.name}</span>
+                 <span class="val">${round(e.v)}${above ? ' <span class="up">darker</span>' : ''}</span></div>
+               <div class="trackA">
+                 <div class="zone" style="left:${HUMAN[t.id]}%"></div>
+                 <div class="bar${e.human ? ' humbar' : ''}" style="width:${e.v}%;${e.human ? '' : 'background:' + e.color}"></div>
+               </div>
+             </div>`;
+          lane.appendChild(row);
+        });
+        host.appendChild(lane);
+      }
+    })();
+
+    // ================= TIME VIEW (one stacked chart per trait) =================
+    (function () {
+      const NS = "http://www.w3.org/2000/svg";
+      const ms = (s) => Date.parse(s + "T00:00:00Z");
+      const tMin = ms("2024-03-01"), tMax = ms("2026-08-01");
+      const host = document.getElementById("optTime");
+      const mk = (tag, attrs = {}, txt) => {
+        const n = document.createElementNS(NS, tag);
+        for (const k in attrs) n.setAttribute(k, attrs[k]);
+        if (txt != null) n.textContent = txt;
+        return n;
+      };
+      // Fit the y-axis to the data (like HLE's tight axis) rather than a mostly-empty 0-100.
+      const allVals = TRAITS.flatMap((t) => [...MODELS.map((m) => m[t.id]), HUMAN[t.id]]);
+      const yMax = Math.min(100, Math.ceil((Math.max(...allVals) + 8) / 10) * 10);
+      for (const t of TRAITS) {
+        const W = 900, H = 214, padL = 40, padR = 16, padT = 24, padB = 26;
+        const plotW = W - padL - padR, plotH = H - padT - padB;
+        const xFor = (t2) => padL + ((t2 - tMin) / (tMax - tMin)) * plotW;
+        // FLIPPED axis: low score (restrained) at TOP, high (dark) at BOTTOM — up = better.
+        const yFor = (v) => padT + (v / yMax) * plotH;
+        const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t.name + " over time" });
+        svg.appendChild(mk("text", { x: padL, y: 15, fill: "var(--ink)", "font-size": 13, "font-weight": 600 }, t.name));
+        const humY = yFor(HUMAN[t.id]);
+        // darker-than-human is BELOW the line now (red); restrained is above (calm).
+        svg.appendChild(mk("rect", { x: padL, y: humY, width: plotW, height: padT + plotH - humY, fill: "var(--danger-wash)" }));
+        svg.appendChild(mk("rect", { x: padL, y: padT, width: plotW, height: humY - padT, fill: "var(--benign-wash)" }));
+        [0, 20, 40, 60].filter((v) => v <= yMax).forEach((v) => {
+          const y = yFor(v);
+          svg.appendChild(mk("line", { x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee2d3", "stroke-width": 1 }));
+          svg.appendChild(mk("text", { x: padL - 6, y: y + 3, fill: "var(--muted)", "font-size": 9, "text-anchor": "end" }, v));
+        });
+        svg.appendChild(mk("text", { x: 10, y: padT + 4, fill: "var(--accent-2)", "font-size": 8.5, "font-weight": 600 }, "restrained"));
+        svg.appendChild(mk("text", { x: 10, y: padT + plotH, fill: "var(--danger)", "font-size": 8.5, "font-weight": 600 }, "darker"));
+        // x year gridlines + labels
+        [["2024-06-01", "2024"], ["2025-01-01", "2025"], ["2026-01-01", "2026"]].forEach(([d, lab]) => {
+          const x = xFor(ms(d));
+          svg.appendChild(mk("line", { x1: x, y1: padT, x2: x, y2: padT + plotH, stroke: "#efe6da", "stroke-width": 1 }));
+          svg.appendChild(mk("text", { x, y: H - padB + 16, fill: "var(--muted)", "font-size": 9, "text-anchor": "middle" }, lab));
+        });
+        // human threshold line
+        svg.appendChild(mk("line", { x1: padL, y1: humY, x2: W - padR, y2: humY, stroke: "#1b1a17", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+        svg.appendChild(mk("text", { x: W - padR, y: humY - 4, fill: "var(--ink)", "font-size": 9, "font-weight": 600, "text-anchor": "end" }, "human average (" + HUMAN[t.id] + ")"));
+        // trend across releases (least squares on raw score vs time)
+        const pts = MODELS.map((m) => ({ x: ms(m.released), y: m[t.id] }));
+        const n = pts.length, sx = pts.reduce((a, p) => a + p.x, 0), sy = pts.reduce((a, p) => a + p.y, 0);
+        const sxx = pts.reduce((a, p) => a + p.x * p.x, 0), sxy = pts.reduce((a, p) => a + p.x * p.y, 0);
+        const slope = (n * sxy - sx * sy) / (n * sxx - sx * sx);
+        const intc = (sy - slope * sx) / n;
+        const ln = (xr) => intc + slope * xr;
+        svg.appendChild(mk("line", { x1: xFor(tMin), y1: yFor(ln(tMin)), x2: xFor(tMax), y2: yFor(ln(tMax)), stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "3 4", opacity: 0.7 }));
+        // model dots + labels (HLE-style)
+        MODELS.forEach((m) => {
+          const cx = xFor(ms(m.released)), cy = yFor(m[t.id]);
+          const rightEdge = cx > W - 120;
+          const g = mk("g");
+          g.appendChild(mk("circle", { cx, cy, r: 6, fill: m.color, "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
+          svg.appendChild(mk("text", { x: rightEdge ? cx - 10 : cx + 10, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, m.short));
+          g.appendChild(mk("title", {}, `${m.name} — ${t.name}: ${round(m[t.id])} · released ${m.released}`));
+          svg.appendChild(g);
+        });
+        host.appendChild(svg);
+      }
+    })();
+
+    // ================= OPTION B =================
+    (function () {
+      const host = document.getElementById("optB");
+      const rows = [
+        ...MODELS.map((m) => ({ ...m, idx: mean(m) })),
+        { name: "Typical adult (human)", human: true, color: "#8a7d6a", ...HUMAN, idx: HUMAN_IDX },
+      ].sort((a, b) => b.idx - a.idx);
+      let rank = 0;
+      rows.forEach((m) => {
+        if (!m.human) rank++;
+        const dark = !m.human && m.idx > HUMAN_IDX;
+        const row = document.createElement("div");
+        row.className = "rowB" + (m.human ? " human" : "");
+        const minis = TRAITS.map((t) => {
+          const v = m[t.id];
+          return `<div class="mini">
+              <span class="mlab">${t.short}</span>
+              <div class="mtrack">
+                <div class="mbar" style="width:${v}%;background:${t.color}"></div>
+                <div class="mhum" style="left:${HUMAN[t.id]}%"></div>
+              </div>
+              <span class="mval">${round(v)}</span>
+            </div>`;
+        }).join("");
+        row.innerHTML =
+          `<div class="brank">${m.human ? "•" : rank}</div>
+           <div class="bname">${m.name}${m.human ? "<small>baseline — the line to stay under</small>" : (dark ? "<small>darker than a person</small>" : "")}</div>
+           <div class="minis">${minis}</div>
+           <div class="idx ${dark ? "dark" : ""}"><div class="num">${round(m.idx)}</div><div class="cap">Dark Index</div></div>`;
+        host.appendChild(row);
+      });
+    })();
+
+    // ================= OPTION C =================
+    (function () {
+      const svg = document.getElementById("optC");
+      const NS = "http://www.w3.org/2000/svg";
+      const W = 940, H = 300, padL = 128, padR = 40, padT = 64, padB = 34;
+      const plotW = W - padL - padR;
+      const dMin = -40, dMax = 25;
+      const xFor = (d) => padL + ((d - dMin) / (dMax - dMin)) * plotW;
+      const laneY = (i) => padT + 12 + i * ((H - padT - padB) / TRAITS.length) + ((H - padT - padB) / TRAITS.length) / 2;
+      const mk = (tag, attrs = {}, txt) => {
+        const n = document.createElementNS(NS, tag);
+        for (const k in attrs) n.setAttribute(k, attrs[k]);
+        if (txt != null) n.textContent = txt;
+        return n;
+      };
+      const x0 = xFor(0);
+      // zones
+      svg.appendChild(mk("rect", { x: x0, y: padT - 6, width: W - padR - x0, height: H - padT - padB + 6, fill: "var(--danger-wash)" }));
+      svg.appendChild(mk("rect", { x: padL, y: padT - 6, width: x0 - padL, height: H - padT - padB + 6, fill: "var(--benign-wash)" }));
+      // zone captions
+      svg.appendChild(mk("text", { x: x0 + 10, y: padT - 16, fill: "var(--danger)", "font-size": 12, "font-weight": 600 }, "▶ darker than people"));
+      const benign = mk("text", { x: x0 - 10, y: padT - 16, fill: "var(--accent-2)", "font-size": 12, "font-weight": 600, "text-anchor": "end" }, "calmer than people ◀");
+      svg.appendChild(benign);
+      // axis ticks
+      for (let d = -40; d <= 20; d += 10) {
+        const x = xFor(d);
+        svg.appendChild(mk("line", { x1: x, y1: padT - 6, x2: x, y2: H - padB, stroke: "#e2d7ca", "stroke-width": d === 0 ? 0 : 1 }));
+        svg.appendChild(mk("text", { x: x, y: H - padB + 18, fill: "var(--muted)", "font-size": 10, "text-anchor": "middle" }, (d > 0 ? "+" : "") + d));
+      }
+      // human centre line
+      svg.appendChild(mk("line", { x1: x0, y1: padT - 6, x2: x0, y2: H - padB, stroke: "#1b1a17", "stroke-width": 2, "stroke-dasharray": "5 4" }));
+      svg.appendChild(mk("text", { x: x0, y: H - padB + 30, fill: "var(--ink)", "font-size": 11, "font-weight": 600, "text-anchor": "middle" }, "human average"));
+      // lanes
+      TRAITS.forEach((t, i) => {
+        const y = laneY(i);
+        svg.appendChild(mk("line", { x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#efe6da", "stroke-width": 1 }));
+        svg.appendChild(mk("text", { x: padL - 14, y: y - 4, fill: "var(--ink)", "font-size": 13, "font-weight": 600, "text-anchor": "end" }, t.name));
+        svg.appendChild(mk("text", { x: padL - 14, y: y + 12, fill: "var(--muted)", "font-size": 10, "text-anchor": "end" }, "human " + HUMAN[t.id]));
+        MODELS.forEach((m) => {
+          const d = m[t.id] - HUMAN[t.id];
+          const cx = xFor(d);
+          const g = mk("g");
+          const dot = mk("circle", { cx, cy: y, r: 8, fill: m.color, "fill-opacity": 0.9, stroke: "#fff", "stroke-width": 1.5 });
+          g.appendChild(dot);
+          g.appendChild(mk("title", {}, `${m.name} — ${t.name}: ${round(m[t.id])} (${d >= 0 ? "+" : ""}${round(d)} vs human)`));
+          svg.appendChild(g);
+        });
+      });
+      // legend
+      const lg = document.getElementById("optCLegend");
+      lg.innerHTML = MODELS.map((m) => `<span class="chip"><span class="sw" style="background:${m.color}"></span>${m.name}</span>`).join("");
+    })();
+  </script>
+</body>
+</html>

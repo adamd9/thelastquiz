@@ -16,6 +16,7 @@ from .utils import parse_choice_json
 from .runtime_data import build_runtime_paths, get_runtime_paths
 from .logging_utils import rotate_log_if_needed
 from .db_factory import connect
+from .openrouter import fetch_release_dates
 
 
 def _extract_actual_error(exception: Exception) -> str:
@@ -94,10 +95,18 @@ async def run_quiz(
     log_path = runtime_paths.logs_dir / f"{run_id}.log"
     db = connect(runtime_paths.db_path)
     db.upsert_quiz(quiz, quiz_json)
+    model_ids = [adapter.id for adapter in adapters]
+    # Record each model's release date (live from OpenRouter's index) with the
+    # run, so the rankings can plot scores over time without a later lookup.
+    try:
+        released = fetch_release_dates(model_ids)
+    except Exception:
+        released = {}
     db.insert_run(run_id=run_id,
         quiz_id=quiz["id"],
         status="running",
-        models=[adapter.id for adapter in adapters],
+        models=model_ids,
+        settings={"model_released": released},
     )
     _append_log(log_path, f"Run {run_id} started for quiz {quiz['id']}.")
     

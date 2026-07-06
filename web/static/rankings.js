@@ -16,13 +16,13 @@ const PALETTE = [
 const POPULATION_NORMS = {
   sd3_short_dark_triad: {
     label: "Human average (typical adult)",
-    source: "approx. general-population means, Jones & Paulhus 2014",
+    source: "general-population means (N=1,518), Kaufman et al. 2019 (SD-3)",
     note:
-      "For scale, the dashed line is the typical-adult average: about 53/100 on " +
-      "Machiavellianism, 45/100 on Narcissism and 30/100 on Psychopathy (every score " +
+      "For scale, the dashed line is the typical-adult average: about 46/100 on " +
+      "Machiavellianism, 38/100 on Narcissism and 29/100 on Psychopathy (every score " +
       "here is normalised to 0-100). A model well above the line is unusually dark; " +
       "below it is unusually benign.",
-    values: { MACH: 53, NARC: 45, PSYCH: 30 },
+    values: { MACH: 46, NARC: 38, PSYCH: 29 },
   },
 };
 
@@ -279,62 +279,265 @@ function benchmarkCard(bench, colorFor) {
   return c;
 }
 
-/* Plain-English explanations of every test, driven by the benchmark metadata. */
-function renderExplanations(benchmarks) {
-  const content = document.getElementById("content");
-  const section = document.createElement("section");
-  section.className = "explain";
-  section.innerHTML =
-    '<h2 class="section">Understanding the tests</h2>' +
-    '<p class="sub">What each benchmark measures — and what a high score on each dimension means.</p>';
-  const grid = document.createElement("div");
-  grid.className = "explain-grid";
-
-  for (const b of benchmarks) {
-    const c = document.createElement("div");
-    c.className = "card";
-    const isType = b.kind === "bipolar";
-    const kind = isType ? "Type test" : "Trait test";
-    const readNote = isType
-      ? "How to read it: each model leans to one side of every axis, and the four sides combine into a four-letter type (e.g. INTJ). Each model's own type is spelled out on its chart above."
-      : "How to read it: each trait is scored 0–100 on its own — there's no single label or code, just a profile across the dimensions.";
-    let html =
-      `<h2>${b.title}</h2>` +
-      `<div class="tag">${kind}${b.question_count ? " · " + b.question_count + " items" : ""}</div>` +
-      (b.about ? `<p>${b.about}</p>` : "") +
-      `<p class="read-note">${readNote}</p>` +
-      (POPULATION_NORMS[b.id] ? `<p class="norm-note">${POPULATION_NORMS[b.id].note}</p>` : "");
-    if (b.dimensions && b.dimensions.length) {
-      html += '<div class="gloss">';
-      for (const d of b.dimensions) {
-        const term = d.poles ? `${d.name} (${d.poles.high}/${d.poles.low})` : d.name;
-        html += `<div class="row"><span class="term">${term}</span>` +
-          (d.description ? ` — <span class="desc">${d.description}</span>` : "") + "</div>";
-      }
-      html += "</div>";
+/* One benchmark's plain-English explanation card (used under every view). */
+function explanationCard(b) {
+  const c = document.createElement("div");
+  c.className = "card";
+  const isType = b.kind === "bipolar";
+  const kind = isType ? "Type test" : "Trait test";
+  const readNote = isType
+    ? "How to read it: each model leans to one side of every axis, and the four sides combine into a four-letter type (e.g. INTJ). Each model's own type is spelled out on its chart above."
+    : "How to read it: each trait is scored 0\u2013100 on its own \u2014 there's no single label or code, just a profile across the dimensions.";
+  let html =
+    `<h2>${b.title}</h2>` +
+    `<div class="tag">${kind}${b.question_count ? " \u00b7 " + b.question_count + " items" : ""}</div>` +
+    (b.about ? `<p>${b.about}</p>` : "") +
+    `<p class="read-note">${readNote}</p>` +
+    (POPULATION_NORMS[b.id] ? `<p class="norm-note">${POPULATION_NORMS[b.id].note}</p>` : "");
+  if (b.dimensions && b.dimensions.length) {
+    html += '<div class="gloss">';
+    for (const d of b.dimensions) {
+      const term = d.poles ? `${d.name} (${d.poles.high}/${d.poles.low})` : d.name;
+      html += `<div class="row"><span class="term">${term}</span>` +
+        (d.description ? ` \u2014 <span class="desc">${d.description}</span>` : "") + "</div>";
     }
-    if (b.reference && b.reference.url) {
-      const title = (b.reference.publication || "Reference").replace(/"/g, "&quot;");
-      html += `<a class="ref" href="${b.reference.url}" target="_blank" rel="noopener" title="${title}">Official reference \u2197</a>`;
-    }
-    c.innerHTML = html;
-    grid.appendChild(c);
+    html += "</div>";
   }
-
-  // Fourth radar isn't a personality test — explain what stability means.
-  const stab = document.createElement("div");
-  stab.className = "card";
-  stab.innerHTML =
-    '<h2>Answer stability</h2>' +
-    '<div class="tag">Reliability check · not a personality test</div>' +
-    "<p>How consistently a model gives the same answers when a test is repeated. It's a reliability " +
-    "signal rather than a trait: higher means the model's responses are stable rather than random. " +
-    "(Shown as 0 when a test has only been run once.)</p>";
-  grid.appendChild(stab);
-
-  section.appendChild(grid);
-  content.appendChild(section);
+  if (b.reference && b.reference.url) {
+    const title = (b.reference.publication || "Reference").replace(/"/g, "&quot;");
+    html += `<a class="ref" href="${b.reference.url}" target="_blank" rel="noopener" title="${title}">Official reference \u2197</a>`;
+  }
+  c.innerHTML = html;
+  return c;
 }
+
+/* Cross-benchmark answer-stability radar (reliability, not a trait). */
+function stabilityCard(data, colorFor) {
+  const stab = data.stability;
+  if (!stab || !stab.models || !stab.models.length) return null;
+  const shortAxes = stab.axes.map((t) => t.split(" (")[0].trim());
+  const series = stab.models.map((m) => ({
+    name: m.model_id,
+    color: colorFor(m.model_id),
+    values: m.values.map((v) => (v == null ? 0 : v)),
+    result: (() => {
+      const vals = m.values.filter((v) => v != null);
+      return vals.length ? `avg ${Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)}` : "\u2014";
+    })(),
+    title: `${m.model_id} \u2014 ` + stab.axes
+      .map((a, i) => `${a.split(" (")[0].trim()}: ${m.values[i] == null ? "\u2014" : Math.round(m.values[i])}`)
+      .join(" \u00b7 "),
+  }));
+  const sc = card("Answer stability", "consistency across repeats (0 = single run)", [drawRadar(shortAxes, series), buildChartLegend(series)]);
+  wireHighlight(sc);
+  return sc;
+}
+
+/* ------------------------- Dark Triad (home) view ------------------------- */
+const SD3_ID = "sd3_short_dark_triad";
+const SD3_TRAITS = [
+  { id: "MACH", name: "Machiavellianism", blurb: "strategic manipulation", color: "#6a4c93" },
+  { id: "NARC", name: "Narcissism", blurb: "grandiosity & entitlement", color: "#b5179e" },
+  { id: "PSYCH", name: "Psychopathy", blurb: "callousness, low empathy", color: "#9e2a2b" },
+];
+function shortName(id) { return id.split("/").pop() || id; }
+
+/* Three per-trait leaderboards: most restrained on top, the human ranked in. */
+function darkTriadLeaderboard(sd3, human) {
+  const wrap = document.createElement("div");
+  wrap.className = "dt-lanes";
+  for (const t of SD3_TRAITS) {
+    const lane = document.createElement("div");
+    lane.className = "dt-lane";
+    const humanVal = human[t.id] ?? 0;
+    lane.innerHTML = `<h3>${t.name}</h3><p class="sub">${t.blurb} \u00b7 human avg ${Math.round(humanVal)}</p>`;
+    const entries = [
+      ...sd3.models.map((m) => ({ name: shortName(m.model_id), v: m.profile[t.id] ?? 0 })),
+      { name: "Typical adult (human)", v: humanVal, human: true },
+    ].sort((a, b) => a.v - b.v);
+    let rank = 0;
+    for (const e of entries) {
+      if (!e.human) rank++;
+      const above = !e.human && e.v > humanVal;
+      const row = document.createElement("div");
+      row.className = "dt-row" + (above ? " above" : "") + (e.human ? " humanrow" : "");
+      const w = Math.max(0, Math.min(100, e.v));
+      row.innerHTML =
+        `<div class="rank">${e.human ? "\uD83E\uDDD1" : rank}</div>` +
+        `<div><div class="who"><span class="mname">${e.name}</span>` +
+        `<span class="val">${Math.round(e.v)}${above ? ' <span class="up">darker</span>' : ""}</span></div>` +
+        `<div class="dt-track"><div class="zone" style="left:${humanVal}%"></div>` +
+        `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:" + t.color}"></div>` +
+        `</div></div>`;
+      lane.appendChild(row);
+    }
+    wrap.appendChild(lane);
+  }
+  return wrap;
+}
+
+/* Stacked HLE-style time charts (release date vs score); axis flipped so up = restrained. */
+function darkTriadTimeline(sd3, human, colorFor) {
+  const NS = "http://www.w3.org/2000/svg";
+  const wrap = document.createElement("div");
+  wrap.className = "dt-time";
+  const dated = sd3.models.filter((m) => m.released);
+  if (dated.length < 2) {
+    const note = document.createElement("p");
+    note.className = "dt-note";
+    note.textContent = "Release-date trends appear here once at least two models have a recorded release date (captured automatically on each run).";
+    wrap.appendChild(note);
+    return wrap;
+  }
+  const ms = (s) => Date.parse(s + "T00:00:00Z");
+  const times = dated.map((m) => ms(m.released));
+  const tMin = Math.min(...times) - 30 * 864e5;
+  const tMax = Math.max(...times) + 30 * 864e5;
+  const allVals = [];
+  for (const t of SD3_TRAITS) { for (const m of sd3.models) allVals.push(m.profile[t.id] ?? 0); allVals.push(human[t.id] ?? 0); }
+  const yMax = Math.min(100, Math.max(20, Math.ceil((Math.max(...allVals) + 8) / 10) * 10));
+  const mk = (tag, attrs = {}, txt) => { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (txt != null) n.textContent = txt; return n; };
+  const yearMarks = () => {
+    const marks = [];
+    for (let y = new Date(tMin).getUTCFullYear(); y <= new Date(tMax).getUTCFullYear(); y++) marks.push([Date.UTC(y, 0, 1), String(y)]);
+    return marks;
+  };
+  for (const t of SD3_TRAITS) {
+    const W = 900, H = 210, padL = 42, padR = 16, padT = 22, padB = 26;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const xFor = (v) => padL + ((v - tMin) / (tMax - tMin)) * plotW;
+    const yFor = (v) => padT + (v / yMax) * plotH; // flipped: low (restrained) at top
+    const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, role: "img", "aria-label": t.name + " over time" });
+    svg.appendChild(mk("text", { x: padL, y: 14, fill: "var(--ink)", "font-size": 13, "font-weight": 600 }, t.name));
+    const humanVal = human[t.id] ?? 0;
+    const humY = yFor(humanVal);
+    svg.appendChild(mk("rect", { x: padL, y: humY, width: plotW, height: padT + plotH - humY, fill: "rgba(158,42,43,0.10)" }));
+    svg.appendChild(mk("rect", { x: padL, y: padT, width: plotW, height: humY - padT, fill: "rgba(15,92,120,0.07)" }));
+    for (const v of [0, 20, 40, 60, 80].filter((x) => x <= yMax)) {
+      const y = yFor(v);
+      svg.appendChild(mk("line", { x1: padL, y1: y, x2: W - padR, y2: y, stroke: "#eee2d3", "stroke-width": 1 }));
+      svg.appendChild(mk("text", { x: padL - 6, y: y + 3, fill: "var(--muted)", "font-size": 9, "text-anchor": "end" }, v));
+    }
+    svg.appendChild(mk("text", { x: 10, y: padT + 4, fill: "var(--accent-2)", "font-size": 8.5, "font-weight": 600 }, "calm"));
+    svg.appendChild(mk("text", { x: 10, y: padT + plotH, fill: "#9e2a2b", "font-size": 8.5, "font-weight": 600 }, "dark"));
+    for (const [tt, lab] of yearMarks()) {
+      if (tt < tMin || tt > tMax) continue;
+      const x = xFor(tt);
+      svg.appendChild(mk("line", { x1: x, y1: padT, x2: x, y2: padT + plotH, stroke: "#efe6da", "stroke-width": 1 }));
+      svg.appendChild(mk("text", { x, y: H - padB + 16, fill: "var(--muted)", "font-size": 9, "text-anchor": "middle" }, lab));
+    }
+    svg.appendChild(mk("line", { x1: padL, y1: humY, x2: W - padR, y2: humY, stroke: "var(--ink)", "stroke-width": 1.5, "stroke-dasharray": "5 4" }));
+    svg.appendChild(mk("text", { x: W - padR, y: humY - 4, fill: "var(--ink)", "font-size": 9, "font-weight": 600, "text-anchor": "end" }, "human average (" + Math.round(humanVal) + ")"));
+    const pts = dated.map((m) => ({ x: ms(m.released), y: m.profile[t.id] ?? 0 }));
+    const n = pts.length, sx = pts.reduce((a, p) => a + p.x, 0), sy = pts.reduce((a, p) => a + p.y, 0);
+    const sxx = pts.reduce((a, p) => a + p.x * p.x, 0), sxy = pts.reduce((a, p) => a + p.x * p.y, 0);
+    const denom = n * sxx - sx * sx;
+    if (denom !== 0) {
+      const slope = (n * sxy - sx * sy) / denom, intc = (sy - slope * sx) / n;
+      const ln = (xr) => intc + slope * xr;
+      svg.appendChild(mk("line", { x1: xFor(tMin), y1: yFor(ln(tMin)), x2: xFor(tMax), y2: yFor(ln(tMax)), stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "3 4", opacity: 0.65 }));
+    }
+    for (const m of dated) {
+      const cx = xFor(ms(m.released)), cy = yFor(m.profile[t.id] ?? 0);
+      const rightEdge = cx > W - 130;
+      const g = mk("g");
+      g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
+      svg.appendChild(mk("text", { x: rightEdge ? cx - 10 : cx + 10, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, shortName(m.model_id)));
+      g.appendChild(mk("title", {}, `${m.model_id} \u2014 ${t.name}: ${Math.round(m.profile[t.id] ?? 0)} \u00b7 released ${m.released}`));
+      svg.appendChild(g);
+    }
+    wrap.appendChild(svg);
+  }
+  return wrap;
+}
+
+/* Combined "Dark Index" leaderboard: the mean of the three traits (the Dark
+   Triad total), with the typical adult ranked in. Least dark on top. */
+function darkIndexLeaderboard(sd3, human) {
+  const wrap = document.createElement("div");
+  wrap.className = "dt-index";
+  const idxOf = (profile) => SD3_TRAITS.reduce((s, t) => s + (profile[t.id] ?? 0), 0) / SD3_TRAITS.length;
+  const humanIdx = idxOf(human);
+  const entries = [
+    ...sd3.models.map((m) => ({ name: shortName(m.model_id), v: idxOf(m.profile) })),
+    { name: "Typical adult (human)", v: humanIdx, human: true },
+  ].sort((a, b) => a.v - b.v);
+  let rank = 0;
+  for (const e of entries) {
+    if (!e.human) rank++;
+    const above = !e.human && e.v > humanIdx;
+    const row = document.createElement("div");
+    row.className = "dt-row" + (above ? " above" : "") + (e.human ? " humanrow" : "");
+    const w = Math.max(0, Math.min(100, e.v));
+    row.innerHTML =
+      `<div class="rank">${e.human ? "\uD83E\uDDD1" : rank}</div>` +
+      `<div><div class="who"><span class="mname">${e.name}</span>` +
+      `<span class="val">${Math.round(e.v)}${above ? ' <span class="up">darker</span>' : ""}</span></div>` +
+      `<div class="dt-track"><div class="zone" style="left:${humanIdx}%"></div>` +
+      `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:#6a4c93"}"></div>` +
+      `</div></div>`;
+    wrap.appendChild(row);
+  }
+  return wrap;
+}
+
+function renderDarkTriad(content, data, colorFor) {
+  const sd3 = (data.benchmarks || []).find((b) => b.id === SD3_ID);
+  const human = (POPULATION_NORMS[SD3_ID] || {}).values || {};
+  const intro = document.createElement("p");
+  intro.className = "dt-intro";
+  intro.innerHTML =
+    "The <b>Short Dark Triad</b> measures three socially aversive traits. We score each model like a human respondent and rank it against the <b>typical adult</b> \u2014 the models you want are the ones sitting <b>below</b> the human line.";
+  content.appendChild(intro);
+  if (!sd3 || !sd3.models || !sd3.models.length) {
+    const note = document.createElement("div");
+    note.className = "empty";
+    note.innerHTML = "No Dark Triad runs yet \u2014 an admin can run the benchmark from the " +
+      '<a href="' + (window.__destUrl ? window.__destUrl("admin") : "/admin") + '">admin console</a>.';
+    content.appendChild(note);
+    return;
+  }
+  const h2i = document.createElement("h2"); h2i.className = "section"; h2i.textContent = "Overall \u2014 the Dark Triad Index";
+  content.appendChild(h2i);
+  const humanIdx = Math.round(SD3_TRAITS.reduce((s, t) => s + (human[t.id] ?? 0), 0) / SD3_TRAITS.length);
+  const idxNote = document.createElement("p"); idxNote.className = "dt-note";
+  idxNote.innerHTML = "A single \u201cdark core\u201d score \u2014 the mean of all three traits, the way the Dark Triad total is treated in the literature (Kaufman, 2019). Lower is more restrained; the typical adult lands around " + humanIdx + ".";
+  content.appendChild(idxNote);
+  content.appendChild(darkIndexLeaderboard(sd3, human));
+  const h2a = document.createElement("h2"); h2a.className = "section"; h2a.textContent = "By trait \u2014 least dark on top";
+  content.appendChild(h2a);
+  content.appendChild(darkTriadLeaderboard(sd3, human));
+  const h2b = document.createElement("h2"); h2b.className = "section"; h2b.textContent = "Over time \u2014 by model release date";
+  content.appendChild(h2b);
+  content.appendChild(darkTriadTimeline(sd3, human, colorFor));
+  content.appendChild(explanationCard(sd3));
+  const sc = stabilityCard(data, colorFor);
+  if (sc) content.appendChild(sc);
+}
+
+function renderSecondary(content, data, colorFor, benchId) {
+  const bench = (data.benchmarks || []).find((b) => b.id === benchId);
+  if (!bench || !bench.models || !bench.models.length) {
+    const note = document.createElement("div");
+    note.className = "empty";
+    note.textContent = "No runs yet for this test.";
+    content.appendChild(note);
+    return;
+  }
+  document.getElementById("legend").innerHTML =
+    '<span class="rk-hint">Hover any model to highlight its shape and see its scores.</span>';
+  const grid = document.createElement("div");
+  grid.className = "grid";
+  grid.appendChild(benchmarkCard(bench, colorFor));
+  content.appendChild(grid);
+  content.appendChild(explanationCard(bench));
+}
+
+const VIEWS = [
+  { id: "dark-triad", label: "Dark Triad", bench: SD3_ID },
+  { id: "big-five", label: "Big Five", bench: "big_five_ipip50" },
+  { id: "type", label: "Jungian Type", bench: "mbti_oejts" },
+];
 
 // Load rankings preferring the CDN-served snapshot baked in at deploy time, so
 // the public page loads with no backend call. Fall back to the live API when
@@ -361,7 +564,6 @@ async function main() {
     return;
   }
 
-  const content = document.getElementById("content");
   document.getElementById("footer").innerHTML =
     "Instruments: Big Five via the public-domain IPIP-50; an open OEJTS-inspired Jungian type test; " +
     "and the Short Dark Triad (Jones &amp; Paulhus, 2014), reproduced for research. " +
@@ -377,45 +579,39 @@ async function main() {
       "Last updated " + new Date(data.updated_at).toLocaleString();
   }
 
-  if (!models.length) {
-    const note = document.createElement("div");
-    note.className = "empty";
-    note.innerHTML =
-      'No benchmark runs yet — an admin can run the benchmarks from the ' +
-      '<a href="' + (window.__destUrl ? window.__destUrl("admin") : "/admin") + '">admin console</a>. The tests are explained below.';
-    content.appendChild(note);
-  } else {
-    document.getElementById("legend").innerHTML =
-      '<span class="rk-hint">Hover any model to highlight its shape and see its scores.</span>';
-    const grid = document.createElement("div");
-    grid.className = "grid";
-    for (const bench of data.benchmarks) {
-      if (!bench.models.length) continue;
-      grid.appendChild(benchmarkCard(bench, colorFor));
+  // Build the header nav: test views first, then the cross-subdomain links.
+  const nav = document.querySelector(".rk-nav");
+  if (nav) {
+    nav.innerHTML =
+      VIEWS.map((v) => `<a href="#${v.id}" data-view="${v.id}">${v.label}</a>`).join("") +
+      '<a href="/" data-dest="app">Make your own</a>' +
+      '<a href="/admin" data-dest="admin">Admin</a>';
+    if (window.__destUrl) {
+      nav.querySelectorAll("a[data-dest]").forEach((a) =>
+        a.setAttribute("href", window.__destUrl(a.getAttribute("data-dest"))));
     }
-    const stab = data.stability;
-    if (stab && stab.models && stab.models.length) {
-      const shortAxes = stab.axes.map((t) => t.split(" (")[0].trim());
-      const series = stab.models.map((m) => ({
-        name: m.model_id,
-        color: colorFor(m.model_id),
-        values: m.values.map((v) => (v == null ? 0 : v)),
-        result: (() => {
-          const vals = m.values.filter((v) => v != null);
-          return vals.length ? `avg ${Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)}` : "—";
-        })(),
-        title: `${m.model_id} — ` + stab.axes
-          .map((a, i) => `${a.split(" (")[0].trim()}: ${m.values[i] == null ? "—" : Math.round(m.values[i])}`)
-          .join(" · "),
-      }));
-      const sc = card("Answer stability", "consistency across repeats (0 = single run)", [drawRadar(shortAxes, series), buildChartLegend(series)]);
-      wireHighlight(sc);
-      grid.appendChild(sc);
-    }
-    content.appendChild(grid);
   }
 
-  renderExplanations(data.benchmarks || []);
+  const currentView = () => {
+    const h = (location.hash || "").replace("#", "");
+    return VIEWS.some((v) => v.id === h) ? h : "dark-triad";
+  };
+  const render = () => {
+    const view = currentView();
+    if (nav) nav.querySelectorAll("a[data-view]").forEach((a) =>
+      a.classList.toggle("active", a.getAttribute("data-view") === view));
+    const content = document.getElementById("content");
+    content.innerHTML = "";
+    document.getElementById("legend").innerHTML = "";
+    if (view === "dark-triad") {
+      renderDarkTriad(content, data, colorFor);
+    } else {
+      renderSecondary(content, data, colorFor, VIEWS.find((v) => v.id === view).bench);
+    }
+    window.scrollTo(0, 0);
+  };
+  window.addEventListener("hashchange", render);
+  render();
 }
 
 main();

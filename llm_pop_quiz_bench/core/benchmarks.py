@@ -12,11 +12,13 @@ new one updates the public site with no manual editing.
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 from statistics import mean, pstdev
 from typing import Any
 
 from .dimensional import get_dimensions, score_dimensional
+from .openrouter import fetch_release_dates
 
 BENCHMARKS_DIR = Path(__file__).resolve().parents[2] / "benchmarks"
 
@@ -180,6 +182,29 @@ def benchmark_coverage(db) -> list[dict[str, Any]]:
     return coverage
 
 
+def _released_for(db, model_list: list[str]) -> dict[str, str]:
+    """Map ``model_id -> release date`` (ISO), preferring dates recorded with a run.
+
+    Falls back to a live OpenRouter lookup for any model missing a recorded date
+    (skipped under the mock test env so unit tests never hit the network).
+    """
+    released: dict[str, str] = {}
+    for run in db.fetch_runs():
+        recorded = (run.get("settings") or {}).get("model_released") or {}
+        if isinstance(recorded, dict):
+            for mid, date in recorded.items():
+                if date:
+                    released.setdefault(mid, date)
+    missing = [m for m in model_list if m not in released]
+    if missing and os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() != "mock":
+        try:
+            for mid, date in fetch_release_dates(missing).items():
+                released.setdefault(mid, date)
+        except Exception:
+            pass
+    return released
+
+
 def build_rankings(db, models: list[str] | None = None) -> dict[str, Any]:
     """Public payload: per-benchmark radar data + a cross-benchmark stability view.
 
@@ -192,6 +217,7 @@ def build_rankings(db, models: list[str] | None = None) -> dict[str, Any]:
 
     present = sorted({model_id for a in aggregates for model_id in a["models"].keys()})
     model_list = [m for m in (models or present) if any(m in a["models"] for a in aggregates)]
+    released_map = _released_for(db, model_list)
 
     benchmarks_out = []
     updated_candidates: list[str] = []
@@ -202,7 +228,7 @@ def build_rankings(db, models: list[str] | None = None) -> dict[str, Any]:
         for model_id in model_list:
             entry = agg["models"].get(model_id)
             if entry:
-                rows.append({"model_id": model_id, **entry})
+                rows.append({"model_id": model_id, "released": released_map.get(model_id), **entry})
         benchmarks_out.append(
             {
                 "id": agg["id"],

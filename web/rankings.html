@@ -94,6 +94,32 @@
       }
       .rankings-page .btn:hover { filter: brightness(1.05); }
       .rankings-page .rk-footer { color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
+
+      /* Test nav active state + Dark Triad (home) view */
+      .rankings-page .rk-nav a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+      .rankings-page .section { font-family: "Fraunces", serif; font-weight: 600; font-size: 1.35rem; margin: 6px 0 0; }
+      .rankings-page .dt-intro { color: var(--muted); max-width: 74ch; margin: 0; font-size: 1rem; }
+      .rankings-page .dt-lanes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; }
+      @media (max-width: 820px) { .rankings-page .dt-lanes { grid-template-columns: 1fr; } }
+      .rankings-page .dt-lane h3 { margin: 0; font-size: 1.02rem; }
+      .rankings-page .dt-lane .sub { color: var(--muted); font-size: 0.8rem; margin: 2px 0 12px; }
+      .rankings-page .dt-row { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: center; margin-bottom: 9px; padding: 2px 5px; border-radius: 9px; border: 1px solid transparent; }
+      .rankings-page .dt-row .rank { font-size: 0.82rem; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+      .rankings-page .dt-row .who { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+      .rankings-page .dt-row .mname { font-size: 0.85rem; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rankings-page .dt-row .val { font-size: 0.8rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 8px; }
+      .rankings-page .dt-row.above .val { color: #9e2a2b; }
+      .rankings-page .dt-row .val .up { color: #9e2a2b; font-weight: 700; }
+      .rankings-page .dt-track { position: relative; height: 15px; background: #f0e7db; border-radius: 8px; overflow: hidden; }
+      .rankings-page .dt-track .zone { position: absolute; top: 0; bottom: 0; right: 0; background: rgba(158,42,43,0.10); border-left: 2px dashed #7a6f62; }
+      .rankings-page .dt-track .bar { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 8px; }
+      .rankings-page .dt-track .humbar { background: repeating-linear-gradient(45deg, #c7b9a3, #c7b9a3 5px, #b7a88f 5px, #b7a88f 10px); }
+      .rankings-page .dt-row.humanrow { background: #f1e9db; border-color: #b9ac99; border-style: dashed; }
+      .rankings-page .dt-row.humanrow .mname { font-weight: 600; }
+      .rankings-page .dt-time { display: grid; gap: 16px; }
+      .rankings-page .dt-time svg { width: 100%; height: auto; background: #fffdf8; border: 1px solid var(--border); border-radius: 12px; }
+      .rankings-page .dt-note { color: var(--muted); font-size: 0.9rem; }
+      .rankings-page .dt-index { max-width: 640px; }
     </style>
   </head>
   <body class="rankings-page">
@@ -139,6 +165,6 @@
       <footer class="rk-footer" id="footer"></footer>
     </main>
     <script src="/static/site-links.js"></script>
-    <script src="/static/rankings.js?v=7"></script>
+    <script src="/static/rankings.js?v=9"></script>
   </body>
 </html>
