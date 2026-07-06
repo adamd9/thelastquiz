@@ -54,8 +54,11 @@ async function unlock() {
   const gate = document.getElementById("gate-msg");
   const tokenPanel = document.getElementById("token-panel");
   const changeToken = document.getElementById("change-token");
+  let probe;
   try {
-    await api("/api/admin/benchmarks");
+    // This probe doubles as the auth check AND the benchmarks payload, so we
+    // don't fetch the (relatively expensive) coverage endpoint twice on load.
+    probe = await api("/api/admin/benchmarks");
   } catch (e) {
     content.hidden = true;
     if (tokenPanel) tokenPanel.hidden = false;
@@ -74,7 +77,7 @@ async function unlock() {
   if (changeToken) changeToken.hidden = false;
   content.hidden = false;
   loadModels();
-  loadBenchmarks();
+  loadBenchmarks(probe);
   loadRuns();
   return true;
 }
@@ -181,10 +184,10 @@ function applyGroupSelection() {
   if (firstChecked) firstChecked.scrollIntoView({ block: "nearest" });
 }
 
-async function loadBenchmarks() {
+async function loadBenchmarks(preloaded) {
   const host = document.getElementById("benchmarks");
   try {
-    const data = await api("/api/admin/benchmarks");
+    const data = preloaded || (await api("/api/admin/benchmarks"));
     host.innerHTML = "";
     for (const b of data.benchmarks) {
       const row = document.createElement("div");
@@ -244,13 +247,24 @@ async function runBenchmark(benchmarkId, btn) {
   }
 }
 
+let runsLoading = false;
+
 async function loadRuns() {
+  // Guard against overlapping loads: a slow request must not pile up behind
+  // repeated clicks (or leave the button spinning twice).
+  if (runsLoading) return;
+  runsLoading = true;
   const tbody = document.getElementById("runs");
+  const refreshBtn = document.getElementById("refresh-runs");
+  const btnLabel = refreshBtn ? refreshBtn.textContent : "";
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Refreshing…";
+  }
   try {
     const data = await api("/api/admin/benchmarks/runs");
     const runs = data.runs || [];
-    // Drop expanded-state for runs no longer shown, so a vanished row can't
-    // keep the auto-refresh paused indefinitely.
+    // Drop expanded-state for runs no longer shown.
     const visible = new Set(runs.slice(0, 25).map((r) => r.run_id));
     for (const id of [...expandedRuns]) if (!visible.has(id)) expandedRuns.delete(id);
     if (!runs.length) {
@@ -263,6 +277,12 @@ async function loadRuns() {
     }
   } catch (e) {
     tbody.innerHTML = `<tr><td colspan="5" class="muted">Could not load runs: ${escapeHtml(e.message)}</td></tr>`;
+  } finally {
+    runsLoading = false;
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = btnLabel || "Refresh";
+    }
   }
 }
 
@@ -387,18 +407,9 @@ function init() {
   }
 
   // Nothing is shown until an admin probe succeeds. Auto-attempt with any
-  // stored token (or an open local-dev server) on load.
+  // stored token (or an open local-dev server) on load. The runs table then
+  // only refreshes when you press Refresh — no invisible timer to fight with.
   unlock();
-  setInterval(() => {
-    if (document.getElementById("admin-content").hidden) return;
-    // Don't rebuild the table while a failure detail is expanded (the user is
-    // likely reading or copying it) or while text is selected — a re-render
-    // would collapse the row and drop the selection mid-copy.
-    if (expandedRuns.size > 0) return;
-    const sel = window.getSelection && window.getSelection();
-    if (sel && !sel.isCollapsed) return;
-    loadRuns();
-  }, 5000);
 }
 
 init();

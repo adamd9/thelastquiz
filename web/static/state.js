@@ -18,6 +18,7 @@ export const state = {
   runsLoaded: false,
   selectedRun: null,
   selectedRunData: null,
+  runDetailLoading: false,
   selectedRunQuizMeta: null,
   selectedRunQuiz: null,
   selectedRunQuizId: null,

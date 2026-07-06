@@ -74,7 +74,13 @@ export async function loadRunDetails(runId, includeLog = false) {
 }
 
 export async function selectRun(runId) {
-  await loadRunDetails(runId, true);
+  // Immediate feedback before the (sometimes slow) detail fetches: mark the row
+  // active and flag the panel as loading, so a click visibly responds right
+  // away. RunResults listens for run:selected and performs the actual load
+  // (clearing the flag), so there is a single fetch rather than a blocking one
+  // with no on-screen response.
+  state.selectedRun = runId;
+  state.runDetailLoading = true;
   document.dispatchEvent(new CustomEvent("run:selected"));
 }
 

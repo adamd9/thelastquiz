@@ -346,6 +346,20 @@ class RunPanel extends HTMLElement {
       `;
       return;
     }
+    if (state.runDetailLoading && state.selectedRunData?.run_id !== state.selectedRun) {
+      // A run was just clicked but its details haven't arrived yet — show a
+      // loading state so the click clearly registers instead of sitting silent.
+      this._built = false;
+      this.innerHTML = `
+        <div class="panel">
+          <div class="panel-header">
+            <div class="panel-title"><h2>Results</h2></div>
+          </div>
+          <div class="runs-loading"><span class="spinner-lg" aria-hidden="true"></span><span>Loading run…</span></div>
+        </div>
+      `;
+      return;
+    }
     if (!this._built) {
       this.buildShell();
     }
@@ -1019,6 +1033,7 @@ class RunResults extends HTMLElement {
 
   async refresh() {
     if (!state.selectedRun) {
+      state.runDetailLoading = false;
       document.dispatchEvent(new CustomEvent("run:datachanged"));
       return;
     }
@@ -1033,6 +1048,7 @@ class RunResults extends HTMLElement {
     } catch (err) {
       state.runError = `Failed to refresh run: ${err.message}`;
     }
+    state.runDetailLoading = false;
     document.dispatchEvent(new CustomEvent("run:datachanged"));
     const status = state.selectedRunData?.status || "";
     if (status && TERMINAL_STATUSES.includes(status)) {
