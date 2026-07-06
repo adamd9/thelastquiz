@@ -690,14 +690,14 @@ async def parse_quiz(
 
 @app.post("/api/quizzes/{quiz_id}/reprocess")
 async def reprocess_quiz(
-    # Reprocessing overwrites the stored quiz definition via LLM reconversion;
-    # never allow that against a committed benchmark's golden master.
-    if quiz_id in benchmarks.benchmark_ids():
-        raise HTTPException(status_code=403, detail="Benchmark quizzes are protected and cannot be reprocessed.")
     quiz_id: str,
     model: str | None = Form(None),
 ) -> dict:
     runtime_paths = get_runtime_paths()
+    # Reprocessing overwrites the stored quiz definition via LLM reconversion;
+    # never allow that against a committed benchmark's golden master.
+    if quiz_id in benchmarks.benchmark_ids():
+        raise HTTPException(status_code=403, detail="Benchmark quizzes are protected and cannot be reprocessed.")
     db = connect(runtime_paths.db_path)
     record = db.fetch_quiz_record(quiz_id)
     db.close()
@@ -901,12 +901,7 @@ def get_run(run_id: str) -> dict:
     return {"run": run, "assets": assets}
 
 
-@app# Benchmark runs feed the rankings and are managed by the admin pipeline;
-    # don't let the open report endpoint churn their assets.
-    if run.get("quiz_id") in benchmarks.benchmark_ids():
-        db.close()
-        raise HTTPException(status_code=403, detail="Benchmark runs are protected.")
-    .post("/api/runs/{run_id}/report")
+@app.post("/api/runs/{run_id}/report")
 def rerun_report(run_id: str, background_tasks: BackgroundTasks) -> dict:
     runtime_paths = get_runtime_paths()
     db = connect(runtime_paths.db_path)
@@ -914,6 +909,11 @@ def rerun_report(run_id: str, background_tasks: BackgroundTasks) -> dict:
     if not run:
         db.close()
         raise HTTPException(status_code=404, detail="Run not found")
+    # Benchmark runs feed the rankings and are managed by the admin pipeline;
+    # don't let the open report endpoint churn their assets.
+    if run.get("quiz_id") in benchmarks.benchmark_ids():
+        db.close()
+        raise HTTPException(status_code=403, detail="Benchmark runs are protected.")
     if run.get("status") in {"queued", "running", "reporting"}:
         db.close()
         raise HTTPException(status_code=400, detail="Run is still in progress")
