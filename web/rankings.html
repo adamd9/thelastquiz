@@ -120,6 +120,25 @@
       .rankings-page .dt-time svg { width: 100%; height: auto; background: #fffdf8; border: 1px solid var(--border); border-radius: 12px; }
       .rankings-page .dt-note { color: var(--muted); font-size: 0.9rem; }
       .rankings-page .dt-index { max-width: 640px; }
+
+      /* Hero prominence + angel–devil scale */
+      .rankings-page .hero h1 { font-size: 2.5rem; line-height: 1.08; margin: 6px 0 12px; }
+      .rankings-page .hero .subhead i { color: var(--accent); }
+      .rankings-page .ld { margin: 2px 0 4px; }
+      .rankings-page .ld-row { display: flex; align-items: center; gap: 16px; }
+      .rankings-page .ld-face { display: flex; flex-direction: column; align-items: center; font-size: 32px; line-height: 1; flex: none; }
+      .rankings-page .ld-face b { font-size: 0.68rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 3px; }
+      .rankings-page .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 84px 0 34px; background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
+      .rankings-page .ld-human { position: absolute; top: -10px; bottom: -10px; width: 0; border-left: 2px dashed #1b1a17; }
+      .rankings-page .ld-human span { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 700; color: var(--ink); }
+      .rankings-page .ld-dot { position: absolute; top: 50%; }
+      .rankings-page .ld-pin { position: absolute; top: -7px; left: -7px; width: 14px; height: 14px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+      .rankings-page .ld-lab { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; color: var(--ink); background: var(--panel); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); }
+      .rankings-page .ld-lab.r0 { bottom: 14px; }
+      .rankings-page .ld-lab.r1 { bottom: 40px; }
+      .rankings-page .ld-lab.r2 { bottom: 66px; }
+      .rankings-page .ld-cap { color: var(--muted); font-size: 0.95rem; margin: 8px 2px 0; }
+      .rankings-page .ld-cap b { color: var(--ink); }
     </style>
   </head>
   <body class="rankings-page">
@@ -140,12 +159,15 @@
 
       <section class="hero">
         <div>
-          <p class="kicker">Model Personality Rankings</p>
-          <h1>Do AI models have a personality?</h1>
+          <p class="kicker">The Last Quiz · Dark Triad Rankings</p>
+          <h1>How dark is your favourite AI?</h1>
           <p class="subhead">
-            We put the leading models through the same psychology instruments people take —
-            the Big Five, an open Jungian type test, and the Short Dark Triad — and scored them
-            exactly like a human respondent. Here's how the top models compare.
+            We sat the leading models down for the <b>Short Dark Triad</b> — psychology's test for the
+            three least-cuddly personality traits: <b>Machiavellianism</b> (scheming), <b>narcissism</b>
+            (grandiosity) and <b>psychopathy</b> (cold-heartedness) — and scored them like any human
+            taking the quiz, then ranked them against the average person. Because before we hand the world
+            over to these things, it seems only fair to ask: <i>should we be checking which one's secretly
+            a bit of a villain?</i>
           </p>
           <div class="rk-updated" id="updated"></div>
         </div>
@@ -165,6 +187,6 @@
       <footer class="rk-footer" id="footer"></footer>
     </main>
     <script src="/static/site-links.js"></script>
-    <script src="/static/rankings.js?v=10"></script>
+    <script src="/static/rankings.js?v=11"></script>
   </body>
 </html>

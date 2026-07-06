@@ -459,14 +459,40 @@ function darkIndexLeaderboard(sd3, human) {
   return wrap;
 }
 
+/* Angel–devil scale: every model on one light→dark continuum by its Dark Index,
+   with the average human marked. The at-a-glance, lighten-the-mood hero. */
+function lightDarkScale(sd3, human) {
+  const idxOf = (p) => SD3_TRAITS.reduce((s, t) => s + (p[t.id] ?? 0), 0) / SD3_TRAITS.length;
+  const humanIdx = idxOf(human);
+  const models = sd3.models
+    .map((m) => ({ name: shortName(m.model_id), v: idxOf(m.profile) }))
+    .sort((a, b) => a.v - b.v);
+  const above = models.filter((m) => m.v > humanIdx);
+  const darkest = models[models.length - 1];
+  const clamp = (v) => Math.max(2, Math.min(98, v));
+  const markers = models
+    .map((m, i) => `<div class="ld-dot" style="left:${clamp(m.v)}%" title="${m.name}: ${Math.round(m.v)}/100 dark index">` +
+      `<span class="ld-pin"></span><span class="ld-lab r${i % 3}">${m.name}</span></div>`)
+    .join("");
+  const caption = above.length
+    ? `The good news: every model sits closer to \uD83D\uDE07 than \uD83D\uDE08. The less-good news: ` +
+      `${above.length === 1 ? "one model creeps" : above.length + " of them creep"} past the average human ` +
+      `(${above.map((m) => m.name).join(", ")}) \u2014 <b>${darkest.name}</b> leads the descent.`
+    : "Halos all round: every model came out <b>more restrained than the average human</b>. For now.";
+  const wrap = document.createElement("div");
+  wrap.className = "ld";
+  wrap.innerHTML =
+    `<div class="ld-row">` +
+    `<div class="ld-face">\uD83D\uDE07<b>saint</b></div>` +
+    `<div class="ld-track"><div class="ld-human" style="left:${clamp(humanIdx)}%"><span>avg human</span></div>${markers}</div>` +
+    `<div class="ld-face">\uD83D\uDE08<b>villain</b></div>` +
+    `</div><p class="ld-cap">${caption}</p>`;
+  return wrap;
+}
+
 function renderDarkTriad(content, data, colorFor) {
   const sd3 = (data.benchmarks || []).find((b) => b.id === SD3_ID);
   const human = (POPULATION_NORMS[SD3_ID] || {}).values || {};
-  const intro = document.createElement("p");
-  intro.className = "dt-intro";
-  intro.innerHTML =
-    "The <b>Short Dark Triad</b> measures three socially aversive traits. We score each model like a human respondent and rank it against the <b>typical adult</b> \u2014 the models you want are the ones sitting <b>below</b> the human line.";
-  content.appendChild(intro);
   if (!sd3 || !sd3.models || !sd3.models.length) {
     const note = document.createElement("div");
     note.className = "empty";
@@ -475,6 +501,7 @@ function renderDarkTriad(content, data, colorFor) {
     content.appendChild(note);
     return;
   }
+  content.appendChild(lightDarkScale(sd3, human));
   const h2i = document.createElement("h2"); h2i.className = "section"; h2i.textContent = "Overall \u2014 the Dark Triad Index";
   content.appendChild(h2i);
   const humanIdx = Math.round(SD3_TRAITS.reduce((s, t) => s + (human[t.id] ?? 0), 0) / SD3_TRAITS.length);
