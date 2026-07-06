@@ -447,16 +447,33 @@
       document.getElementById("ranking").hidden = false;
     }
 
-    load().then(function (data) {
+    // Pull the Dark Triad models out of a rankings payload (snapshot or API),
+    // sorted saint -> villain. Returns [] when the payload has no usable data.
+    function extractModels(data) {
       var benches = (data && data.benchmarks) || [];
       var sd3 = null;
       for (var i = 0; i < benches.length; i++) { if (benches[i].id === "sd3_short_dark_triad") { sd3 = benches[i]; break; } }
-      if (!sd3 || !sd3.models || !sd3.models.length) return;
-      var models = sd3.models.map(function (m) {
+      if (!sd3 || !sd3.models || !sd3.models.length) return [];
+      return sd3.models.map(function (m) {
         return { name: shortName(m.model_id), v: idxOf(m.profile) };
       }).sort(function (a, b) { return a.v - b.v; });
+    }
+
+    function render(models) {
+      if (!models.length) return false;
       renderScale(models);
       renderLeaderboard(models);
+      return true;
+    }
+
+    load().then(function (data) {
+      // Render from the CDN snapshot when it has data. A stale/empty snapshot
+      // (e.g. baked while the API was down) shouldn't leave the front door
+      // blank, so fall back to the live API before giving up.
+      if (render(extractModels(data))) return;
+      return fetch((window.API_BASE || "") + "/api/rankings")
+        .then(function (r) { return r.json(); })
+        .then(function (live) { render(extractModels(live)); });
     }).catch(function () { /* leave sections hidden on failure */ });
   })();
   </script>
