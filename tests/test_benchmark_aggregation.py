@@ -46,6 +46,21 @@ def test_aggregate_midpoint_run_scores_fifty(tmp_path):
     conn.close()
 
 
+def test_aggregate_uses_latest_run_not_average(tmp_path):
+    conn = connect(tmp_path / "db.sqlite3")
+    bench = benchmarks.get_benchmark("big_five_ipip50")
+    _seed_run(conn, bench, "modelX", "A", "old_run")   # extreme answers, first
+    _seed_run(conn, bench, "modelX", "C", "new_run")    # midpoint, and latest
+
+    agg = benchmarks.aggregate_benchmark(conn, "big_five_ipip50")
+    profile = agg["models"]["modelX"]["profile"]
+    # The latest run answered the exact midpoint, so every trait is 50; an
+    # average with the earlier extreme run would not land on 50.
+    assert all(value == 50.0 for value in profile.values()), profile
+    assert agg["models"]["modelX"]["runs"] == 2
+    conn.close()
+
+
 def test_build_rankings_reports_all_benchmarks_and_stability(tmp_path):
     conn = connect(tmp_path / "db.sqlite3")
     sd3 = benchmarks.get_benchmark("sd3_short_dark_triad")

@@ -29,6 +29,22 @@ def test_models(client):
     assert "groups" in data
 
 
+def test_subdomain_host_routing(client):
+    # Default (app) host serves the main app SPA shell.
+    app_root = client.get("/")
+    assert app_root.status_code == 200
+    assert "/static/app.js" in app_root.text
+    # rankings.<domain> serves the rankings page at its root.
+    rankings_root = client.get("/", headers={"Host": "rankings.thelastquiz.net"})
+    assert rankings_root.status_code == 200
+    assert "/static/rankings.js" in rankings_root.text
+    # Deep links resolve to the right shell per host (host-aware SPA fallback).
+    app_deep = client.get("/create-run", headers={"Host": "app.thelastquiz.net"})
+    assert app_deep.status_code == 200 and "/static/app.js" in app_deep.text
+    rankings_deep = client.get("/anything", headers={"Host": "rankings.thelastquiz.net"})
+    assert rankings_deep.status_code == 200 and "/static/rankings.js" in rankings_deep.text
+
+
 def test_parse_quiz_text(client, monkeypatch):
     import importlib
 

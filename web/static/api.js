@@ -1,7 +1,15 @@
 import { state } from "./state.js";
 
+// The SPA (Cloudflare Pages) and the API (Azure) may be on different origins;
+// window.API_BASE (set by site-links.js) points absolute API calls at the
+// backend. Empty locally / on the backend host, so calls stay same-origin.
+export function apiUrl(path) {
+  const base = (typeof window !== "undefined" && window.API_BASE) || "";
+  return typeof path === "string" && path.startsWith("/") ? base + path : path;
+}
+
 export async function fetchJSON(url, options) {
-  const resp = await fetch(url, options);
+  const resp = await fetch(apiUrl(url), options);
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(text || resp.statusText);

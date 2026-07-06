@@ -13,6 +13,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ..core import benchmarks, reporter
@@ -28,6 +29,30 @@ from ..core.logging_utils import rotate_log_if_needed
 from ..core.db_factory import connect
 
 app = FastAPI()
+
+# CORS — the SPA is served from Cloudflare Pages (app./rankings.<domain>) while
+# the API runs on Azure (thelastquiz.drop37.com), so browser calls are
+# cross-origin. Allow the public subdomains + Pages previews + localhost out of
+# the box; LLM_POP_QUIZ_ALLOWED_ORIGINS (comma-separated) can add more without a
+# code change.
+_cors_origins = [
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost:5173",
+]
+_cors_origins += [
+    o.strip()
+    for o in os.environ.get("LLM_POP_QUIZ_ALLOWED_ORIGINS", "").split(",")
+    if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_origin_regex=r"^https://(app|rankings)\.(the)?lastquiz\.net$|^https://[a-z0-9-]+\.pages\.dev$",
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=False,
+)
 
 
 @app.middleware("http")
@@ -184,11 +209,13 @@ def _record_run_cost(run_id: str, runtime_root: Path) -> None:
         return
 
 
-def _reap_stale_runs(runtime_paths, inactivity_seconds: int = 300) -> None:
+def _reap_stale_runs(runtime_paths, inactivity_seconds: int = 600) -> None:
     """Fail runs whose log has gone quiet — a crashed or hung background task.
 
-    Uses the run log's last-modified time as a liveness signal: active runs write
-    to it continuously (per model/question), so a long silence means it's stuck.
+    Uses the run log's last-modified time as a liveness signal: active runs
+    heartbeat it after every question, so a long silence means it's stuck. The
+    window must comfortably exceed a single question's ceiling (120s) plus any
+    thread contention when several runs execute at once.
     """
     try:
         db = connect(runtime_paths.db_path)
@@ -423,12 +450,21 @@ def admin_page() -> FileResponse:
     return FileResponse(path)
 
 
+def _is_rankings_host(request: Request) -> bool:
+    """True when served on the public rankings subdomain (rankings.<domain>)."""
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    return host.startswith("rankings.")
+
+
 @app.get("/")
-def index() -> FileResponse:
-    index_path = WEB_ROOT / "index.html"
-    if not index_path.exists():
+def index(request: Request) -> FileResponse:
+    # rankings.<domain> serves the public rankings page at its root; every other
+    # host (app.<domain>, localhost, previews) gets the main app.
+    page = "rankings.html" if _is_rankings_host(request) else "index.html"
+    path = WEB_ROOT / page
+    if not path.exists():
         raise HTTPException(status_code=404, detail="Frontend not found")
-    return FileResponse(index_path)
+    return FileResponse(path)
 
 
 @app.get("/favicon.ico")
@@ -873,10 +909,13 @@ def get_run_log(run_id: str, tail: int = 300) -> dict:
 
 
 @app.get("/{full_path:path}")
-def spa_fallback(full_path: str) -> FileResponse:
+def spa_fallback(full_path: str, request: Request) -> FileResponse:
     if full_path.startswith("api/") or full_path.startswith("static/"):
         raise HTTPException(status_code=404, detail="Not found")
-    index_path = WEB_ROOT / "index.html"
-    if not index_path.exists():
+    # Deep links resolve to the SPA shell (main app) or the rankings page,
+    # depending on the subdomain, so client-side routes survive a refresh.
+    page = "rankings.html" if _is_rankings_host(request) else "index.html"
+    path = WEB_ROOT / page
+    if not path.exists():
         raise HTTPException(status_code=404, detail="Frontend not found")
-    return FileResponse(index_path)
+    return FileResponse(path)

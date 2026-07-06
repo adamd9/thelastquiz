@@ -1,4 +1,5 @@
 import { escapeHtml, renderMarkdown } from "../utils.js";
+import { apiUrl } from "../api.js";
 
 class MarkdownViewer extends HTMLElement {
   connectedCallback() {
@@ -40,7 +41,7 @@ class MarkdownViewer extends HTMLElement {
     this.rendered = "";
     this.render();
     try {
-      const resp = await fetch(url);
+      const resp = await fetch(apiUrl(url));
       if (!resp.ok) {
         const text = await resp.text();
         throw new Error(text || resp.statusText);

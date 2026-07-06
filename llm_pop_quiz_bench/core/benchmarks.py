@@ -103,11 +103,12 @@ def _completed_runs(db, benchmark_id: str) -> list[dict[str, Any]]:
 
 
 def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
-    """Aggregate all completed runs of a benchmark into per-model profiles.
+    """Aggregate a benchmark's completed runs into per-model profiles.
 
-    Each model's normalized profile is averaged across every completed run
-    (repetitions/reruns), and a stability score (100 - mean per-dimension SD
-    across runs) captures how consistently the model answers.
+    Each model's shown profile comes from its LATEST completed run (a rerun
+    supersedes the old one — no averaging). A stability score (100 - mean
+    per-dimension SD across a model's runs) still captures how consistently it
+    answers when repeated.
     """
     bench = get_benchmark(benchmark_id)
     if not bench:
@@ -115,12 +116,13 @@ def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
     dims = get_dimensions(bench)
     dim_ids = [d["id"] for d in dims]
 
-    per_model_profiles: dict[str, list[dict[str, float]]] = {}
+    # Per model, collect each completed run's profile tagged with its timestamp.
+    per_model_runs: dict[str, list[tuple[str, dict[str, float]]]] = {}
     latest: str | None = None
 
     for run in _completed_runs(db, benchmark_id):
-        created = run.get("created_at")
-        if created and (latest is None or created > latest):
+        created = run.get("created_at") or ""
+        if latest is None or created > latest:
             latest = created
         rows_by_model: dict[str, list[dict]] = {}
         for row in db.fetch_results(run["run_id"]):
@@ -129,25 +131,29 @@ def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
             result = score_dimensional(bench, rows)
             if result.answered == 0:
                 continue
-            per_model_profiles.setdefault(model_id, []).append(result.profile)
+            per_model_runs.setdefault(model_id, []).append((created, result.profile))
 
     models_out: dict[str, Any] = {}
-    for model_id, profiles in per_model_profiles.items():
-        n = len(profiles)
-        mean_profile = {
-            dim_id: round(mean([p.get(dim_id, 0.0) for p in profiles]), 2) for dim_id in dim_ids
-        }
-        per_dim_std = {
-            dim_id: round(pstdev([p.get(dim_id, 0.0) for p in profiles]), 2) if n > 1 else 0.0
-            for dim_id in dim_ids
-        }
-        stability = round(100.0 - mean(list(per_dim_std.values())), 2) if n > 1 else None
+    for model_id, runs in per_model_runs.items():
+        runs.sort(key=lambda item: item[0])
+        # Latest run wins for the displayed profile (no averaging across reruns).
+        profile = {dim_id: round(runs[-1][1].get(dim_id, 0.0), 2) for dim_id in dim_ids}
+        n = len(runs)
+        if n > 1:
+            per_dim_std = {
+                dim_id: round(pstdev([p.get(dim_id, 0.0) for _, p in runs]), 2)
+                for dim_id in dim_ids
+            }
+            stability = round(100.0 - mean(list(per_dim_std.values())), 2)
+        else:
+            per_dim_std = {}
+            stability = None
         models_out[model_id] = {
-            "profile": mean_profile,
-            "type_code": _type_from_profile(dims, mean_profile),
+            "profile": profile,
+            "type_code": _type_from_profile(dims, profile),
             "runs": n,
             "stability": stability,
-            "per_dimension_std": per_dim_std if n > 1 else {},
+            "per_dimension_std": per_dim_std,
         }
 
     summary = _benchmark_summary(bench)

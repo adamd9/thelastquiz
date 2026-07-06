@@ -4,7 +4,7 @@ import { buildModelGroups, escapeHtml, getQuizTypeLabel } from "../utils.js";
 
 // Normal users can compare up to this many models per run (keeps runs fast and
 // affordable). The admin benchmark console has no such cap.
-const MAX_MODELS = 10;
+const MAX_MODELS = 5;
 
 class ModelPicker extends HTMLElement {
   constructor() {

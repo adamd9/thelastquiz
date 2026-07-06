@@ -6,3 +6,4 @@ venv/
 .venv/
 .playwright-cli/
 .DS_Store
+dist/

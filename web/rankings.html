@@ -40,6 +40,24 @@
       .rankings-page .card .tag { color: var(--muted); font-size: 0.78rem; margin-bottom: 6px; }
       .rankings-page .card p { margin: 6px 0 0; color: var(--ink); font-size: 0.92rem; line-height: 1.55; }
       .rankings-page .card svg { width: 100%; height: auto; display: block; }
+      .rankings-page .card polygon.series { cursor: pointer; transition: fill-opacity .12s ease, stroke-opacity .12s ease, stroke-width .12s ease; }
+
+      .rankings-page .rk-hint { color: var(--muted); font-size: 0.85rem; }
+      .rankings-page .rk-clegend { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+      .rankings-page .rk-clegend li { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 8px; font-size: 0.86rem; cursor: default; }
+      .rankings-page .rk-clegend li:hover, .rankings-page .rk-clegend li.active { background: rgba(218,95,53,0.10); }
+      .rankings-page .rk-clegend .sw { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+      .rankings-page .rk-clegend .nm { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .rankings-page .rk-clegend .res { margin-left: auto; color: var(--accent-2); font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 10px; }
+      .rankings-page .rk-clegend li.baseline .nm { font-style: italic; color: var(--muted); }
+      .rankings-page .norm-note { color: var(--muted); font-size: 0.86rem; font-style: italic; border-left: 3px solid var(--accent); padding-left: 10px; margin-top: 10px; }
+      .rankings-page .typebreak { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+      .rankings-page .typebreak-h { font-weight: 600; font-size: 0.85rem; margin-bottom: 6px; }
+      .rankings-page .typebreak-row { display: flex; align-items: baseline; gap: 8px; padding: 3px 0; font-size: 0.85rem; flex-wrap: wrap; }
+      .rankings-page .typebreak-row .tb-model { color: var(--ink); font-weight: 600; }
+      .rankings-page .typebreak-row .tb-code { color: var(--accent); letter-spacing: 0.08em; }
+      .rankings-page .typebreak-row .tb-words { color: var(--muted); }
+      .rankings-page .read-note { color: var(--ink); font-size: 0.86rem; background: rgba(15,92,120,0.06); border-radius: 8px; padding: 8px 10px; margin-top: 10px; }
 
       .rankings-page .ring { fill: none; stroke: var(--border); }
       .rankings-page .spoke { stroke: var(--border); }
@@ -81,7 +99,7 @@
   <body class="rankings-page">
     <main class="app-shell">
       <header class="app-header">
-        <a class="app-brand" href="/rankings">
+        <a class="app-brand" href="/rankings" data-dest="rankings">
           <img class="app-logo" src="/static/logo.png" alt="The Last Quiz logo" />
           <div>
             <p class="kicker">The Last Quiz</p>
@@ -89,8 +107,8 @@
           </div>
         </a>
         <nav class="app-nav rk-nav">
-          <a href="/">Make your own</a>
-          <a href="/admin">Admin</a>
+          <a href="/" data-dest="app">Make your own</a>
+          <a href="/admin" data-dest="admin">Admin</a>
         </nav>
       </header>
 
@@ -115,11 +133,12 @@
           <h3>Think your favourite model has a personality?</h3>
           <p>Upload any magazine-style quiz and run it across the models yourself.</p>
         </div>
-        <a class="btn" href="/">Run your own quiz →</a>
+        <a class="btn" href="/" data-dest="app">Run your own quiz →</a>
       </div>
 
       <footer class="rk-footer" id="footer"></footer>
     </main>
-    <script src="/static/rankings.js"></script>
+    <script src="/static/site-links.js"></script>
+    <script src="/static/rankings.js?v=6"></script>
   </body>
 </html>

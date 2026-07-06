@@ -24,6 +24,7 @@
       .btn:disabled { opacity:.5; cursor:not-allowed; }
       .btn.secondary { background:transparent; border:1px solid var(--line); color:var(--ink); }
       .models { display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:6px 14px; max-height:230px; overflow:auto; margin-top:8px; padding:10px; border:1px solid var(--line); border-radius:10px; }
+      .models.collapsed { display:none; }
       .models label { display:flex; gap:8px; align-items:center; color:var(--ink); margin:0; font-size:13.5px; }
       .bench { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:12px 0; border-bottom:1px solid var(--line); }
       .bench:last-child { border-bottom:none; }
@@ -41,7 +42,7 @@
     <div class="wrap">
       <header class="top">
         <div class="brand">The Last Quiz · Benchmark Admin</div>
-        <nav><a href="/rankings">Public rankings</a><a href="/">Main app</a></nav>
+        <nav><a href="/rankings" data-dest="rankings">Public rankings</a><a href="/" data-dest="app">Main app</a></nav>
       </header>
 
       <h1>Personality benchmark runs</h1>
@@ -72,7 +73,8 @@
             </div>
           </div>
         </div>
-        <div class="models" id="models"></div>
+        <button class="btn secondary" id="toggle-models" type="button" style="margin-top:10px;">Show individual models</button>
+        <div class="models collapsed" id="models"></div>
         <div class="note" id="models-note">Loading models…</div>
       </div>
 
@@ -92,6 +94,7 @@
       </div>
     </div>
     <div id="toast"></div>
-    <script type="module" src="/static/admin.js?v=6"></script>
+    <script src="/static/site-links.js"></script>
+    <script type="module" src="/static/admin.js?v=7"></script>
   </body>
 </html>

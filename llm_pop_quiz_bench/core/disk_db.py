@@ -1,13 +1,30 @@
 """Disk-based JSONL storage implementation using the DatabaseInterface."""
 from __future__ import annotations
 
+import functools
 import json
+import threading
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 from .db_interface import DatabaseInterface
 from .store import read_jsonl, write_jsonl, append_jsonl
+
+
+# All DiskDatabase instances in a process share one lock. connect() creates a
+# fresh instance per request/run and the API runs benchmark jobs in background
+# threads, so load-modify-save mutations must be serialized to avoid clobbering
+# each other (e.g. two runs finishing at once, or the stale-run watchdog).
+_DISK_LOCK = threading.RLock()
+
+
+def _synchronized(method):
+    @functools.wraps(method)
+    def wrapper(*args, **kwargs):
+        with _DISK_LOCK:
+            return method(*args, **kwargs)
+    return wrapper
 
 
 class DiskDatabase(DatabaseInterface):
@@ -46,6 +63,7 @@ class DiskDatabase(DatabaseInterface):
         """Save all runs to disk."""
         write_jsonl(self.runs_path, runs.values())
 
+    @_synchronized
     def upsert_quiz(
         self,
         quiz_def: dict,
@@ -69,6 +87,7 @@ class DiskDatabase(DatabaseInterface):
         }
         self._save_quizzes(quizzes)
 
+    @_synchronized
     def insert_run(
         self,
         run_id: str,
@@ -91,6 +110,7 @@ class DiskDatabase(DatabaseInterface):
         }
         self._save_runs(runs)
 
+    @_synchronized
     def update_run_status(self, run_id: str, status: str) -> None:
         """Update the status of a run."""
         runs = self._load_runs()
@@ -98,6 +118,7 @@ class DiskDatabase(DatabaseInterface):
             runs[run_id]["status"] = status
             self._save_runs(runs)
 
+    @_synchronized
     def mark_stale_runs_failed(
         self,
         statuses: Iterable[str] = ("queued", "running", "reporting"),
@@ -121,6 +142,7 @@ class DiskDatabase(DatabaseInterface):
         
         return run_ids
 
+    @_synchronized
     def insert_results(
         self,
         run_id: str,
@@ -145,6 +167,7 @@ class DiskDatabase(DatabaseInterface):
             }
             append_jsonl(self.results_path, doc)
 
+    @_synchronized
     def insert_asset(self, run_id: str, asset_type: str, path: Path) -> None:
         """Insert an asset record."""
         created_at = datetime.now(timezone.utc).isoformat()
@@ -179,6 +202,7 @@ class DiskDatabase(DatabaseInterface):
         # Sort by created_at descending
         return sorted(assets, key=lambda x: x.get("created_at", ""), reverse=True)
 
+    @_synchronized
     def delete_assets_for_run(self, run_id: str) -> None:
         """Delete all assets for a run."""
         records = read_jsonl(self.assets_path)
@@ -231,6 +255,7 @@ class DiskDatabase(DatabaseInterface):
             "raw_payload": raw_payload,
         }
 
+    @_synchronized
     def delete_quiz(self, quiz_id: str) -> list[str]:
         """Delete a quiz and return IDs of deleted runs."""
         # Find all runs for this quiz
@@ -261,6 +286,7 @@ class DiskDatabase(DatabaseInterface):
         
         return run_ids
 
+    @_synchronized
     def insert_audit(
         self,
         *,
@@ -317,6 +343,7 @@ class DiskDatabase(DatabaseInterface):
                 return r["ip"]
         return None
 
+    @_synchronized
     def replace_run_outcomes(
         self,
         run_id: str,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,13 +37,17 @@ def _extract_actual_error(exception: Exception) -> str:
 
 
 def _get_model_params(adapter) -> dict:
-    """Get model-specific parameters from the adapter's configuration."""
-    # Use the model's configured defaultParams from models.yaml
-    if hasattr(adapter, 'default_params'):
-        return adapter.default_params.copy()
-    else:
-        # Fallback to basic temperature if no specific config available
-        return {"temperature": 0.2}
+    """Get model parameters, with safe defaults so no request is unbounded.
+
+    Many benchmarked models aren't listed in models.yaml, so their configured
+    params are empty. Without a token cap a reasoning model will "think" at
+    length about a simple 1-5 Likert item and can take minutes per question, so
+    we always bound the response length and temperature.
+    """
+    params = dict(getattr(adapter, "default_params", None) or {})
+    params.setdefault("temperature", 0.2)
+    params.setdefault("max_tokens", 512)
+    return params
 
 
 def _append_log(path: Path, message: str) -> None:
@@ -53,6 +58,20 @@ def _append_log(path: Path, message: str) -> None:
     with path.open("a", encoding="utf-8") as handle:
         handle.write(f"{line}\n")
     print(line)
+
+
+def _touch_liveness(path: Path) -> None:
+    """Bump the run log's mtime without writing a line.
+
+    The stale-run watchdog treats the log's last-modified time as a liveness
+    signal. Successful questions emit no log line, so a model slowly working
+    through many questions would otherwise look "stuck" and be failed by
+    mistake — especially when several runs are launched at once.
+    """
+    try:
+        os.utime(path, None)
+    except OSError:
+        pass
 
 
 async def run_quiz(
@@ -82,87 +101,90 @@ async def run_quiz(
     )
     _append_log(log_path, f"Run {run_id} started for quiz {quiz['id']}.")
     
-    for adapter in adapters:
-        try:
-            _append_log(log_path, f"Testing model: {adapter.id}")
-            model_records: list[dict] = []
-            
-            for idx, q in enumerate(questions, start=1):
-                try:
-                    ctx = PromptContext(
-                        quiz_title=quiz["title"],
-                        q_num=idx,
-                        q_total=len(questions),
-                        question_text=q["text"],
-                        options=[opt["text"] for opt in q["options"]],
-                    )
-                    prompt = render_prompt(ctx)
-                    messages = [{"role": "user", "content": prompt}]
-                    
-                    # Build parameters based on model capabilities
-                    params = _get_model_params(adapter)
-                    
-                    start = time.perf_counter()
-                    resp = await asyncio.wait_for(
-                        adapter.send(messages, params=params), timeout=120
-                    )
-                    latency_ms = int((time.perf_counter() - start) * 1000)
-                    raw_text = resp.get("text") if isinstance(resp, dict) else None
-                    data = parse_choice_json(raw_text)
-                    if not data:
-                        # No parseable choice JSON. This is typically a refusal —
-                        # e.g. the model declines an inappropriate question — so we
-                        # keep whatever it actually said as the explanation.
-                        refusal_text = (raw_text or "").strip()
-                        data = {
-                            "choice": "",
-                            "reason": refusal_text or "The model returned no answer.",
-                            "additional_thoughts": "",
-                            "refused": True,
-                        }
-                    rec = QAResult(
-                        question_id=q["id"],
-                        choice=data.get("choice", ""),
-                        reason=data.get("reason", ""),
-                        additional_thoughts=data.get("additional_thoughts", ""),
-                        refused=data.get("refused", False),
-                        latency_ms=latency_ms,
-                        tokens_in=resp.get("tokens_in"),
-                        tokens_out=resp.get("tokens_out"),
-                    )
-                    model_records.append(rec.__dict__)
-                    
-                except Exception as e:
-                    # Extract the actual error from RetryError or other wrappers
-                    actual_error = _extract_actual_error(e)
-                    _append_log(
-                        log_path,
-                        f"Question {idx} failed for {adapter.id}: {actual_error[:150]}",
-                    )
-                    # Record a failed attempt for this question
-                    rec = QAResult(
-                        question_id=q["id"],
-                        choice="",
-                        reason=f"Error: {actual_error[:150]}",
-                        additional_thoughts="",
-                        refused=True,
-                        latency_ms=0,
-                        tokens_in=0,
-                        tokens_out=0,
-                    )
-                    model_records.append(rec.__dict__)
-                    continue
-            
-            # If we got here, the adapter worked (even if some questions failed)
-            _append_log(log_path, f"Model {adapter.id} completed successfully")
+    # Models run concurrently — each still answers its own questions in order
+    # (one in-flight request per model), which keeps us gentle on rate limits
+    # while cutting wall-clock time roughly by the number of models. The
+    # semaphore caps how many run at once for larger custom selections.
+    sem = asyncio.Semaphore(6)
+
+    async def run_one_model(adapter):
+        async with sem:
+            try:
+                _append_log(log_path, f"Testing model: {adapter.id}")
+                model_records: list[dict] = []
+                for idx, q in enumerate(questions, start=1):
+                    try:
+                        ctx = PromptContext(
+                            quiz_title=quiz["title"],
+                            q_num=idx,
+                            q_total=len(questions),
+                            question_text=q["text"],
+                            options=[opt["text"] for opt in q["options"]],
+                        )
+                        prompt = render_prompt(ctx)
+                        messages = [{"role": "user", "content": prompt}]
+                        params = _get_model_params(adapter)
+                        start = time.perf_counter()
+                        resp = await asyncio.wait_for(
+                            adapter.send(messages, params=params), timeout=60
+                        )
+                        latency_ms = int((time.perf_counter() - start) * 1000)
+                        raw_text = resp.get("text") if isinstance(resp, dict) else None
+                        data = parse_choice_json(raw_text)
+                        if not data:
+                            # No parseable choice JSON — typically a refusal, so
+                            # keep whatever the model actually said as the reason.
+                            refusal_text = (raw_text or "").strip()
+                            data = {
+                                "choice": "",
+                                "reason": refusal_text or "The model returned no answer.",
+                                "additional_thoughts": "",
+                                "refused": True,
+                            }
+                        model_records.append(QAResult(
+                            question_id=q["id"],
+                            choice=data.get("choice", ""),
+                            reason=data.get("reason", ""),
+                            additional_thoughts=data.get("additional_thoughts", ""),
+                            refused=data.get("refused", False),
+                            latency_ms=latency_ms,
+                            tokens_in=resp.get("tokens_in"),
+                            tokens_out=resp.get("tokens_out"),
+                        ).__dict__)
+                    except Exception as e:
+                        actual_error = _extract_actual_error(e)
+                        _append_log(
+                            log_path,
+                            f"Question {idx} failed for {adapter.id}: {actual_error[:150]}",
+                        )
+                        model_records.append(QAResult(
+                            question_id=q["id"],
+                            choice="",
+                            reason=f"Error: {actual_error[:150]}",
+                            additional_thoughts="",
+                            refused=True,
+                            latency_ms=0,
+                            tokens_in=0,
+                            tokens_out=0,
+                        ).__dict__)
+                    finally:
+                        # Keep the run's liveness fresh so the stale-run watchdog
+                        # (which reads log mtime) never fails an active run.
+                        _touch_liveness(log_path)
+                db.insert_results(run_id, quiz["id"], adapter.id, model_records)
+                _append_log(log_path, f"Model {adapter.id} completed successfully")
+                return (adapter, None)
+            except Exception as e:
+                actual_error = _extract_actual_error(e)
+                _append_log(log_path, f"Model {adapter.id} failed completely: {actual_error}")
+                return (adapter, actual_error)
+
+    results = await asyncio.gather(*(run_one_model(a) for a in adapters))
+    for adapter, error in results:
+        if error is None:
             successful_adapters.append(adapter)
-            
-        except Exception as e:
-            actual_error = _extract_actual_error(e)
-            _append_log(log_path, f"Model {adapter.id} failed completely: {actual_error}")
-            failed_adapters.append((adapter.id, actual_error))
-            continue
-        db.insert_results(run_id, quiz["id"], adapter.id, model_records)
+        else:
+            failed_adapters.append((adapter.id, error))
 
     # Print summary of model results
     _append_log(log_path, "=" * 60)

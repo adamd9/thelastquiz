@@ -29,7 +29,8 @@ function toast(msg) {
 }
 
 async function api(path, opts = {}) {
-  const res = await fetch(path, {
+  const base = window.API_BASE || "";
+  const res = await fetch((path.startsWith("/") ? base + path : path), {
     ...opts,
     headers: headers(opts.body ? { "Content-Type": "application/json", ...(opts.headers || {}) } : opts.headers),
   });
@@ -232,6 +233,15 @@ function init() {
     loadRuns();
   });
   document.getElementById("refresh-runs").addEventListener("click", loadRuns);
+
+  const toggleModels = document.getElementById("toggle-models");
+  const modelsEl = document.getElementById("models");
+  if (toggleModels && modelsEl) {
+    toggleModels.addEventListener("click", () => {
+      const collapsed = modelsEl.classList.toggle("collapsed");
+      toggleModels.textContent = collapsed ? "Show individual models" : "Hide individual models";
+    });
+  }
 
   loadModels();
   loadBenchmarks();
