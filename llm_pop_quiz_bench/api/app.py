@@ -30,11 +30,11 @@ from ..core.db_factory import connect
 
 app = FastAPI()
 
-# CORS — the SPA is served from Cloudflare Pages (app./rankings.<domain>) while
-# the API runs on Azure (thelastquiz.drop37.com), so browser calls are
-# cross-origin. Allow the public subdomains + Pages previews + localhost out of
-# the box; LLM_POP_QUIZ_ALLOWED_ORIGINS (comma-separated) can add more without a
-# code change.
+# CORS — the SPA is served from Cloudflare Pages (thelastquiz.net apex +
+# app.<domain>) while the API runs on Azure (thelastquiz.drop37.com), so
+# browser calls are cross-origin. Allow the public hosts + Pages previews +
+# localhost out of the box; LLM_POP_QUIZ_ALLOWED_ORIGINS (comma-separated) can
+# add more without a code change.
 _cors_origins = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
@@ -48,7 +48,7 @@ _cors_origins += [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"^https://(app|rankings)\.(the)?lastquiz\.net$|^https://[a-z0-9-]+\.pages\.dev$",
+    allow_origin_regex=r"^https://((app|rankings)\.)?(the)?lastquiz\.net$|^https://[a-z0-9-]+\.pages\.dev$",
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=False,
