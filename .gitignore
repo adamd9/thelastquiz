@@ -7,3 +7,9 @@ venv/
 .playwright-cli/
 .DS_Store
 dist/
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+!.env.example
