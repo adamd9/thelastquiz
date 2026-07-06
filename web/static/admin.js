@@ -206,7 +206,8 @@ async function loadBenchmarks() {
 
 async function runBenchmark(benchmarkId, btn) {
   const reps = parseInt(document.getElementById("reps").value, 10) || 1;
-  const body = { reps };
+  const force = Boolean(document.getElementById("force")?.checked);
+  const body = { reps, force };
   // selectedModels is kept in sync with both the checkboxes and the group
   // dropdown, so it is the single source of truth for what to run.
   const modelIds = [...selectedModels];
@@ -223,7 +224,13 @@ async function runBenchmark(benchmarkId, btn) {
       method: "POST",
       body: JSON.stringify(body),
     });
-    toast(`Started ${res.run_ids.length} run(s) for ${res.models.length} model(s).`);
+    const skipped = (res.skipped || []).length;
+    if (!res.run_ids.length) {
+      toast(res.message || "Nothing to run — all selected models already have a result.");
+    } else {
+      const skipNote = skipped ? ` · skipped ${skipped} already done` : "";
+      toast(`Started ${res.run_ids.length} run(s) for ${res.models.length} model(s)${skipNote}.`);
+    }
     setTimeout(loadRuns, 800);
     setTimeout(loadBenchmarks, 1500);
   } catch (e) {
@@ -264,13 +271,15 @@ function renderRunRow(tbody, r) {
     ? settings.models_completed
     : modelStatus.filter((m) => m.status === "completed").length;
   const failed = modelStatus.filter((m) => m.status === "failed");
+  const skipped = Array.isArray(settings.skipped_models) ? settings.skipped_models : [];
   const inProgress = ["queued", "running", "reporting"].includes(r.status);
 
   let resultsCell;
   if (modelStatus.length) {
     const okClass = completed === total ? "s-completed" : "s-warn";
     const failMarkup = failed.length ? ` · <span class="s-failed">${failed.length} failed</span>` : "";
-    resultsCell = `<span class="${okClass}">${completed}/${total} ok</span>${failMarkup}`;
+    const skipMarkup = skipped.length ? ` · <span class="muted">${skipped.length} skipped</span>` : "";
+    resultsCell = `<span class="${okClass}">${completed}/${total} ok</span>${failMarkup}${skipMarkup}`;
   } else if (inProgress) {
     resultsCell = `<span class="muted">—</span>`;
   } else {
@@ -278,7 +287,7 @@ function renderRunRow(tbody, r) {
   }
 
   const created = r.created_at ? new Date(r.created_at).toLocaleString() : "";
-  const hasDetail = failed.length > 0;
+  const hasDetail = failed.length > 0 || skipped.length > 0;
   const tr = document.createElement("tr");
   tr.className = "run-row" + (hasDetail ? " expandable" : "");
   tr.innerHTML =
@@ -292,16 +301,28 @@ function renderRunRow(tbody, r) {
   if (!hasDetail) return;
   const detailTr = document.createElement("tr");
   detailTr.hidden = true;
-  const rows = failed
+  const failRows = failed
     .map(
       (m) =>
         `<div class="fail-row"><span class="fail-model">${escapeHtml(m.model)}</span> — ` +
         `<span class="fail-error">${escapeHtml(m.error || "unknown error")}</span></div>`
     )
     .join("");
+  const skipRows = skipped
+    .map((m) => {
+      const when = m.last_completed ? new Date(m.last_completed).toLocaleString() : "earlier";
+      return `<div class="fail-row"><span class="fail-model">${escapeHtml(m.model)}</span> — ` +
+        `<span class="muted">already completed ${escapeHtml(when)} (skipped to save credits)</span></div>`;
+    })
+    .join("");
+  const failBlock = failed.length
+    ? `<div class="fail-title">Models that did not complete (${failed.length})</div>${failRows}`
+    : "";
+  const skipBlock = skipped.length
+    ? `<div class="fail-title" style="margin-top:8px;">Skipped — already have a result (${skipped.length})</div>${skipRows}`
+    : "";
   detailTr.innerHTML =
-    `<td colspan="5"><div class="fail-detail">` +
-    `<div class="fail-title">Models that did not complete (${failed.length})</div>${rows}</div></td>`;
+    `<td colspan="5"><div class="fail-detail">${failBlock}${skipBlock}</div></td>`;
   tbody.appendChild(detailTr);
 
   const caret = tr.querySelector(".caret");

@@ -82,6 +82,12 @@
               <label for="reps">Repeats</label>
               <select id="reps"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
             </div>
+            <div>
+              <label for="force">Rerun</label>
+              <label style="display:flex;gap:6px;align-items:center;color:var(--ink);font-size:13px;white-space:nowrap;padding:9px 0;">
+                <input type="checkbox" id="force" style="min-width:auto;" /> Force (re-run models that already have a result)
+              </label>
+            </div>
           </div>
         </div>
         <button class="btn secondary" id="toggle-models" type="button" style="margin-top:10px;">Show individual models</button>
@@ -108,6 +114,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=10"></script>
+    <script type="module" src="/static/admin.js?v=11"></script>
   </body>
 </html>

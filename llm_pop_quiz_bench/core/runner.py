@@ -37,6 +37,29 @@ def _extract_actual_error(exception: Exception) -> str:
     return str(exception)
 
 
+def _summarize_failure_reasons(records: list[dict]) -> str:
+    """Condense the per-question failure reasons for an incomplete model into a
+    short, human-readable cause (e.g. an out-of-credit 402), so the admin console
+    can show *why* a model produced 0/N instead of just the count."""
+    from collections import Counter
+
+    reasons = [
+        (r.get("reason") or "").strip()
+        for r in records
+        if r.get("refused") or r.get("choice") in (None, "")
+    ]
+    reasons = [r for r in reasons if r]
+    if not reasons:
+        return ""
+    counts = Counter(reasons)
+    top, _ = counts.most_common(1)[0]
+    top = top[:180]
+    extra = len(counts) - 1
+    if extra > 0:
+        return f"{top} (+{extra} other reason{'s' if extra > 1 else ''})"
+    return top
+
+
 def _get_model_params(adapter) -> dict:
     """Get model parameters, with safe defaults so no request is unbounded.
 
@@ -203,13 +226,18 @@ async def run_quiz(
                 total = len(questions)
                 if answered < total:
                     missing = total - answered
+                    cause = _summarize_failure_reasons(model_records)
+                    detail = f" — {cause}" if cause else ""
                     _append_log(
                         log_path,
                         f"Model {adapter.id} produced an incomplete result: "
                         f"answered {answered}/{total} ({missing} missing). "
-                        "Marking as failed.",
+                        f"Marking as failed.{(' Cause: ' + cause) if cause else ''}",
                     )
-                    return (adapter, f"Incomplete result: answered {answered}/{total} questions")
+                    return (
+                        adapter,
+                        f"Incomplete result: answered {answered}/{total} questions{detail}",
+                    )
                 _append_log(log_path, f"Model {adapter.id} completed successfully")
                 return (adapter, None)
             except Exception as e:

@@ -171,6 +171,30 @@ def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
     return summary
 
 
+def models_with_completed_result(db, quiz_id: str) -> dict[str, str]:
+    """Map ``model_id -> ISO timestamp`` of the most recent run in which the
+    model produced a COMPLETE result (answered every question) for this quiz.
+
+    Used to skip re-running models that already have a usable result, so a
+    subsequent run doesn't burn credits redoing work that succeeded. Reads the
+    per-model status the runner persists on each run's settings, so no
+    re-scoring or external call is needed.
+    """
+    completed: dict[str, str] = {}
+    for run in db.fetch_runs():
+        if run.get("quiz_id") != quiz_id or run.get("status") != "completed":
+            continue
+        created = run.get("created_at") or ""
+        status_list = (run.get("settings") or {}).get("model_status") or []
+        for entry in status_list:
+            if entry.get("status") != "completed":
+                continue
+            model_id = entry.get("model")
+            if model_id and created > completed.get(model_id, ""):
+                completed[model_id] = created
+    return completed
+
+
 def benchmark_coverage(db) -> list[dict[str, Any]]:
     """Admin view: each benchmark plus which models have results and run counts."""
     coverage = []

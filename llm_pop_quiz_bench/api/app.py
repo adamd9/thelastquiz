@@ -80,10 +80,27 @@ def _cors_headers(request: Request) -> dict[str, str]:
 
 
 @app.middleware("http")
-async def add_no_cache_headers(request: Request, call_next):
-    """Prevent stale cached assets during active development/iteration."""
+async def add_cache_headers(request: Request, call_next):
+    """Caching policy — lean on Cloudflare's CDN for anything static/immutable,
+    and only defeat caching where the payload is genuinely dynamic.
+
+    - Dynamic API JSON (``/api/*`` except ``/api/assets``): ``no-store`` so live
+      data (runs, rankings, models, health) is never served stale from a cache.
+    - Everything else (the ``/static`` bundle, the HTML shells, and the
+      ``/api/assets`` run-report images): ``no-cache`` — caches *may* store it but
+      must revalidate against origin, so a re-run report or a new deploy is
+      picked up immediately while unchanged bytes come back as a cheap 304.
+
+    In production the public HTML/JS/CSS is actually served by Cloudflare Pages
+    (see scripts/build-pages.sh), which purges its edge on every deploy; the
+    ``?v=`` query on the non-content-hashed scripts is the deliberate belt-and-
+    braces cache-bust for those. This backend policy governs the API host."""
     response = await call_next(request)
-    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    path = request.url.path
+    if path.startswith("/api/") and not path.startswith("/api/assets/"):
+        response.headers["Cache-Control"] = "no-store"
+    else:
+        response.headers["Cache-Control"] = "no-cache"
     return response
 
 
@@ -410,6 +427,7 @@ class BenchmarkRunRequest(BaseModel):
     models: list[str] | None = None
     group: str | None = None
     reps: int = 1
+    force: bool = False
 
 
 @app.get("/api/rankings")
@@ -497,6 +515,33 @@ def admin_run_benchmark(
     quiz_path = runtime_paths.quizzes_dir / f"{benchmark_id}.json"
     quiz_path.write_text(quiz_json, encoding="utf-8")
 
+    # Skip models that already have a complete result for this benchmark so a
+    # rerun only fills the gaps instead of re-billing every model. The rankings
+    # aggregate the latest good run per model, so a skipped model still shows.
+    # ``force`` overrides this to deliberately re-run everything.
+    db = connect(runtime_paths.db_path)
+    already_done = benchmarks.models_with_completed_result(db, benchmark_id)
+    db.close()
+    requested_ids = list(model_ids)
+    skipped_models: list[dict] = []
+    if not req.force:
+        skipped_models = [
+            {"model": m, "last_completed": already_done[m]}
+            for m in requested_ids
+            if m in already_done
+        ]
+        model_ids = [m for m in requested_ids if m not in already_done]
+
+    if not model_ids:
+        return {
+            "benchmark_id": benchmark_id,
+            "models": [],
+            "reps": 0,
+            "run_ids": [],
+            "skipped": skipped_models,
+            "message": "All selected models already have a result — nothing to run. Use Force rerun to run them again.",
+        }
+
     reps = max(1, min(int(req.reps or 1), 5))
     run_ids: list[str] = []
     for rep in range(reps):
@@ -510,7 +555,12 @@ def admin_run_benchmark(
             quiz_id=benchmark_id,
             status="queued",
             models=[adapter.id for adapter in adapters],
-            settings={"benchmark": True, "benchmark_id": benchmark_id, "rep": rep},
+            settings={
+                "benchmark": True,
+                "benchmark_id": benchmark_id,
+                "rep": rep,
+                "skipped_models": skipped_models,
+            },
         )
         db.insert_audit(
             event="benchmark_run_created",
@@ -527,7 +577,13 @@ def admin_run_benchmark(
         )
         run_ids.append(run_id)
 
-    return {"benchmark_id": benchmark_id, "models": model_ids, "reps": reps, "run_ids": run_ids}
+    return {
+        "benchmark_id": benchmark_id,
+        "models": model_ids,
+        "reps": reps,
+        "run_ids": run_ids,
+        "skipped": skipped_models,
+    }
 
 
 @app.get("/rankings")

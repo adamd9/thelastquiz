@@ -82,7 +82,6 @@ export function buildModelGroups(models) {
     "The lineup benchmarked by Humanity's Last Exam — the field's hardest capability test.",
     pickByNeedles([
       "gpt-4o",
-      "o1",
       "o3-mini",
       "o3",
       "gpt-5-mini",
