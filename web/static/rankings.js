@@ -311,28 +311,6 @@ function explanationCard(b) {
   return c;
 }
 
-/* Cross-benchmark answer-stability radar (reliability, not a trait). */
-function stabilityCard(data, colorFor) {
-  const stab = data.stability;
-  if (!stab || !stab.models || !stab.models.length) return null;
-  const shortAxes = stab.axes.map((t) => t.split(" (")[0].trim());
-  const series = stab.models.map((m) => ({
-    name: m.model_id,
-    color: colorFor(m.model_id),
-    values: m.values.map((v) => (v == null ? 0 : v)),
-    result: (() => {
-      const vals = m.values.filter((v) => v != null);
-      return vals.length ? `avg ${Math.round(vals.reduce((a, b) => a + b, 0) / vals.length)}` : "\u2014";
-    })(),
-    title: `${m.model_id} \u2014 ` + stab.axes
-      .map((a, i) => `${a.split(" (")[0].trim()}: ${m.values[i] == null ? "\u2014" : Math.round(m.values[i])}`)
-      .join(" \u00b7 "),
-  }));
-  const sc = card("Answer stability", "consistency across repeats (0 = single run)", [drawRadar(shortAxes, series), buildChartLegend(series)]);
-  wireHighlight(sc);
-  return sc;
-}
-
 /* ------------------------- Dark Triad (home) view ------------------------- */
 const SD3_ID = "sd3_short_dark_triad";
 const SD3_TRAITS = [
@@ -511,8 +489,6 @@ function renderDarkTriad(content, data, colorFor) {
   content.appendChild(h2b);
   content.appendChild(darkTriadTimeline(sd3, human, colorFor));
   content.appendChild(explanationCard(sd3));
-  const sc = stabilityCard(data, colorFor);
-  if (sc) content.appendChild(sc);
 }
 
 function renderSecondary(content, data, colorFor, benchId) {

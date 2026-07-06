@@ -42,7 +42,6 @@ def test_aggregate_midpoint_run_scores_fifty(tmp_path):
     assert set(profile) == {"O", "C", "E", "A", "N"}
     assert all(value == 50.0 for value in profile.values())
     assert agg["models"]["modelX"]["runs"] == 1
-    assert agg["models"]["modelX"]["stability"] is None  # single run
     conn.close()
 
 
@@ -61,11 +60,11 @@ def test_aggregate_uses_latest_run_not_average(tmp_path):
     conn.close()
 
 
-def test_build_rankings_reports_all_benchmarks_and_stability(tmp_path):
+def test_build_rankings_reports_all_benchmarks(tmp_path):
     conn = connect(tmp_path / "db.sqlite3")
     sd3 = benchmarks.get_benchmark("sd3_short_dark_triad")
     _seed_run(conn, sd3, "m", "C", "r1")
-    _seed_run(conn, sd3, "m", "D", "r2")  # differing answers -> variance across runs
+    _seed_run(conn, sd3, "m", "D", "r2")
 
     data = benchmarks.build_rankings(conn)
     ids = {b["id"] for b in data["benchmarks"]}
@@ -74,8 +73,6 @@ def test_build_rankings_reports_all_benchmarks_and_stability(tmp_path):
     sd3_view = next(b for b in data["benchmarks"] if b["id"] == "sd3_short_dark_triad")
     entry = next(r for r in sd3_view["models"] if r["model_id"] == "m")
     assert entry["runs"] == 2
-    assert entry["stability"] is not None  # two runs -> stability is computed
-    assert data["stability"]["axes"]  # cross-benchmark stability view present
     conn.close()
 
 

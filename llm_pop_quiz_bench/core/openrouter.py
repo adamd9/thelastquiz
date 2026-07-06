@@ -78,13 +78,16 @@ def _load_release_dates(api_key: str | None = None) -> dict[str, str]:
             if not mid or not created:
                 continue
             try:
-                out[mid] = datetime.fromtimestamp(int(created), tz=timezone.utc).strftime("%Y-%m-%d")
+                ts = datetime.fromtimestamp(int(created), tz=timezone.utc)
+                out[mid] = ts.strftime("%Y-%m-%d")
             except (ValueError, OSError, OverflowError):
                 continue
     return out
 
 
-def fetch_release_dates(model_ids: list[str] | None = None, *, force: bool = False) -> dict[str, str]:
+def fetch_release_dates(
+    model_ids: list[str] | None = None, *, force: bool = False
+) -> dict[str, str]:
     """Model release dates (ISO ``YYYY-MM-DD``) from the OpenRouter index, cached.
 
     Best-effort: returns ``{}`` (or a partial map) if OpenRouter is unreachable,
