@@ -231,23 +231,83 @@ async function loadRuns() {
     const data = await api("/api/admin/benchmarks/runs");
     const runs = data.runs || [];
     if (!runs.length) {
-      tbody.innerHTML = '<tr><td colspan="4" class="muted">No benchmark runs yet.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="5" class="muted">No benchmark runs yet.</td></tr>';
       return;
     }
     tbody.innerHTML = "";
     for (const r of runs.slice(0, 25)) {
-      const tr = document.createElement("tr");
-      const created = r.created_at ? new Date(r.created_at).toLocaleString() : "";
-      tr.innerHTML =
-        `<td>${r.quiz_title || r.quiz_id}</td>` +
-        `<td class="s-${r.status}">${r.status}</td>` +
-        `<td class="muted">${(r.models || []).length}</td>` +
-        `<td class="muted">${created}</td>`;
-      tbody.appendChild(tr);
+      renderRunRow(tbody, r);
     }
   } catch (e) {
-    tbody.innerHTML = `<tr><td colspan="4" class="muted">Could not load runs: ${e.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="muted">Could not load runs: ${escapeHtml(e.message)}</td></tr>`;
   }
+}
+
+// Render one run row plus, when a run had model failures, a hidden detail row
+// that lists each failed model and the reason it dropped out (persisted on the
+// run's settings.model_status by the runner).
+function renderRunRow(tbody, r) {
+  const settings = r.settings || {};
+  const modelStatus = Array.isArray(settings.model_status) ? settings.model_status : [];
+  const attempted = (r.models || []).length;
+  const total = settings.models_total != null ? settings.models_total : attempted;
+  const completed = settings.models_completed != null
+    ? settings.models_completed
+    : modelStatus.filter((m) => m.status === "completed").length;
+  const failed = modelStatus.filter((m) => m.status === "failed");
+  const inProgress = ["queued", "running", "reporting"].includes(r.status);
+
+  let resultsCell;
+  if (modelStatus.length) {
+    const okClass = completed === total ? "s-completed" : "s-warn";
+    const failMarkup = failed.length ? ` · <span class="s-failed">${failed.length} failed</span>` : "";
+    resultsCell = `<span class="${okClass}">${completed}/${total} ok</span>${failMarkup}`;
+  } else if (inProgress) {
+    resultsCell = `<span class="muted">—</span>`;
+  } else {
+    resultsCell = `<span class="muted">${completed}/${total}</span>`;
+  }
+
+  const created = r.created_at ? new Date(r.created_at).toLocaleString() : "";
+  const hasDetail = failed.length > 0;
+  const tr = document.createElement("tr");
+  tr.className = "run-row" + (hasDetail ? " expandable" : "");
+  tr.innerHTML =
+    `<td>${hasDetail ? '<span class="caret">▸</span>' : '<span class="caret"></span>'}${escapeHtml(r.quiz_title || r.quiz_id)}</td>` +
+    `<td class="s-${r.status}">${escapeHtml(r.status)}</td>` +
+    `<td class="muted">${attempted}</td>` +
+    `<td>${resultsCell}</td>` +
+    `<td class="muted">${escapeHtml(created)}</td>`;
+  tbody.appendChild(tr);
+
+  if (!hasDetail) return;
+  const detailTr = document.createElement("tr");
+  detailTr.hidden = true;
+  const rows = failed
+    .map(
+      (m) =>
+        `<div class="fail-row"><span class="fail-model">${escapeHtml(m.model)}</span> — ` +
+        `<span class="fail-error">${escapeHtml(m.error || "unknown error")}</span></div>`
+    )
+    .join("");
+  detailTr.innerHTML =
+    `<td colspan="5"><div class="fail-detail">` +
+    `<div class="fail-title">Models that did not complete (${failed.length})</div>${rows}</div></td>`;
+  tbody.appendChild(detailTr);
+
+  const caret = tr.querySelector(".caret");
+  tr.addEventListener("click", () => {
+    detailTr.hidden = !detailTr.hidden;
+    if (caret) caret.textContent = detailTr.hidden ? "▸" : "▾";
+  });
+}
+
+function escapeHtml(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
 }
 
 function init() {

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 import secrets
 import shutil
 import time
+import traceback
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -47,14 +49,34 @@ _cors_origins += [
     for o in os.environ.get("LLM_POP_QUIZ_ALLOWED_ORIGINS", "").split(",")
     if o.strip()
 ]
+_cors_origin_regex = re.compile(
+    r"^https://((app|rankings)\.)?(the)?lastquiz\.net$|^https://[a-z0-9-]+\.pages\.dev$"
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_origin_regex=r"^https://((app|rankings)\.)?(the)?lastquiz\.net$|^https://[a-z0-9-]+\.pages\.dev$",
+    allow_origin_regex=_cors_origin_regex.pattern,
     allow_methods=["*"],
     allow_headers=["*"],
     allow_credentials=False,
 )
+
+
+def _allowed_cors_origin(origin: str | None) -> str | None:
+    """Return the origin if it passes the same allowlist/regex as the CORS
+    middleware, else None. Used to attach CORS headers to error responses that
+    are generated outside the middleware (e.g. unhandled 500s), which would
+    otherwise surface in the browser as a misleading "CORS policy" error."""
+    if not origin:
+        return None
+    if origin in _cors_origins or _cors_origin_regex.fullmatch(origin):
+        return origin
+    return None
+
+
+def _cors_headers(request: Request) -> dict[str, str]:
+    allowed = _allowed_cors_origin(request.headers.get("origin"))
+    return {"Access-Control-Allow-Origin": allowed, "Vary": "Origin"} if allowed else {}
 
 
 @app.middleware("http")
@@ -77,6 +99,28 @@ async def handle_request_validation_error(
         f"validation_error method={request.method} path={request.url.path} detail={detail} body={exc.body}",
     )
     return JSONResponse(status_code=422, content={"detail": detail})
+
+
+@app.exception_handler(Exception)
+async def handle_unexpected_error(request: Request, exc: Exception) -> JSONResponse:
+    """Convert any unhandled exception into a JSON 500 that still carries CORS
+    headers. Starlette's ServerErrorMiddleware sits outside the CORS middleware,
+    so without this the browser reports a bogus "No Access-Control-Allow-Origin"
+    error instead of the real failure. Also logs the traceback for debugging."""
+    try:
+        runtime_paths = get_runtime_paths()
+        _append_server_log(
+            runtime_paths.logs_dir / "server.log",
+            f"unhandled_error method={request.method} path={request.url.path} "
+            f"error={exc!r}\n{traceback.format_exc()}",
+        )
+    except Exception:
+        pass
+    return JSONResponse(
+        status_code=500,
+        content={"detail": f"Internal server error: {exc}"},
+        headers=_cors_headers(request),
+    )
 WEB_ROOT = Path(__file__).resolve().parents[2] / "web"
 STATIC_ROOT = WEB_ROOT / "static"
 
@@ -905,14 +949,14 @@ def create_run(
 @app.get("/api/runs")
 def list_runs() -> dict:
     runtime_paths = get_runtime_paths()
-    # Official benchmark runs belong to the rankings pipeline (admin console),
-    # not the main app's run history. Exclude them from the public list.
-    bench_ids = benchmarks.benchmark_ids()
-    runs = [r for r in runs if r.get("quiz_id") not in bench_ids]
     _reap_stale_runs(runtime_paths)
     db = connect(runtime_paths.db_path)
     runs = db.fetch_runs()
     db.close()
+    # Official benchmark runs belong to the rankings pipeline (admin console),
+    # not the main app's run history. Exclude them from the public list.
+    bench_ids = benchmarks.benchmark_ids()
+    runs = [r for r in runs if r.get("quiz_id") not in bench_ids]
     return {"runs": runs}
 
 

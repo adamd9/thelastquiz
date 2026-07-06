@@ -102,11 +102,18 @@ async def run_quiz(
         released = fetch_release_dates(model_ids)
     except Exception:
         released = {}
+    # Merge into any settings the caller already stored on the run (e.g. the
+    # API records ``public``/``benchmark_id``/``rep`` at queue time). Re-inserting
+    # with only ``model_released`` here would clobber those and, for example,
+    # drop the ``public`` flag that keeps app runs out of the official rankings.
+    existing_run = db.fetch_run(run_id)
+    run_settings = dict((existing_run or {}).get("settings") or {})
+    run_settings["model_released"] = released
     db.insert_run(run_id=run_id,
         quiz_id=quiz["id"],
         status="running",
         models=model_ids,
-        settings={"model_released": released},
+        settings=run_settings,
     )
     _append_log(log_path, f"Run {run_id} started for quiz {quiz['id']}.")
     
@@ -240,6 +247,25 @@ async def run_quiz(
     
     _append_log(log_path, "=" * 60)
     _append_log(log_path, "Run complete. Waiting on reports if enabled.")
+
+    # Persist a per-model status summary onto the run so the admin console can
+    # show which models produced results and *why* the rest did not, without
+    # anyone having to open the raw log file.
+    model_status = [
+        {"model": adapter.id, "status": "completed", "error": None}
+        for adapter in successful_adapters
+    ]
+    model_status += [
+        {"model": model_id, "status": "failed", "error": error}
+        for model_id, error in failed_adapters
+    ]
+    run_record = db.fetch_run(run_id)
+    settings = dict((run_record or {}).get("settings") or {})
+    settings["model_status"] = model_status
+    settings["models_total"] = len(adapters)
+    settings["models_completed"] = len(successful_adapters)
+    settings["models_failed"] = len(failed_adapters)
+    db.update_run_settings(run_id, settings)
 
     db.update_run_status(run_id, "completed")
     db.close()
