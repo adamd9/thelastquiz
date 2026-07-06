@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import json
+import httpx
 from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
@@ -246,6 +247,35 @@ def _reap_stale_runs(runtime_paths, inactivity_seconds: int = 600) -> None:
         return
 
 
+def _trigger_rankings_publish(runtime_root: Path) -> None:
+    """Re-publish the public rankings snapshot after a run's data changes.
+
+    The public rankings site is a static Cloudflare Pages bundle that bakes
+    ``rankings.json`` at build time so it serves entirely from the CDN with no
+    per-visit API call. The cost of that is that fresh run data only appears
+    once the bundle is rebuilt. Rather than requiring a manual code deploy, we
+    ping a Cloudflare Pages *deploy hook* — a data-only rebuild that just
+    re-snapshots ``/api/rankings`` — whenever a run finishes. Set the hook URL
+    via ``RANKINGS_DEPLOY_HOOK_URL``; unset means the feature is off (e.g. local
+    dev, where the page already falls back to the live API).
+
+    Fire-and-forget: any failure here must never fail the run itself, and we log
+    only the hook host (never the full URL, which carries a secret token).
+    """
+    hook_url = os.environ.get("RANKINGS_DEPLOY_HOOK_URL", "").strip()
+    if not hook_url:
+        return
+    log_path = build_runtime_paths(runtime_root).logs_dir / "deploy.log"
+    try:
+        response = httpx.post(hook_url, timeout=10.0)
+        _append_server_log(
+            log_path,
+            f"rankings_publish status={response.status_code} host={httpx.URL(hook_url).host}",
+        )
+    except Exception as error:  # noqa: BLE001 - best-effort; must not break a run
+        _append_server_log(log_path, f"rankings_publish failed error={error}")
+
+
 def _run_and_report(
     quiz_path: Path,
     adapters: list,
@@ -270,6 +300,7 @@ def _run_and_report(
         db.update_run_status(run_id, "completed")
         db.close()
     _record_run_cost(run_id, runtime_root)
+    _trigger_rankings_publish(runtime_root)
 
 
 def _report_only(run_id: str, runtime_root: Path) -> None:

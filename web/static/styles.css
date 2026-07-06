@@ -71,6 +71,15 @@ body {
   object-fit: contain;
 }
 
+.model-title .provider-logo,
+.selection-name .provider-logo {
+  margin-right: 6px;
+}
+
+#models label .provider-logo {
+  margin: 0 6px 0 4px;
+}
+
 .app-title {
   font-weight: 600;
   letter-spacing: 0.01em;

@@ -1,4 +1,5 @@
 import { buildModelGroups } from "/static/utils.js";
+import { providerLogoImg } from "/static/model-logo.js";
 
 /* The Last Quiz — benchmark admin console (ES module, same pattern as app.js).
  * Talks to /api/admin/benchmarks* (auth-ready: sends X-Admin-Token if set) and
@@ -90,6 +91,8 @@ async function loadModels() {
     const span = document.createElement("span");
     span.textContent = m.name || id;
     label.appendChild(cb);
+    const logo = providerLogoImg(id, 15);
+    if (logo) label.appendChild(logo);
     label.appendChild(span);
     container.appendChild(label);
   }

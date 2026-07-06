@@ -63,11 +63,12 @@
     .hero h1 em { font-style: italic; color: var(--danger); }
     .hero .dek { color: var(--muted); font-size: 1.14rem; max-width: 56ch; margin: 16px 0 0; }
     .hero .dek b { color: var(--ink); }
-    .hero-top { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 36px; align-items: center; }
-    .hero-copy .cta-row { margin-top: 22px; }
-    .hero-art { border-radius: 20px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--border); }
-    .hero-art img { display: block; width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 3; }
-    @media (max-width: 820px) { .hero-top { grid-template-columns: 1fr; } }
+    .hero .cta-row { margin-top: 22px; }
+
+    /* full-width hero banner — the brand "Last Supper" art */
+    .banner { display: block; width: 100%; margin-top: 6px; border-radius: 20px; overflow: hidden;
+      box-shadow: var(--shadow); border: 1px solid var(--border); }
+    .banner img { display: block; width: 100%; height: auto; }
 
     .scale-card {
       background: var(--panel); border: 1px solid var(--border); border-radius: 22px;
@@ -149,25 +150,6 @@
     .make p { color: var(--muted); margin: 12px 0 0; max-width: 60ch; }
     .make .cta-row { margin-top: 20px; }
 
-    /* live ticker of recent user submissions — replaces the static preview */
-    .ticker { margin-top: 26px; border-top: 1px solid rgba(27,26,23,0.10); padding-top: 16px; }
-    .ticker-head { display: flex; align-items: center; gap: 8px; font-size: 0.72rem; font-weight: 700;
-      letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; }
-    .ticker-head .live { display: inline-flex; align-items: center; gap: 6px; color: var(--danger); }
-    .ticker-head .live .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: pulse 1.6s infinite; }
-    @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(158,42,43,0.45); } 70% { box-shadow: 0 0 0 8px rgba(158,42,43,0); } 100% { box-shadow: 0 0 0 0 rgba(158,42,43,0); } }
-    .ticker-mask { overflow: hidden;
-      -webkit-mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent);
-      mask-image: linear-gradient(90deg, transparent, #000 5%, #000 95%, transparent); }
-    .ticker-track { display: flex; gap: 12px; width: max-content; animation: ticker 36s linear infinite; }
-    .ticker:hover .ticker-track { animation-play-state: paused; }
-    @keyframes ticker { from { transform: translateX(0); } to { transform: translateX(-50%); } }
-    .tk { display: flex; align-items: center; gap: 9px; background: #fff; border: 1px solid var(--border);
-      border-radius: 999px; padding: 8px 15px; box-shadow: var(--shadow-sm); white-space: nowrap; }
-    .tk .e { font-size: 17px; line-height: 1; }
-    .tk .t { font-weight: 600; font-size: 0.9rem; }
-    .tk .meta { color: var(--muted); font-size: 0.76rem; }
-
     /* ---------------------------- Community grid --------------------------- */
     .mag-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
     .qcard { position: relative; background: var(--panel); border: 1px solid var(--border); border-radius: 18px;
@@ -225,6 +207,7 @@
         <span>The Last Quiz<small>Personality tests for machines</small></span>
       </a>
       <nav class="mast-nav">
+        <a href="/">Home</a>
         <a href="/rankings#dark-triad">Dark Triad</a>
         <a href="/rankings#big-five">Big Five</a>
         <a href="/rankings#type">Jungian Type</a>
@@ -233,25 +216,23 @@
       </nav>
     </header>
 
+    <!-- ============================== Banner ============================== -->
+    <div class="banner">
+      <img src="/static/logo.png" alt="The Last Quiz — a Last Supper of AI models" />
+    </div>
+
     <!-- =============================== Hero =============================== -->
     <section class="hero">
-      <div class="hero-top">
-        <div class="hero-copy">
-          <span class="kicker">The headline ranking</span>
-          <h1>Does your favourite AI have a <em>dark side?</em></h1>
-          <p class="dek">
-            We put the world's leading models through the same personality tests psychologists give people —
-            starting with the one that measures <b>manipulation, ego and cold-heartedness</b>. Here's exactly
-            where they land between saint and villain.
-          </p>
-          <div class="cta-row">
-            <a class="btn primary" href="/rankings#dark-triad">See the full Dark Triad rankings →</a>
-            <a class="btn ghost" href="/rankings#about">How we test the models</a>
-          </div>
-        </div>
-        <div class="hero-art">
-          <img src="/static/logo.png" alt="The Last Quiz — a Last Supper of AI models" />
-        </div>
+      <span class="kicker">The headline ranking</span>
+      <h1>Does your favourite AI have a <em>dark side?</em></h1>
+      <p class="dek">
+        We put the world's leading models through the same personality tests psychologists give people —
+        starting with the one that measures <b>manipulation, ego and cold-heartedness</b>. Here's exactly
+        where they land between saint and villain.
+      </p>
+      <div class="cta-row">
+        <a class="btn primary" href="/rankings#dark-triad">See the full Dark Triad rankings →</a>
+        <a class="btn ghost" href="/rankings#about">How we test the models</a>
       </div>
 
       <div class="scale-card">
@@ -294,29 +275,6 @@
       <div class="cta-row">
         <a class="btn primary" href="/">Create a quiz →</a>
         <a class="btn ghost" href="#community">See what people made</a>
-      </div>
-
-      <div class="ticker">
-        <div class="ticker-head"><span class="live"><span class="dot"></span>Live</span> · just submitted by the community</div>
-        <div class="ticker-mask">
-          <div class="ticker-track">
-            <span class="tk"><span class="e">🧙</span><span class="t">Which Hogwarts house is each AI?</span><span class="meta">@maya · just now</span></span>
-            <span class="tk"><span class="e">😤</span><span class="t">How petty is your chatbot?</span><span class="meta">@dev_sam · 2m ago</span></span>
-            <span class="tk"><span class="e">💌</span><span class="t">Love languages of the LLMs</span><span class="meta">@priya · 5m ago</span></span>
-            <span class="tk"><span class="e">🧟</span><span class="t">Would your AI survive a zombie apocalypse?</span><span class="meta">@theo · 8m ago</span></span>
-            <span class="tk"><span class="e">☕</span><span class="t">Morning person or gremlin?</span><span class="meta">@lena · 12m ago</span></span>
-            <span class="tk"><span class="e">🎬</span><span class="t">Which sitcom character is your model?</span><span class="meta">@raj · 15m ago</span></span>
-            <span class="tk"><span class="e">🔥</span><span class="t">The hot-takes stress test</span><span class="meta">@nyx · 18m ago</span></span>
-            <!-- duplicate set for a seamless loop -->
-            <span class="tk"><span class="e">🧙</span><span class="t">Which Hogwarts house is each AI?</span><span class="meta">@maya · just now</span></span>
-            <span class="tk"><span class="e">😤</span><span class="t">How petty is your chatbot?</span><span class="meta">@dev_sam · 2m ago</span></span>
-            <span class="tk"><span class="e">💌</span><span class="t">Love languages of the LLMs</span><span class="meta">@priya · 5m ago</span></span>
-            <span class="tk"><span class="e">🧟</span><span class="t">Would your AI survive a zombie apocalypse?</span><span class="meta">@theo · 8m ago</span></span>
-            <span class="tk"><span class="e">☕</span><span class="t">Morning person or gremlin?</span><span class="meta">@lena · 12m ago</span></span>
-            <span class="tk"><span class="e">🎬</span><span class="t">Which sitcom character is your model?</span><span class="meta">@raj · 15m ago</span></span>
-            <span class="tk"><span class="e">🔥</span><span class="t">The hot-takes stress test</span><span class="meta">@nyx · 18m ago</span></span>
-          </div>
-        </div>
       </div>
     </section>
 

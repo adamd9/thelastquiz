@@ -1,6 +1,7 @@
 import { fetchJSON } from "../api.js";
 import { state, loadModelSelection, notifyModelSelectionChanged, setCurrentStep } from "../state.js";
 import { buildModelGroups, escapeHtml, getQuizTypeLabel } from "../utils.js";
+import { providerLogoHtml } from "../model-logo.js";
 
 // Normal users can compare up to this many models per run (keeps runs fast and
 // affordable). The admin benchmark console has no such cap.
@@ -227,7 +228,7 @@ class ModelPicker extends HTMLElement {
             ${selected ? "checked" : ""}
           />
           <div class="model-meta">
-            <strong class="model-title">${model.name || model.id}</strong>
+            <strong class="model-title">${providerLogoHtml(model.id, 16)}${model.name || model.id}</strong>
             <div class="model-id">${model.id}</div>
             <div class="model-desc">${model.description || "No description"}</div>
             <span class="tag">${priceLabel}</span>
@@ -288,7 +289,7 @@ class ModelPicker extends HTMLElement {
             const showId = model?.name && model.name !== id;
             return `
               <li class="selection-item">
-                <div class="selection-name">${label}</div>
+                <div class="selection-name">${providerLogoHtml(id, 15)}${label}</div>
                 ${showId ? `<div class="selection-id">${id}</div>` : ""}
               </li>
             `;
