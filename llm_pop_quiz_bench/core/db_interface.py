@@ -42,6 +42,11 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
+    def update_run_settings(self, run_id: str, settings: dict) -> None:
+        """Replace the settings blob of a run."""
+        pass
+
+    @abstractmethod
     def mark_stale_runs_failed(
         self,
         statuses: Iterable[str] = ("queued", "running", "reporting"),

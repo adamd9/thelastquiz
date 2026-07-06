@@ -200,6 +200,15 @@ def update_run_status(conn: sqlite3.Connection, run_id: str, status: str) -> Non
     conn.commit()
 
 
+def update_run_settings(conn: sqlite3.Connection, run_id: str, settings: dict) -> None:
+    updated_at = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        "UPDATE runs SET settings=?, updated_at=? WHERE run_id=?",
+        (json.dumps(settings or {}, ensure_ascii=False), updated_at, run_id),
+    )
+    conn.commit()
+
+
 def mark_stale_runs_failed(
     conn: sqlite3.Connection,
     statuses: Iterable[str] = ("queued", "running", "reporting"),

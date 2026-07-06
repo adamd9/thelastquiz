@@ -113,6 +113,13 @@ class MongoDatabase(DatabaseInterface):
             {"$set": {"status": status}},
         )
 
+    def update_run_settings(self, run_id: str, settings: dict) -> None:
+        """Replace the settings blob of a run."""
+        self.runs.update_one(
+            {"run_id": run_id},
+            {"$set": {"settings": settings or {}}},
+        )
+
     def mark_stale_runs_failed(
         self,
         statuses: Iterable[str] = ("queued", "running", "reporting"),

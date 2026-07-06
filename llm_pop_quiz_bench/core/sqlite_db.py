@@ -43,6 +43,10 @@ class SQLiteDatabase(DatabaseInterface):
         """Update the status of a run."""
         sqlite_store.update_run_status(self.conn, run_id, status)
 
+    def update_run_settings(self, run_id: str, settings: dict) -> None:
+        """Replace the settings blob of a run."""
+        sqlite_store.update_run_settings(self.conn, run_id, settings)
+
     def mark_stale_runs_failed(
         self,
         statuses: Iterable[str] = ("queued", "running", "reporting"),

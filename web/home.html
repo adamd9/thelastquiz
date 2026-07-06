@@ -228,6 +228,27 @@
         <a class="btn primary" href="/rankings#dark-triad">See the full Dark Triad rankings →</a>
         <a class="btn ghost" href="/rankings#about">How we test the models</a>
       </div>
+
+      <div class="scale-card" id="home-scale" hidden>
+        <div class="cap-top">
+          <span class="lbl">The Darkness Scale — Dark Triad Index</span>
+          <span class="hint">Lower = more restrained · the dashed line is the average human</span>
+        </div>
+        <div class="ld" id="home-ld"></div>
+      </div>
+    </section>
+
+    <!-- ===================== Live Dark Triad ranking ===================== -->
+    <section class="block" id="ranking" hidden>
+      <div class="sec-head">
+        <div>
+          <span class="kicker">The headline ranking</span>
+          <h2>Who's the most restrained — and who's the villain?</h2>
+          <p class="lede">One combined “dark core” score — the mean of all three traits. The typical adult lands around 38; lower is more restrained.</p>
+        </div>
+        <a class="more" href="/rankings#dark-triad">Full breakdown by trait →</a>
+      </div>
+      <div class="rank-card" id="home-rank"></div>
     </section>
 
     <!-- ===================== Create your own (second hero) ===================== -->
@@ -355,5 +376,89 @@
       computed deterministically. For curiosity and research — <a href="/rankings#about">not a clinical assessment</a> of anything, or anyone.
     </footer>
   </div>
+
+  <script>
+  /* Homepage rankings: pull the live snapshot the rankings page uses and render
+   * the Darkness Scale + Dark Triad Index leaderboard from real data. Same-origin
+   * on the apex; falls back to the API. Sections stay hidden if data is missing,
+   * so the front door never shows fabricated results. */
+  (function () {
+    var HUMAN = { MACH: 46, NARC: 38, PSYCH: 29 };
+    var HUMAN_IDX = Math.round((HUMAN.MACH + HUMAN.NARC + HUMAN.PSYCH) / 3);
+    var pos = function (v) { return Math.max(2, Math.min(98, v)); };
+    var barW = function (v) { return Math.max(0, Math.min(100, v)); };
+    var shortName = function (id) { return String(id).split("/").pop() || id; };
+    var idxOf = function (p) { return (((p && p.MACH) || 0) + ((p && p.NARC) || 0) + ((p && p.PSYCH) || 0)) / 3; };
+
+    function load() {
+      return fetch("/rankings.json").then(function (r) {
+        if (r.ok && (r.headers.get("content-type") || "").indexOf("json") !== -1) return r.json();
+        throw new Error("no snapshot");
+      }).catch(function () {
+        return fetch((window.API_BASE || "") + "/api/rankings").then(function (r) { return r.json(); });
+      });
+    }
+
+    function renderScale(models) {
+      var markers = models.map(function (m, i) {
+        return '<div class="ld-dot" style="left:' + pos(m.v) + '%" title="' + m.name + ': ' + Math.round(m.v) + '/100">' +
+          '<span class="ld-pin"></span><span class="ld-lab r' + (i % 3) + '">' + m.name + '</span></div>';
+      }).join("");
+      var above = models.filter(function (m) { return m.v > HUMAN_IDX; });
+      var darkest = models[models.length - 1];
+      var caption = above.length
+        ? 'The good news: every model sits closer to \uD83D\uDE07 than \uD83D\uDE08. The less-good news: ' +
+          (above.length === 1 ? 'one model creeps' : above.length + ' of them creep') +
+          ' past the average human \u2014 <b>' + darkest.name + '</b> leads the descent.'
+        : 'Halos all round: every model came out <b>more restrained than the average human</b>. For now.';
+      document.getElementById("home-ld").innerHTML =
+        '<div class="ld-row">' +
+        '<div class="ld-face">\uD83D\uDE07<b>saint</b></div>' +
+        '<div class="ld-track"><div class="ld-human" style="left:' + pos(HUMAN_IDX) + '%"><span>avg human</span></div>' + markers + '</div>' +
+        '<div class="ld-face">\uD83D\uDE08<b>villain</b></div>' +
+        '</div><p class="ld-cap">' + caption + '</p>';
+      document.getElementById("home-scale").hidden = false;
+    }
+
+    function renderLeaderboard(models) {
+      var out = [], inserted = false;
+      for (var i = 0; i < models.length; i++) {
+        if (!inserted && models[i].v > HUMAN_IDX) { out.push({ human: true, v: HUMAN_IDX }); inserted = true; }
+        out.push(models[i]);
+      }
+      if (!inserted) out.push({ human: true, v: HUMAN_IDX });
+      var rank = 0;
+      var html = out.map(function (e) {
+        var w = barW(e.v);
+        if (e.human) {
+          return '<div class="rank-row human"><div class="rk">\uD83E\uDDD1</div><div>' +
+            '<div class="who"><span class="nm">Typical adult (human)</span><span class="sc">' + Math.round(e.v) + ' / 100</span></div>' +
+            '<div class="rank-track"><div class="zone" style="left:' + HUMAN_IDX + '%"></div><div class="bar humbar" style="width:' + w + '%"></div></div>' +
+            '</div></div>';
+        }
+        rank++;
+        var ab = e.v > HUMAN_IDX;
+        return '<div class="rank-row' + (ab ? ' above' : '') + '"><div class="rk">' + rank + '</div><div>' +
+          '<div class="who"><span class="nm">' + e.name + '</span><span class="sc">' + Math.round(e.v) + ' / 100' + (ab ? ' \u00b7 darker' : '') + '</span></div>' +
+          '<div class="rank-track"><div class="zone" style="left:' + HUMAN_IDX + '%"></div><div class="bar' + (ab ? ' dark' : '') + '" style="width:' + w + '%"></div></div>' +
+          '</div></div>';
+      }).join("");
+      document.getElementById("home-rank").innerHTML = html;
+      document.getElementById("ranking").hidden = false;
+    }
+
+    load().then(function (data) {
+      var benches = (data && data.benchmarks) || [];
+      var sd3 = null;
+      for (var i = 0; i < benches.length; i++) { if (benches[i].id === "sd3_short_dark_triad") { sd3 = benches[i]; break; } }
+      if (!sd3 || !sd3.models || !sd3.models.length) return;
+      var models = sd3.models.map(function (m) {
+        return { name: shortName(m.model_id), v: idxOf(m.profile) };
+      }).sort(function (a, b) { return a.v - b.v; });
+      renderScale(models);
+      renderLeaderboard(models);
+    }).catch(function () { /* leave sections hidden on failure */ });
+  })();
+  </script>
 </body>
 </html>

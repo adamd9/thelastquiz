@@ -119,6 +119,14 @@ class DiskDatabase(DatabaseInterface):
             self._save_runs(runs)
 
     @_synchronized
+    def update_run_settings(self, run_id: str, settings: dict) -> None:
+        """Replace the settings blob of a run."""
+        runs = self._load_runs()
+        if run_id in runs:
+            runs[run_id]["settings"] = settings or {}
+            self._save_runs(runs)
+
+    @_synchronized
     def mark_stale_runs_failed(
         self,
         statuses: Iterable[str] = ("queued", "running", "reporting"),
