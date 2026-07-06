@@ -20,6 +20,7 @@ export async function fetchJSON(url, options) {
 export async function refreshRuns() {
   const data = await fetchJSON("/api/runs");
   state.runs = data.runs;
+  state.runsLoaded = true;
   document.dispatchEvent(new CustomEvent("runs:updated"));
 }
 

@@ -36,13 +36,18 @@ class RunList extends HTMLElement {
   connectedCallback() {
     this._sig = null;
     this.render();
-    refreshRuns();
+    refreshRuns().catch((err) => {
+      state.runError = `Couldn't load runs: ${err.message}`;
+      state.runsLoaded = true;
+      this.render();
+    });
     document.addEventListener("runs:updated", () => this.render());
     document.addEventListener("run:selected", () => this.render());
   }
 
   computeSignature() {
     return JSON.stringify({
+      loaded: state.runsLoaded,
       selected: state.selectedRun,
       error: state.runError || "",
       runs: state.runs.map((run) => [run.run_id, run.status, runDisplayTitle(run)]),
@@ -69,6 +74,12 @@ class RunList extends HTMLElement {
       `;
       })
       .join("");
+    let listBody;
+    if (!state.runsLoaded && !state.runError) {
+      listBody = `<div class="runs-loading"><span class="spinner-lg" aria-hidden="true"></span><span>Loading runs…</span></div>`;
+    } else {
+      listBody = items || "<div class='status'>No runs yet — tap “New quiz” to start.</div>";
+    }
     this.innerHTML = `
       <div class="panel">
         <div class="panel-header">
@@ -82,7 +93,7 @@ class RunList extends HTMLElement {
           </div>
         </div>
         ${state.runError ? `<div class="status">${escapeHtml(state.runError)}</div>` : ""}
-        <div class="list scroll">${items || "<div class='status'>No runs yet — tap “New quiz” to start.</div>"}</div>
+        <div class="list scroll">${listBody}</div>
       </div>
     `;
     this.querySelector("button[data-new-run]")?.addEventListener("click", () => {

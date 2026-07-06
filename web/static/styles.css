@@ -1665,6 +1665,17 @@ pre {
   margin-right: 6px;
 }
 
+/* Run list loading state */
+.runs-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 12px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
 /* Add-a-quiz step */
 .or-divider {
   display: flex;

@@ -15,6 +15,7 @@ export const state = {
   selectedModels: new Set(),
   selectedGroup: "",
   runs: [],
+  runsLoaded: false,
   selectedRun: null,
   selectedRunData: null,
   selectedRunQuizMeta: null,
