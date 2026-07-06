@@ -758,8 +758,7 @@ async function main() {
     nav.innerHTML =
       '<a href="/" data-dest="home">Home</a>' +
       VIEWS.map((v) => `<a href="#${v.id}" data-view="${v.id}">${v.label}</a>`).join("") +
-      '<a href="/" data-dest="app">Make your own</a>' +
-      '<a href="/admin" data-dest="admin">Admin</a>';
+      '<a href="/" data-dest="app">Make your own</a>';
     if (window.__destUrl) {
       nav.querySelectorAll("a[data-dest]").forEach((a) =>
         a.setAttribute("href", window.__destUrl(a.getAttribute("data-dest"))));

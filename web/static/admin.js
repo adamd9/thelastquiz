@@ -49,10 +49,14 @@ async function api(path, opts = {}) {
 async function unlock() {
   const content = document.getElementById("admin-content");
   const gate = document.getElementById("gate-msg");
+  const tokenPanel = document.getElementById("token-panel");
+  const changeToken = document.getElementById("change-token");
   try {
     await api("/api/admin/benchmarks");
   } catch (e) {
     content.hidden = true;
+    if (tokenPanel) tokenPanel.hidden = false;
+    if (changeToken) changeToken.hidden = true;
     gate.hidden = false;
     gate.textContent = getToken()
       ? "That token was rejected. Check it and try again."
@@ -60,6 +64,11 @@ async function unlock() {
     return false;
   }
   gate.hidden = true;
+  // Once unlocked, tuck the token entry away — the token is persisted in
+  // localStorage, so there's no need to show it again. A "Change token" link
+  // in the header re-reveals it if the token ever needs updating.
+  if (tokenPanel) tokenPanel.hidden = true;
+  if (changeToken) changeToken.hidden = false;
   content.hidden = false;
   loadModels();
   loadBenchmarks();
@@ -321,6 +330,18 @@ function init() {
     if (e.key === "Enter") document.getElementById("save-token").click();
   });
   document.getElementById("refresh-runs").addEventListener("click", loadRuns);
+
+  const changeToken = document.getElementById("change-token");
+  if (changeToken) {
+    changeToken.addEventListener("click", (e) => {
+      e.preventDefault();
+      const tokenPanel = document.getElementById("token-panel");
+      if (tokenPanel) tokenPanel.hidden = false;
+      changeToken.hidden = true;
+      tokenInput.value = getToken();
+      tokenInput.focus();
+    });
+  }
 
   const toggleModels = document.getElementById("toggle-models");
   const modelsEl = document.getElementById("models");
