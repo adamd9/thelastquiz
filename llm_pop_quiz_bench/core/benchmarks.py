@@ -41,6 +41,44 @@ def benchmark_ids() -> set[str]:
     return {load_benchmark_file(p).get("id") for p in list_benchmark_files()}
 
 
+def is_official_run(run: dict[str, Any]) -> bool:
+    """Whether a run was produced by the trusted benchmark pipeline.
+
+    Only official runs feed the public rankings. Runs created through the main
+    app's open ``POST /api/runs`` path are never official, so a visitor cannot
+    inject or overwrite ranking data by running a benchmark quiz themselves.
+    """
+    return bool((run.get("settings") or {}).get("benchmark"))
+
+
+def backfill_official_runs(db) -> int:
+    """One-time migration: tag legacy benchmark-quiz runs as official.
+
+    Runs that populated the rankings before the ``benchmark`` provenance flag
+    existed carry no marker, so the provenance-gated aggregation would drop
+    them. Mark any run whose ``quiz_id`` is a committed benchmark as official so
+    existing rankings survive. Idempotent — already-tagged runs are skipped.
+    """
+    ids = benchmark_ids()
+    updated = 0
+    for run in db.fetch_runs():
+        quiz_id = run.get("quiz_id")
+        if quiz_id not in ids:
+            continue
+        settings = run.get("settings") or {}
+        if settings.get("benchmark"):
+            continue
+        new_settings = {
+            **settings,
+            "benchmark": True,
+            "benchmark_id": quiz_id,
+            "backfilled": True,
+        }
+        db.update_run_settings(run["run_id"], new_settings)
+        updated += 1
+    return updated
+
+
 def _benchmark_summary(bench: dict[str, Any]) -> dict[str, Any]:
     dims = get_dimensions(bench)
     return {
@@ -97,7 +135,9 @@ def _completed_runs(db, benchmark_id: str) -> list[dict[str, Any]]:
     return [
         run
         for run in db.fetch_runs()
-        if run.get("quiz_id") == benchmark_id and run.get("status") == "completed"
+        if run.get("quiz_id") == benchmark_id
+        and run.get("status") == "completed"
+        and is_official_run(run)
     ]
 
 

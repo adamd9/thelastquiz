@@ -120,6 +120,11 @@ def cleanup_stale_runs() -> None:
     runtime_paths = get_runtime_paths()
     db = connect(runtime_paths.db_path)
     run_ids = db.mark_stale_runs_failed()
+    try:
+        benchmarks.backfill_official_runs(db)
+    except Exception:
+        # Backfill is best-effort provenance tagging; never block startup.
+        pass
     db.close()
     if run_ids:
         for run_id in run_ids:
@@ -559,6 +564,10 @@ def list_quizzes() -> dict:
     db = connect(runtime_paths.db_path)
     quizzes = db.fetch_quizzes()
     db.close()
+    # Benchmark quizzes are managed only through the admin console; keep them out
+    # of the public quiz library so they can't be selected, reprocessed, or run.
+    bench_ids = benchmarks.benchmark_ids()
+    quizzes = [q for q in quizzes if q.get("quiz_id") not in bench_ids]
     return {"quizzes": quizzes}
 
 
@@ -587,6 +596,10 @@ def get_quiz(quiz_id: str) -> dict:
 @app.delete("/api/quizzes/{quiz_id}")
 def remove_quiz(quiz_id: str) -> dict:
     runtime_paths = get_runtime_paths()
+    # Deleting a benchmark quiz would cascade-delete its official runs and wipe
+    # the public rankings, so benchmarks are never deletable via the API.
+    if quiz_id in benchmarks.benchmark_ids():
+        raise HTTPException(status_code=403, detail="Benchmark quizzes are protected and cannot be deleted.")
     db = connect(runtime_paths.db_path)
     try:
         record = db.fetch_quiz_record(quiz_id)
@@ -677,6 +690,10 @@ async def parse_quiz(
 
 @app.post("/api/quizzes/{quiz_id}/reprocess")
 async def reprocess_quiz(
+    # Reprocessing overwrites the stored quiz definition via LLM reconversion;
+    # never allow that against a committed benchmark's golden master.
+    if quiz_id in benchmarks.benchmark_ids():
+        raise HTTPException(status_code=403, detail="Benchmark quizzes are protected and cannot be reprocessed.")
     quiz_id: str,
     model: str | None = Form(None),
 ) -> dict:
@@ -751,6 +768,16 @@ def create_run(
     runtime_paths = get_runtime_paths()
     use_mocks = os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() == "mock"
     client_ip = _client_ip(request)
+
+    # Benchmark quizzes are the source of the public rankings. They may only be
+    # run through the admin benchmark pipeline (which tags runs as official);
+    # allowing the open run path to target them would let a visitor inject or
+    # overwrite ranking data.
+    if req.quiz_id in benchmarks.benchmark_ids():
+        raise HTTPException(
+            status_code=403,
+            detail="This quiz is a protected benchmark and cannot be run from the app.",
+        )
 
     db = connect(runtime_paths.db_path)
     try:
@@ -842,6 +869,10 @@ def create_run(
 @app.get("/api/runs")
 def list_runs() -> dict:
     runtime_paths = get_runtime_paths()
+    # Official benchmark runs belong to the rankings pipeline (admin console),
+    # not the main app's run history. Exclude them from the public list.
+    bench_ids = benchmarks.benchmark_ids()
+    runs = [r for r in runs if r.get("quiz_id") not in bench_ids]
     _reap_stale_runs(runtime_paths)
     db = connect(runtime_paths.db_path)
     runs = db.fetch_runs()
@@ -870,7 +901,12 @@ def get_run(run_id: str) -> dict:
     return {"run": run, "assets": assets}
 
 
-@app.post("/api/runs/{run_id}/report")
+@app# Benchmark runs feed the rankings and are managed by the admin pipeline;
+    # don't let the open report endpoint churn their assets.
+    if run.get("quiz_id") in benchmarks.benchmark_ids():
+        db.close()
+        raise HTTPException(status_code=403, detail="Benchmark runs are protected.")
+    .post("/api/runs/{run_id}/report")
 def rerun_report(run_id: str, background_tasks: BackgroundTasks) -> dict:
     runtime_paths = get_runtime_paths()
     db = connect(runtime_paths.db_path)
