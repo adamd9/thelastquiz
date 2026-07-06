@@ -8,6 +8,7 @@
  * the admin uses — to let visitors filter a large field down to a curated
  * subset instead of rendering every benchmarked model at once. */
 import { buildModelGroups } from "./model-groups.js";
+import { providerLogoImg, providerLogoHtml, providerLogoUrl } from "./model-logo.js";
 
 // On-brand palette that reads well on the app's cream panels.
 const PALETTE = [
@@ -173,6 +174,8 @@ function buildChartLegend(series) {
     nm.className = "nm";
     nm.textContent = s.name;
     li.appendChild(sw);
+    const legendLogo = providerLogoImg(s.name, 15);
+    if (legendLogo) li.appendChild(legendLogo);
     li.appendChild(nm);
     if (s.result) {
       const res = document.createElement("span");
@@ -353,7 +356,7 @@ function darkTriadLeaderboard(sd3, human) {
     const humanVal = human[t.id] ?? 0;
     lane.innerHTML = `<h3>${t.name}</h3><p class="sub">${t.blurb} \u00b7 human avg ${Math.round(humanVal)}</p>`;
     const entries = [
-      ...sd3.models.map((m) => ({ name: shortName(m.model_id), v: m.profile[t.id] ?? 0 })),
+      ...sd3.models.map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: m.profile[t.id] ?? 0 })),
       { name: "Typical adult (human)", v: humanVal, human: true },
     ].sort((a, b) => a.v - b.v);
     const rankedModels = entries.filter((e) => !e.human);
@@ -368,7 +371,7 @@ function darkTriadLeaderboard(sd3, human) {
       const icon = e.human ? "\uD83E\uDDD1" : e.saint ? "\uD83D\uDE07" : e.devil ? "\uD83D\uDE08" : String(rank);
       row.innerHTML =
         `<div class="rank">${icon}</div>` +
-        `<div><div class="who"><span class="mname">${e.name}</span>` +
+        `<div><div class="who"><span class="mname">${providerLogoHtml(e.id, 16)}${e.name}</span>` +
         `<span class="val">${Math.round(e.v)}${above ? ' <span class="up">darker</span>' : ""}</span></div>` +
         `<div class="dt-track"><div class="zone" style="left:${humanVal}%"></div>` +
         `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:" + darkColor(e.v)}"></div>` +
@@ -455,8 +458,11 @@ function darkTriadTimeline(sd3, human, colorFor) {
       const rightEdge = cx > W - 130;
       const g = mk("g");
       const badge = m.model_id === saintId ? "\uD83D\uDE07" : m.model_id === devilId ? "\uD83D\uDE08" : null;
+      const tlLogo = providerLogoUrl(m.model_id);
       if (badge) {
         g.appendChild(mk("text", { x: cx, y: cy, "font-size": 17, "text-anchor": "middle", "dominant-baseline": "central" }, badge));
+      } else if (tlLogo) {
+        g.appendChild(mk("image", { href: tlLogo, x: cx - 8, y: cy - 8, width: 16, height: 16 }));
       } else {
         g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
       }
@@ -477,7 +483,7 @@ function darkIndexLeaderboard(sd3, human) {
   const idxOf = (profile) => SD3_TRAITS.reduce((s, t) => s + (profile[t.id] ?? 0), 0) / SD3_TRAITS.length;
   const humanIdx = idxOf(human);
   const entries = [
-    ...sd3.models.map((m) => ({ name: shortName(m.model_id), v: idxOf(m.profile) })),
+    ...sd3.models.map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) })),
     { name: "Typical adult (human)", v: humanIdx, human: true },
   ].sort((a, b) => a.v - b.v);
   const rankedModels = entries.filter((e) => !e.human);
@@ -492,7 +498,7 @@ function darkIndexLeaderboard(sd3, human) {
     const icon = e.human ? "\uD83E\uDDD1" : e.saint ? "\uD83D\uDE07" : e.devil ? "\uD83D\uDE08" : String(rank);
     row.innerHTML =
       `<div class="rank">${icon}</div>` +
-      `<div><div class="who"><span class="mname">${label}</span>` +
+      `<div><div class="who"><span class="mname">${providerLogoHtml(e.id, 16)}${e.name}</span>` +
       `<span class="val">${Math.round(e.v)}${above ? ' <span class="up">darker</span>' : ""}</span></div>` +
       `<div class="dt-track"><div class="zone" style="left:${humanIdx}%"></div>` +
       `<div class="bar${e.human ? " humbar" : ""}" style="width:${w}%;${e.human ? "" : "background:" + darkColor(e.v)}"></div>` +
@@ -508,12 +514,12 @@ function lightDarkScale(sd3, human) {
   const idxOf = (p) => SD3_TRAITS.reduce((s, t) => s + (p[t.id] ?? 0), 0) / SD3_TRAITS.length;
   const humanIdx = idxOf(human);
   const models = sd3.models
-    .map((m) => ({ name: shortName(m.model_id), v: idxOf(m.profile) }))
+    .map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) }))
     .sort((a, b) => a.v - b.v);
   const clamp = (v) => Math.max(2, Math.min(98, v));
   const markers = models
     .map((m, i) => `<div class="ld-dot" style="left:${clamp(m.v)}%" title="${m.name}: ${Math.round(m.v)}/100 dark index">` +
-      `<span class="ld-pin"></span><span class="ld-lab r${i % 3}">${m.name}</span></div>`)
+      `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${m.name}</span></div>`)
     .join("");
   const caption =
     "Further left is more restrained than the average person; further right, more villainous. " +
