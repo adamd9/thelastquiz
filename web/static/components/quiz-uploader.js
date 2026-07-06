@@ -14,7 +14,7 @@ class QuizUploader extends HTMLElement {
     const text = textarea ? textarea.value.trim() : "";
 
     if (!text && (!fileInput || fileInput.files.length === 0)) {
-      this.setStatus("Paste some quiz text or choose a photo first.", "warn");
+      this.setStatus("Paste some quiz text or choose one or more photos first.", "warn");
       return;
     }
 
@@ -24,7 +24,9 @@ class QuizUploader extends HTMLElement {
     try {
       const body = new FormData();
       if (fileInput.files.length > 0) {
-        body.append("file", fileInput.files[0]);
+        for (const file of fileInput.files) {
+          body.append("files", file);
+        }
       } else {
         body.append("text", text);
       }
@@ -113,19 +115,28 @@ class QuizUploader extends HTMLElement {
           </div>
           <span class="badge">Step 1</span>
         </div>
+        <div class="upload-guidance">
+          <strong>Include everything the quiz needs:</strong>
+          <ul>
+            <li><strong>All the questions</strong> and their answer options.</li>
+            <li>The <strong>scoring methodology</strong> — how answers add up to a result (e.g. "mostly A", point totals, or a scoring key).</li>
+          </ul>
+          <span class="status">Missing the scoring section? Add it too — otherwise we can only guess how results are decided.</span>
+        </div>
         <div>
           <label>Paste the quiz text</label>
-          <textarea placeholder="e.g. Which houseplant are you? 1) On a Saturday you… A) …"></textarea>
+          <textarea placeholder="e.g. Which houseplant are you? 1) On a Saturday you… A) …&#10;&#10;Scoring: Mostly A → …, Mostly B → …"></textarea>
         </div>
         <div class="or-divider"><span>or</span></div>
         <div>
-          <label>Upload a photo or screenshot</label>
-          <input type="file" accept="image/*" capture="environment" />
+          <label>Upload photos or screenshots</label>
+          <input type="file" accept="image/*" capture="environment" multiple />
+          <div class="status">You can add several images at once — e.g. one for the questions and one for the scoring key.</div>
         </div>
         <div class="actions">
           <button data-parse>Add quiz</button>
         </div>
-        <div class="status" data-status>Paste a quiz or choose a photo to begin.</div>
+        <div class="status" data-status>Paste a quiz or choose one or more photos to begin.</div>
         <button class="link-toggle" data-reuse>or reuse a past quiz</button>
         ${successCard}
       </div>
@@ -133,6 +144,11 @@ class QuizUploader extends HTMLElement {
 
     this.querySelector("[data-parse]")?.addEventListener("click", () => this.parseQuiz());
     this.querySelector("[data-reuse]")?.addEventListener("click", () => setCurrentStep(2));
+    this.querySelector("input[type=file]")?.addEventListener("change", (event) => {
+      const count = event.target.files?.length || 0;
+      if (count === 1) this.setStatus("1 image ready. Add more if the scoring is on another page.", "info");
+      else if (count > 1) this.setStatus(`${count} images ready.`, "info");
+    });
     this.querySelector("[data-pick-models]")?.addEventListener("click", () => setCurrentStep(3));
     this.querySelector("[data-add-another]")?.addEventListener("click", () => {
       state.quiz = null;

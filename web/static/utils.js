@@ -847,6 +847,18 @@ export function renderRawInput(rawPreview) {
       </div>
     `;
   }
+  if (rawPreview.type === "images" && Array.isArray(rawPreview.images)) {
+    return rawPreview.images
+      .map(
+        (image) => `
+      <div class=\"raw-image-frame\">
+        <img src=\"${image.data_url}\" alt=\"Uploaded quiz image\" />
+        <div class=\"status\">${image.filename || "Uploaded image"} (${image.mime || ""})</div>
+      </div>
+    `
+      )
+      .join("");
+  }
   return "<div class=\"status\">Raw input not available.</div>";
 }
 

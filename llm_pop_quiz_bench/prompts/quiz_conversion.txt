@@ -9,4 +9,6 @@ Normalize common shorthand formats into an explicit question and options.
 If title/source/outcomes are missing, add a brief note describing assumptions and keep fields minimal.
 When source is unknown, set source{publication:"unknown",url:""}.
 Outcome conditions may use mostly, mostlyTag or scoreRange. Return only valid JSON.
+The input may be split across multiple images or blocks of text (for example, the questions in one and the scoring key / how-to-score instructions in another). Combine them into a single quiz, and use the scoring material to populate the outcomes.
+If the questions are present but the scoring methodology (how answers map to a result) is missing, still return the questions and use conversion_feedback to say the scoring key was not provided.
 Set conversion_feedback to "" when the conversion is confident. If the input is incomplete or ambiguous, describe what was inferred or what was missing in conversion_feedback. Use null for optional fields that are not present.

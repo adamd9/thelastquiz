@@ -163,6 +163,27 @@ def _build_raw_preview(raw_payload: dict | None) -> dict | None:
             "mime": mime,
             "filename": image_path.name,
         }
+    if raw_payload.get("type") == "images":
+        previews = []
+        for image in raw_payload.get("images", []):
+            image_path = Path(image.get("path", ""))
+            if not image_path.exists():
+                continue
+            mime = image.get("mime") or "image/png"
+            data_url = (
+                f"data:{mime};base64,"
+                f"{base64.b64encode(image_path.read_bytes()).decode('ascii')}"
+            )
+            previews.append(
+                {
+                    "data_url": data_url,
+                    "mime": mime,
+                    "filename": image_path.name,
+                }
+            )
+        if not previews:
+            return None
+        return {"type": "images", "images": previews}
     return None
 
 
@@ -622,36 +643,37 @@ def remove_quiz(quiz_id: str) -> dict:
 @app.post("/api/quizzes/parse")
 async def parse_quiz(
     text: str | None = Form(None),
-    file: UploadFile | None = File(None),
+    files: list[UploadFile] | None = File(None),
     model: str | None = Form(None),
 ) -> dict:
-    if not text and not file:
-        raise HTTPException(status_code=400, detail="Provide text or image file")
+    # A multipart form with an empty file field can yield a single UploadFile
+    # with no filename, so filter those out to detect a real upload.
+    uploads = [f for f in (files or []) if f and (f.filename or "")]
+    if not text and not uploads:
+        raise HTTPException(status_code=400, detail="Provide text or image file(s)")
 
     runtime_paths = get_runtime_paths()
 
-    image_bytes = None
-    image_mime = None
+    images: list[tuple[bytes, str]] | None = None
     text_input = text
     raw_payload = {}
-    if file is not None:
-        upload_path = await _save_upload(file, runtime_paths.uploads_dir)
-        image_bytes = upload_path.read_bytes()
-        image_mime = file.content_type or "image/png"
+    if uploads:
+        images = []
+        saved_images = []
+        for upload in uploads:
+            upload_path = await _save_upload(upload, runtime_paths.uploads_dir)
+            image_mime = upload.content_type or "image/png"
+            images.append((upload_path.read_bytes(), image_mime))
+            saved_images.append({"path": str(upload_path), "mime": image_mime})
         text_input = None
-        raw_payload = {
-            "type": "image",
-            "path": str(upload_path),
-            "mime": image_mime,
-        }
+        raw_payload = {"type": "images", "images": saved_images}
     elif text_input:
         raw_payload = {"type": "text", "text": text_input}
 
     try:
         quiz_def = convert_to_quiz(
             text=text_input,
-            image_bytes=image_bytes,
-            image_mime=image_mime,
+            images=images,
             model=model,
         )
     except Exception as exc:
@@ -705,6 +727,7 @@ async def reprocess_quiz(
 
     image_bytes = None
     image_mime = None
+    images = None
     text_input = None
     if raw_payload.get("type") == "text":
         text_input = raw_payload.get("text")
@@ -717,6 +740,18 @@ async def reprocess_quiz(
                 detail="Stored raw image is missing; cannot reprocess",
             )
         image_bytes = image_path.read_bytes()
+    elif raw_payload.get("type") == "images":
+        images = []
+        for image in raw_payload.get("images", []):
+            image_path = Path(image.get("path", ""))
+            if not image_path.exists():
+                raise HTTPException(
+                    status_code=500,
+                    detail="Stored raw image is missing; cannot reprocess",
+                )
+            images.append((image_path.read_bytes(), image.get("mime") or "image/png"))
+        if not images:
+            raise HTTPException(status_code=400, detail="Quiz is missing raw input data")
     else:
         raise HTTPException(status_code=400, detail="Unsupported raw input type")
 
@@ -725,6 +760,7 @@ async def reprocess_quiz(
             text=text_input,
             image_bytes=image_bytes,
             image_mime=image_mime,
+            images=images,
             model=model,
         )
     except Exception as exc:
