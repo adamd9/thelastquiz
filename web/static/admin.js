@@ -54,6 +54,14 @@ async function unlock() {
   const gate = document.getElementById("gate-msg");
   const tokenPanel = document.getElementById("token-panel");
   const changeToken = document.getElementById("change-token");
+
+  // Fire the independent loads immediately so they run in PARALLEL with the
+  // (relatively slow) auth/benchmarks probe rather than queueing behind it.
+  // They target elements inside the still-hidden admin panel; if auth fails
+  // below, the panel simply stays hidden and their responses are discarded.
+  loadModels();
+  loadRuns();
+
   let probe;
   try {
     // This probe doubles as the auth check AND the benchmarks payload, so we
@@ -76,9 +84,7 @@ async function unlock() {
   if (tokenPanel) tokenPanel.hidden = true;
   if (changeToken) changeToken.hidden = false;
   content.hidden = false;
-  loadModels();
   loadBenchmarks(probe);
-  loadRuns();
   return true;
 }
 
