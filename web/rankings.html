@@ -121,6 +121,14 @@
       }
       .rankings-page .btn:hover { filter: brightness(1.05); }
       .rankings-page .rk-footer { color: var(--muted); font-size: 0.8rem; line-height: 1.7; }
+      .rankings-page .rk-foot-nav { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 16px; }
+      .rankings-page .rk-foot-nav a { color: var(--ink); font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); text-decoration: none; }
+      .rankings-page .rk-foot-nav a:hover { border-color: var(--accent); }
+      .rankings-page .rk-foot-tagline { margin: 0 0 10px; color: var(--ink); font-weight: 600; font-size: 0.92rem; }
+      @media (max-width: 640px) {
+        .rankings-page .rk-nav { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; max-width: 100%; }
+        .rankings-page .rk-nav::-webkit-scrollbar { display: none; }
+      }
 
       /* Test nav active state + Dark Triad (home) view */
       .rankings-page .rk-nav a.active { background: var(--accent); color: #fff; border-color: var(--accent); }
@@ -214,7 +222,18 @@
         <a class="btn" href="/" data-dest="app">Run your own quiz →</a>
       </div>
 
-      <footer class="rk-footer" id="footer"></footer>
+      <footer class="rk-footer">
+        <nav class="rk-foot-nav">
+          <a href="/" data-dest="home">Home</a>
+          <a href="#dark-triad">Dark Triad</a>
+          <a href="#big-five">Big Five</a>
+          <a href="#type">Jungian Type</a>
+          <a href="#about">About &amp; method</a>
+          <a href="/" data-dest="app">Make your own →</a>
+        </nav>
+        <p class="rk-foot-tagline">The Last Quiz — do AI models have personality?</p>
+        <div id="footer"></div>
+      </footer>
     </main>
     <script src="/static/site-links.js"></script>
     <script type="module" src="/static/rankings.js?v=16"></script>

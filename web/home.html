@@ -178,6 +178,10 @@
     /* -------------------------------- Footer ------------------------------- */
     .foot { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 0.82rem; line-height: 1.7; }
     .foot a { color: var(--accent-2); font-weight: 600; }
+    .foot-nav { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 16px; }
+    .foot-nav a { color: var(--ink); font-weight: 600; font-size: 0.85rem; padding: 6px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel); }
+    .foot-nav a:hover { border-color: var(--accent); }
+    .foot-tagline { margin: 0 0 10px; color: var(--ink); font-weight: 600; font-size: 0.92rem; }
 
     @media (max-width: 900px) {
       .mag-grid { grid-template-columns: repeat(2, 1fr); }
@@ -185,6 +189,9 @@
     @media (max-width: 640px) {
       .tiles, .mag-grid, .how { grid-template-columns: 1fr; }
       .hero h1 { max-width: none; }
+      /* Keep the top nav to a single, swipeable row instead of a tall stack. */
+      .mast-nav { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; max-width: 100%; }
+      .mast-nav::-webkit-scrollbar { display: none; }
     }
   </style>
 </head>
@@ -370,6 +377,15 @@
 
     <!-- =============================== Footer =============================== -->
     <footer class="foot">
+      <nav class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/rankings#dark-triad">Dark Triad</a>
+        <a href="/rankings#big-five">Big Five</a>
+        <a href="/rankings#type">Jungian Type</a>
+        <a href="/rankings#about">About &amp; method</a>
+        <a href="/" data-dest="app">Make your own →</a>
+      </nav>
+      <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
       Instruments: the Big Five via the public-domain IPIP-50; an open, OEJTS-inspired Jungian type test;
       and the Short Dark Triad (Jones &amp; Paulhus, 2014), reproduced for research. Human reference points from
       published population norms (Kaufman et al., 2019). Models answer each item as a self-report; scores are
