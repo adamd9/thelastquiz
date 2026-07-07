@@ -77,3 +77,40 @@ export function providerLogoHtml(modelId, size = 16) {
   const p = providerPrefix(modelId);
   return `<img class="provider-logo" src="${url}" width="${size}" height="${size}" alt="${p}" loading="lazy" />`;
 }
+
+// Family/brand token to drop from a model's label when its provider logo is
+// shown alongside — the icon already says "Claude/GPT/Gemini/…", so the label
+// can lead with just the variant+version (e.g. claude-opus-4.8 -> opus-4.8,
+// gpt-5.5 -> 5.5, gemini-2.5-pro -> 2.5-pro). Keyed off the author prefix.
+const FAMILY_TOKEN = {
+  openai: "gpt",
+  anthropic: "claude",
+  google: "gemini",
+  "google-vertex": "gemini",
+  "x-ai": "grok",
+  "meta-llama": "llama",
+  meta: "llama",
+  deepseek: "deepseek",
+  mistralai: "mistral",
+  mistral: "mistral",
+  qwen: "qwen",
+  moonshotai: "kimi",
+  "z-ai": "glm",
+  zhipu: "glm",
+  thudm: "glm",
+  nousresearch: "hermes",
+};
+
+/* A model's short label with the redundant family prefix removed — but ONLY
+ * when we actually render a provider logo for it (otherwise the family would be
+ * lost). Falls back to the full short name (author prefix stripped). */
+export function familyLabel(modelId) {
+  const shortName = String(modelId || "").split("/").pop() || String(modelId || "");
+  if (!providerLogoUrl(modelId)) return shortName; // no icon → keep full name
+  const fam = FAMILY_TOKEN[providerPrefix(modelId)];
+  if (fam && shortName.toLowerCase().startsWith(fam + "-")) {
+    const stripped = shortName.slice(fam.length + 1);
+    if (stripped) return stripped;
+  }
+  return shortName;
+}

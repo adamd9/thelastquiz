@@ -81,7 +81,8 @@
     .ld-human { position: absolute; top: -12px; bottom: -12px; width: 0; border-left: 2px dashed #1b1a17; }
     .ld-human span { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 700; color: var(--ink); }
     .ld-dot { position: absolute; top: 50%; }
-    .ld-pin { position: absolute; top: -7px; left: -7px; width: 14px; height: 14px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+    .ld-pin { position: absolute; top: -9px; left: -9px; width: 18px; height: 18px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
+    .ld-pin img { width: 12px; height: 12px; object-fit: contain; }
     .ld-lab { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; color: var(--ink); background: var(--panel); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); }
     .ld-lab.r0 { bottom: 16px; } .ld-lab.r1 { bottom: 44px; } .ld-lab.r2 { bottom: 72px; }
     .ld-cap { color: var(--muted); font-size: 0.95rem; margin: 10px 2px 0; }
@@ -393,7 +394,8 @@
     </footer>
   </div>
 
-  <script>
+  <script type="module">
+  import { providerLogoUrl, familyLabel } from "/static/model-logo.js";
   /* Homepage rankings: pull the live snapshot the rankings page uses and render
    * the Darkness Scale + Dark Triad Index leaderboard from real data. Same-origin
    * on the apex; falls back to the API. Sections stay hidden if data is missing,
@@ -417,8 +419,10 @@
 
     function renderScale(models) {
       var markers = models.map(function (m, i) {
+        var logo = providerLogoUrl(m.id);
+        var pin = logo ? '<img src="' + logo + '" alt="" />' : '';
         return '<div class="ld-dot" style="left:' + pos(m.v) + '%" title="' + m.name + ': ' + Math.round(m.v) + '/100">' +
-          '<span class="ld-pin"></span><span class="ld-lab r' + (i % 3) + '">' + m.name + '</span></div>';
+          '<span class="ld-pin">' + pin + '</span><span class="ld-lab r' + (i % 3) + '">' + familyLabel(m.id) + '</span></div>';
       }).join("");
       var above = models.filter(function (m) { return m.v > HUMAN_IDX; });
       var darkest = models[models.length - 1];
@@ -471,7 +475,7 @@
       for (var i = 0; i < benches.length; i++) { if (benches[i].id === "sd3_short_dark_triad") { sd3 = benches[i]; break; } }
       if (!sd3 || !sd3.models || !sd3.models.length) return [];
       return sd3.models.map(function (m) {
-        return { name: shortName(m.model_id), v: idxOf(m.profile) };
+        return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) };
       }).sort(function (a, b) { return a.v - b.v; });
     }
 

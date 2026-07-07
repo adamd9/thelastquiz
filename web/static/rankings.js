@@ -8,7 +8,7 @@
  * the admin uses — to let visitors filter a large field down to a curated
  * subset instead of rendering every benchmarked model at once. */
 import { buildModelGroups } from "./model-groups.js";
-import { providerLogoImg, providerLogoHtml, providerLogoUrl } from "./model-logo.js";
+import { providerLogoImg, providerLogoHtml, providerLogoUrl, familyLabel } from "./model-logo.js";
 
 // On-brand palette that reads well on the app's cream panels.
 const PALETTE = [
@@ -466,7 +466,7 @@ function darkTriadTimeline(sd3, human, colorFor) {
       } else {
         g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
       }
-      svg.appendChild(mk("text", { x: rightEdge ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, shortName(m.model_id)));
+      svg.appendChild(mk("text", { x: rightEdge ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, familyLabel(m.model_id)));
       g.appendChild(mk("title", {}, `${m.model_id} \u2014 ${t.name}: ${Math.round(m.profile[t.id] ?? 0)} \u00b7 released ${m.released}`));
       svg.appendChild(g);
     }
@@ -519,7 +519,7 @@ function lightDarkScale(sd3, human) {
   const clamp = (v) => Math.max(2, Math.min(98, v));
   const markers = models
     .map((m, i) => `<div class="ld-dot" style="left:${clamp(m.v)}%" title="${m.name}: ${Math.round(m.v)}/100 dark index">` +
-      `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${m.name}</span></div>`)
+      `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${familyLabel(m.id)}</span></div>`)
     .join("");
   const caption =
     "Further left is more restrained than the average person; further right, more villainous. " +
