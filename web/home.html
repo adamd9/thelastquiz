@@ -396,6 +396,7 @@
 
   <script type="module">
   import { providerLogoUrl, familyLabel } from "/static/model-logo.js";
+  import { buildModelGroups } from "/static/model-groups.js";
   /* Homepage rankings: pull the live snapshot the rankings page uses and render
    * the Darkness Scale + Dark Triad Index leaderboard from real data. Same-origin
    * on the apex; falls back to the API. Sections stay hidden if data is missing,
@@ -468,13 +469,20 @@
     }
 
     // Pull the Dark Triad models out of a rankings payload (snapshot or API),
-    // sorted saint -> villain. Returns [] when the payload has no usable data.
+    // sorted saint -> villain. Filtered to the curated Humanity's Last Exam
+    // lineup (same default as /rankings' Dark Triad view) so the front door
+    // opens on a meaningful, aligned subset rather than every model at once.
+    // Returns [] when the payload has no usable data.
     function extractModels(data) {
       var benches = (data && data.benchmarks) || [];
       var sd3 = null;
       for (var i = 0; i < benches.length; i++) { if (benches[i].id === "sd3_short_dark_triad") { sd3 = benches[i]; break; } }
       if (!sd3 || !sd3.models || !sd3.models.length) return [];
-      return sd3.models.map(function (m) {
+      var groups = buildModelGroups(sd3.models.map(function (m) { return { id: m.model_id, available: true }; }));
+      var hle = groups.find(function (g) { return g.id === "hle"; });
+      var allowed = hle ? new Set(hle.modelIds) : null;
+      var models = allowed ? sd3.models.filter(function (m) { return allowed.has(m.model_id); }) : sd3.models;
+      return models.map(function (m) {
         return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) };
       }).sort(function (a, b) { return a.v - b.v; });
     }
