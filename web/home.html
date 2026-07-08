@@ -493,6 +493,7 @@
     }
 
     function renderLeaderboard(models) {
+      var lightest = models[0], darkest = models[models.length - 1];
       var out = [], inserted = false;
       for (var i = 0; i < models.length; i++) {
         if (!inserted && models[i].v > HUMAN_IDX) { out.push({ human: true, v: HUMAN_IDX }); inserted = true; }
@@ -510,7 +511,9 @@
         }
         rank++;
         var ab = e.v > HUMAN_IDX;
-        return '<div class="rank-row' + (ab ? ' above' : '') + '"><div class="rk">' + rank + '</div><div>' +
+        // Halo the lightest (saint) model and horns the darkest (villain).
+        var icon = e === lightest ? '\uD83D\uDE07' : e === darkest ? '\uD83D\uDE08' : String(rank);
+        return '<div class="rank-row' + (ab ? ' above' : '') + '"><div class="rk">' + icon + '</div><div>' +
           '<div class="who"><span class="nm">' + e.name + '</span><span class="sc">' + Math.round(e.v) + ' / 100' + (ab ? ' \u00b7 darker' : '') + '</span></div>' +
           '<div class="rank-track"><div class="zone" style="left:' + HUMAN_IDX + '%"></div><div class="bar' + (ab ? ' dark' : '') + '" style="width:' + w + '%"></div></div>' +
           '</div></div>';
