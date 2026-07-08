@@ -80,13 +80,33 @@
       background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
     .ld-human { position: absolute; top: -12px; bottom: -12px; width: 0; border-left: 2px dashed #1b1a17; }
     .ld-human span { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 700; color: var(--ink); }
-    .ld-dot { position: absolute; top: 50%; }
+    .ld-dot { position: absolute; top: 50%; cursor: pointer; }
+    .ld-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 999px; }
     .ld-pin { position: absolute; top: -9px; left: -9px; width: 18px; height: 18px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .ld-pin img { width: 12px; height: 12px; object-fit: contain; }
     .ld-lab { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; color: var(--ink); background: var(--panel); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); }
     .ld-lab.r0 { bottom: 16px; } .ld-lab.r1 { bottom: 44px; } .ld-lab.r2 { bottom: 72px; }
     .ld-cap { color: var(--muted); font-size: 0.95rem; margin: 10px 2px 0; }
     .ld-cap b { color: var(--ink); }
+
+    /* Rich hover/tap/keyboard tooltip card shared by chart points. See
+       /static/rich-tooltip.js. */
+    .rq-tip {
+      position: absolute; z-index: 1000; max-width: 240px;
+      background: var(--panel); color: var(--ink); border: 1px solid var(--border);
+      border-radius: 12px; box-shadow: var(--shadow); padding: 10px 12px;
+      font-size: 0.82rem; line-height: 1.4; pointer-events: none;
+    }
+    .rq-tip[hidden] { display: none; }
+    .rq-tip .rq-name { font-weight: 700; font-size: 0.88rem; }
+    .rq-tip .rq-id { color: var(--muted); font-size: 0.72rem; margin-top: 1px; word-break: break-all; }
+    .rq-tip .rq-date { color: var(--muted); font-size: 0.76rem; margin-top: 4px; }
+    .rq-tip .rq-rows { margin-top: 6px; border-top: 1px solid var(--border); padding-top: 6px; display: grid; gap: 2px; }
+    .rq-tip .rq-row { display: flex; justify-content: space-between; gap: 10px; }
+    .rq-tip .rq-row.rq-hi { font-weight: 700; color: var(--accent); }
+    .rq-tip .rq-k { color: var(--muted); }
+    .rq-tip .rq-row.rq-hi .rq-k { color: var(--accent); }
+    .rq-tip .rq-v { font-variant-numeric: tabular-nums; }
 
     .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
     .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.98rem;
@@ -397,6 +417,7 @@
   <script type="module">
   import { providerLogoUrl, familyLabel } from "/static/model-logo.js";
   import { buildModelGroups } from "/static/model-groups.js";
+  import { attachRichTooltip, escapeHtml, formatReleased } from "/static/rich-tooltip.js";
   /* Homepage rankings: pull the live snapshot the rankings page uses and render
    * the Darkness Scale + Dark Triad Index leaderboard from real data. Same-origin
    * on the apex; falls back to the API. Sections stay hidden if data is missing,
@@ -422,7 +443,7 @@
       var markers = models.map(function (m, i) {
         var logo = providerLogoUrl(m.id);
         var pin = logo ? '<img src="' + logo + '" alt="" />' : '';
-        return '<div class="ld-dot" style="left:' + pos(m.v) + '%" title="' + m.name + ': ' + Math.round(m.v) + '/100">' +
+        return '<div class="ld-dot" data-idx="' + i + '" style="left:' + pos(m.v) + '%">' +
           '<span class="ld-pin">' + pin + '</span><span class="ld-lab r' + (i % 3) + '">' + familyLabel(m.id) + '</span></div>';
       }).join("");
       var above = models.filter(function (m) { return m.v > HUMAN_IDX; });
@@ -432,12 +453,24 @@
           (above.length === 1 ? 'one model creeps' : above.length + ' of them creep') +
           ' past the average human \u2014 <b>' + darkest.name + '</b> leads the descent.'
         : 'Halos all round: every model came out <b>more restrained than the average human</b>. For now.';
-      document.getElementById("home-ld").innerHTML =
+      var ldEl = document.getElementById("home-ld");
+      ldEl.innerHTML =
         '<div class="ld-row">' +
         '<div class="ld-face">\uD83D\uDE07<b>saint</b></div>' +
         '<div class="ld-track"><div class="ld-human" style="left:' + pos(HUMAN_IDX) + '%"><span>avg human</span></div>' + markers + '</div>' +
         '<div class="ld-face">\uD83D\uDE08<b>villain</b></div>' +
         '</div><p class="ld-cap">' + caption + '</p>';
+      Array.prototype.forEach.call(ldEl.querySelectorAll(".ld-dot"), function (dot) {
+        var m = models[Number(dot.dataset.idx)];
+        dot.setAttribute("aria-label", m.name + ": " + Math.round(m.v) + "/100 dark index");
+        attachRichTooltip(dot, function () {
+          return '<div class="rq-name">' + escapeHtml(familyLabel(m.id)) + '</div>' +
+            '<div class="rq-id">' + escapeHtml(m.id) + '</div>' +
+            '<div class="rq-date">' + escapeHtml(formatReleased(m.released)) + '</div>' +
+            '<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span>' +
+            '<span class="rq-v">' + Math.round(m.v) + ' / 100</span></div></div>';
+        });
+      });
       document.getElementById("home-scale").hidden = false;
     }
 
@@ -483,7 +516,7 @@
       var allowed = hle ? new Set(hle.modelIds) : null;
       var models = allowed ? sd3.models.filter(function (m) { return allowed.has(m.model_id); }) : sd3.models;
       return models.map(function (m) {
-        return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) };
+        return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), released: m.released };
       }).sort(function (a, b) { return a.v - b.v; });
     }
 

@@ -153,6 +153,7 @@
       .rankings-page .dt-row.humanrow .mname { font-weight: 600; }
       .rankings-page .dt-time { display: grid; gap: 16px; }
       .rankings-page .dt-time svg { width: 100%; height: auto; background: #fffdf8; border: 1px solid var(--border); border-radius: 12px; }
+      .rankings-page .dt-time svg g[role="button"]:focus-visible circle { stroke: var(--accent); stroke-width: 2; }
       .rankings-page .dt-note { color: var(--muted); font-size: 0.9rem; }
       .rankings-page .dt-index { max-width: 640px; }
 
@@ -166,7 +167,8 @@
       .rankings-page .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 84px 0 34px; background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
       .rankings-page .ld-human { position: absolute; top: -10px; bottom: -10px; width: 0; border-left: 2px dashed #1b1a17; }
       .rankings-page .ld-human span { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 700; color: var(--ink); }
-      .rankings-page .ld-dot { position: absolute; top: 50%; }
+      .rankings-page .ld-dot { position: absolute; top: 50%; cursor: pointer; }
+      .rankings-page .ld-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 999px; }
       .rankings-page .ld-pin { position: absolute; top: -10px; left: -10px; width: 20px; height: 20px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
       .rankings-page .ld-pin .provider-logo { width: 13px; height: 13px; }
       .rankings-page .mname .provider-logo { margin-right: 6px; }
@@ -236,6 +238,6 @@
       </footer>
     </main>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/rankings.js?v=16"></script>
+    <script type="module" src="/static/rankings.js?v=17"></script>
   </body>
 </html>
