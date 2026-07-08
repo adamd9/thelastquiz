@@ -240,8 +240,9 @@ async function runBenchmark(benchmarkId, btn) {
     if (!res.run_ids.length) {
       toast(res.message || "Nothing to run — all selected models already have a result.");
     } else {
-      const skipNote = skipped ? ` · skipped ${skipped} already done` : "";
-      toast(`Started ${res.run_ids.length} run(s) for ${res.models.length} model(s)${skipNote}.`);
+      const tested = res.models.length;
+      const skipNote = skipped ? ` (${skipped} already passed, skipped)` : "";
+      toast(`Testing ${tested} new model${tested === 1 ? "" : "s"} this run${skipNote} · ${res.run_ids.length} run(s) started.`);
     }
     setTimeout(loadRuns, 800);
     setTimeout(loadBenchmarks, 1500);
@@ -305,6 +306,7 @@ function renderRunRow(tbody, r) {
     : modelStatus.filter((m) => m.status === "completed").length;
   const failed = modelStatus.filter((m) => m.status === "failed");
   const skipped = Array.isArray(settings.skipped_models) ? settings.skipped_models : [];
+  const pct = total ? Math.round((completed / total) * 100) : 0;
   const inProgress = ["queued", "running", "reporting"].includes(r.status);
 
   let resultsCell;
@@ -312,7 +314,7 @@ function renderRunRow(tbody, r) {
     const okClass = completed === total ? "s-completed" : "s-warn";
     const failMarkup = failed.length ? ` · <span class="s-failed">${failed.length} failed</span>` : "";
     const skipMarkup = skipped.length ? ` · <span class="muted">${skipped.length} skipped</span>` : "";
-    resultsCell = `<span class="${okClass}">${completed}/${total} ok</span>${failMarkup}${skipMarkup}`;
+    resultsCell = `<span class="${okClass}">${completed}/${total} ok · ${pct}%</span>${failMarkup}${skipMarkup}`;
   } else if (inProgress) {
     resultsCell = `<span class="muted">—</span>`;
   } else {
@@ -356,8 +358,14 @@ function renderRunRow(tbody, r) {
   const skipBlock = skipped.length
     ? `<div class="fail-title" style="margin-top:8px;">Skipped — already have a result (${skipped.length})</div>${skipRows}`
     : "";
+  const summaryBlock = modelStatus.length
+    ? `<div class="fail-summary">This run tested <b>${total}</b> model${total === 1 ? "" : "s"} — ` +
+      `<b>${completed}</b> passed (${pct}%)${failed.length ? `, <b>${failed.length}</b> failed` : ""}.` +
+      (skipped.length ? ` <b>${skipped.length}</b> skipped (already passed).` : "") +
+      `</div>`
+    : "";
   detailTr.innerHTML =
-    `<td colspan="5"><div class="fail-detail">${failBlock}${skipBlock}</div></td>`;
+    `<td colspan="5"><div class="fail-detail">${summaryBlock}${failBlock}${skipBlock}</div></td>`;
   tbody.appendChild(detailTr);
 
   const caret = tr.querySelector(".caret");

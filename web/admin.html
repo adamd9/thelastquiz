@@ -39,6 +39,8 @@
       tr.run-row.expandable:hover td { background:rgba(124,92,255,.06); }
       .caret { display:inline-block; width:12px; color:var(--muted); }
       .fail-detail { padding:4px 2px 8px; display:grid; gap:6px; }
+      .fail-detail .fail-summary { color:var(--ink); font-size:13px; margin:0 0 4px; padding-bottom:6px; border-bottom:1px solid var(--line); }
+      .fail-detail .fail-summary b { color:var(--ink); }
       .fail-detail .fail-title { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
       .fail-row { font-size:13px; }
       .fail-row .fail-model { color:var(--ink); font-weight:600; }
@@ -105,7 +107,7 @@
           <h3 style="margin:0;">Recent benchmark runs</h3>
           <button class="btn secondary" id="refresh-runs">Refresh</button>
         </div>
-        <table><thead><tr><th>Benchmark</th><th>Status</th><th>Models</th><th>Results</th><th>Created</th></tr></thead>
+        <table><thead><tr><th>Benchmark</th><th>Status</th><th>Tested</th><th>Results</th><th>Created</th></tr></thead>
           <tbody id="runs"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
         </table>
         <div class="note">A run is only counted as a result for a model when it answers every question. Click a run with failures to see why each model dropped out.</div>
@@ -114,6 +116,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=14"></script>
+    <script type="module" src="/static/admin.js?v=15"></script>
   </body>
 </html>
