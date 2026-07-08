@@ -471,6 +471,28 @@ function darkTriadTimeline(sd3, human, colorFor) {
     }
     const byScore = [...dated].sort((a, b) => (a.profile[t.id] ?? 0) - (b.profile[t.id] ?? 0));
     const saintId = byScore[0].model_id, devilId = byScore[byScore.length - 1].model_id;
+    // De-collision pass (HLE-style): every point keeps its logo + hover, but we
+    // only draw a text label where it won't overlap one already placed. The
+    // saint/devil extremes and the latest release always keep their label; the
+    // rest are placed greedily by score so the darker (more interesting) ones win.
+    const latestT = Math.max(...dated.map((m) => ms(m.released)));
+    const hit = (a, b) => a.x1 < b.x2 && a.x2 > b.x1 && a.y1 < b.y2 && a.y2 > b.y1;
+    const cand = dated.map((m) => {
+      const cx = xFor(ms(m.released)), cy = yFor(m.profile[t.id] ?? 0);
+      const rightEdge = cx > W - 130;
+      const w = familyLabel(m.model_id).length * 5.6 + 4;
+      const x1 = rightEdge ? cx - 11 - w : cx + 11;
+      const prio = (m.model_id === saintId || m.model_id === devilId) ? 2 : (ms(m.released) === latestT ? 1 : 0);
+      return { id: m.model_id, box: { x1, x2: x1 + w, y1: cy - 6.5, y2: cy + 6.5 }, prio, score: m.profile[t.id] ?? 0 };
+    });
+    cand.sort((a, b) => b.prio - a.prio || b.score - a.score);
+    // Seed with the "human average" label box so model names never sit on top of it.
+    const humLabel = "human average (" + Math.round(humanVal) + ")";
+    const placedBoxes = [{ x1: (W - padR) - humLabel.length * 5.6, x2: W - padR, y1: humY - 13, y2: humY - 1 }];
+    const labelShow = new Set();
+    for (const c of cand) {
+      if (c.prio >= 2 || !placedBoxes.some((p) => hit(c.box, p))) { placedBoxes.push(c.box); labelShow.add(c.id); }
+    }
     for (const m of dated) {
       const cx = xFor(ms(m.released)), cy = yFor(m.profile[t.id] ?? 0);
       const rightEdge = cx > W - 130;
@@ -486,7 +508,9 @@ function darkTriadTimeline(sd3, human, colorFor) {
       } else {
         g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
       }
-      svg.appendChild(mk("text", { x: rightEdge ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, familyLabel(m.model_id)));
+      if (labelShow.has(m.model_id)) {
+        svg.appendChild(mk("text", { x: rightEdge ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, familyLabel(m.model_id)));
+      }
       g.setAttribute("aria-label", `${familyLabel(m.model_id)}, ${t.name}: ${Math.round(m.profile[t.id] ?? 0)}, released ${m.released}`);
       attachRichTooltip(g, () => darkTriadTooltipHtml(m, t.id));
       svg.appendChild(g);
@@ -563,7 +587,33 @@ function lightDarkScale(sd3, human) {
       `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">${Math.round(m.v)} / 100</span></div></div>`
     ));
   });
+  // Once laid out, hide labels that collide: keep the saint/villain extremes,
+  // then greedily drop any name whose box overlaps one already kept. Every dot
+  // keeps its logo + hover tooltip, and the ranked list below names them all.
+  decollideScaleLabels(wrap);
   return wrap;
+}
+
+/* Hide overlapping .ld-lab labels within an .ld scale (measured after layout).
+   Extremes (first/last dot) are always kept; the rest survive only if their
+   box doesn't overlap one already kept. Runs on rAF so widths are real. */
+function decollideScaleLabels(wrap) {
+  requestAnimationFrame(() => {
+    const dots = [...wrap.querySelectorAll(".ld-dot")];
+    if (!dots.length) return;
+    const order = dots.map((d, i) => ({ d, i, prio: (i === 0 || i === dots.length - 1) ? 1 : 0 }));
+    order.sort((a, b) => b.prio - a.prio || a.i - b.i);
+    const kept = [];
+    const overlaps = (a, b) => a.left < b.right + 4 && a.right + 4 > b.left && a.top < b.bottom && a.bottom > b.top;
+    for (const o of order) {
+      const lab = o.d.querySelector(".ld-lab");
+      if (!lab) continue;
+      const r = lab.getBoundingClientRect();
+      if (!r.width) continue;
+      if (o.prio || !kept.some((k) => overlaps(r, k))) kept.push(r);
+      else lab.style.display = "none";
+    }
+  });
 }
 
 function renderDarkTriad(content, data, colorFor) {

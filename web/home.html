@@ -472,6 +472,24 @@
         });
       });
       document.getElementById("home-scale").hidden = false;
+      // Hide labels that collide (saint/villain extremes always kept), measured
+      // after layout. Every dot keeps its logo + hover; the list names them all.
+      requestAnimationFrame(function () {
+        var dots = Array.prototype.slice.call(ldEl.querySelectorAll(".ld-dot"));
+        if (!dots.length) return;
+        var order = dots.map(function (d, i) { return { d: d, i: i, prio: (i === 0 || i === dots.length - 1) ? 1 : 0 }; });
+        order.sort(function (a, b) { return b.prio - a.prio || a.i - b.i; });
+        var kept = [];
+        var overlaps = function (a, b) { return a.left < b.right + 4 && a.right + 4 > b.left && a.top < b.bottom && a.bottom > b.top; };
+        order.forEach(function (o) {
+          var lab = o.d.querySelector(".ld-lab");
+          if (!lab) return;
+          var r = lab.getBoundingClientRect();
+          if (!r.width) return;
+          if (o.prio || !kept.some(function (k) { return overlaps(r, k); })) kept.push(r);
+          else lab.style.display = "none";
+        });
+      });
     }
 
     function renderLeaderboard(models) {
