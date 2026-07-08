@@ -42,6 +42,12 @@ class RunCreator extends HTMLElement {
         body: JSON.stringify(payload),
       });
       status.textContent = "Off we go! Opening your results…";
+      if (window.tlqTrack) {
+        window.tlqTrack("run_started", {
+          models: (payload.models || []).length,
+          group: payload.group || null,
+        });
+      }
       await refreshRuns();
       await selectRun(data.run_id);
       setCurrentStep(0);

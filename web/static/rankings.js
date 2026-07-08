@@ -904,6 +904,9 @@ async function main() {
   }
 
   window.addEventListener("hashchange", render);
+  window.addEventListener("hashchange", () => {
+    if (window.tlqTrack) window.tlqTrack("view_switched", { view: currentView() });
+  });
   render();
 }
 

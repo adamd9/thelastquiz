@@ -353,6 +353,11 @@ class MongoDatabase(DatabaseInterface):
         )
         return doc.get("ip") if doc else None
 
+    def fetch_audit(self, since_iso: str | None = None) -> list[dict]:
+        """Fetch audit-log entries (optionally only those at/after since_iso)."""
+        query = {"created_at": {"$gte": since_iso}} if since_iso else {}
+        return list(self.audit.find(query, {"_id": 0}).sort("created_at", 1))
+
     def replace_run_outcomes(
         self,
         run_id: str,

@@ -147,6 +147,11 @@ class DatabaseInterface(ABC):
         pass
 
     @abstractmethod
+    def fetch_audit(self, since_iso: str | None = None) -> list[dict]:
+        """Fetch audit-log entries (optionally only those at/after ``since_iso``)."""
+        pass
+
+    @abstractmethod
     def fetch_ip_for_run(self, run_id: str) -> str | None:
         """Return the earliest recorded IP associated with a run."""
         pass

@@ -61,6 +61,7 @@ async function unlock() {
   // below, the panel simply stays hidden and their responses are discarded.
   loadModels();
   loadRuns();
+  loadStats();
 
   let probe;
   try {
@@ -293,6 +294,68 @@ async function loadRuns() {
   }
 }
 
+// Fetch and render the stats & engagement dashboard (headline numbers, per-day
+// sparklines for views/runs/cost, and top pages) from /api/admin/stats.
+async function loadStats() {
+  const cards = document.getElementById("stats-cards");
+  const charts = document.getElementById("stats-charts");
+  const pathsEl = document.getElementById("stats-paths");
+  const btn = document.getElementById("refresh-stats");
+  if (!cards) return;
+  if (btn) btn.disabled = true;
+  try {
+    const s = await api("/api/admin/stats?days=30");
+    const t = s.totals || {};
+    const num = (n) => (n == null ? "0" : Number(n).toLocaleString());
+    const money = (c) => (c == null ? "—" : "$" + Number(c).toFixed(2));
+    const statusText = Object.entries(t.runs_by_status || {})
+      .map(([k, v]) => `${v} ${k}`)
+      .join(" · ");
+    const cardData = [
+      ["Page views", num(t.pageviews)],
+      ["Sessions", num(t.sessions)],
+      ["Runs", num(t.runs)],
+      ["Est. cost", money(t.cost_usd)],
+      ["Tokens in", num(t.tokens_in)],
+      ["Tokens out", num(t.tokens_out)],
+      ["Quizzes", num(t.quizzes)],
+    ];
+    cards.innerHTML = cardData
+      .map(
+        ([k, v]) =>
+          `<div class="stat-card"><div class="v">${escapeHtml(String(v))}</div><div class="k">${escapeHtml(k)}</div></div>`
+      )
+      .join("");
+    const series = s.series || {};
+    const labels = series.labels || [];
+    const spark = (vals, cls, fmt) => {
+      const max = Math.max(1, ...(vals || []));
+      const bars = (vals || [])
+        .map(
+          (v, i) =>
+            `<div class="bar ${cls}" style="height:${Math.round((v / max) * 100)}%" title="${escapeHtml(labels[i] || "")}: ${escapeHtml(fmt(v))}"></div>`
+        )
+        .join("");
+      return `<div class="spark">${bars}</div>`;
+    };
+    charts.innerHTML =
+      `<div class="stat-chart"><h4>Page views / day</h4>${spark(series.pageviews, "views", (v) => String(v))}</div>` +
+      `<div class="stat-chart"><h4>Runs / day</h4>${spark(series.runs, "", (v) => String(v))}</div>` +
+      `<div class="stat-chart"><h4>Est. cost / day</h4>${spark(series.cost, "cost", (v) => "$" + Number(v).toFixed(2))}</div>`;
+    const tp = s.top_paths || [];
+    pathsEl.innerHTML = tp.length
+      ? "Top pages: " + tp.map((p) => `${escapeHtml(p.path)} (${p.views})`).join(" · ") +
+        (statusText ? ` · Runs: ${escapeHtml(statusText)}` : "")
+      : statusText
+        ? `Runs: ${escapeHtml(statusText)}`
+        : "";
+  } catch (e) {
+    cards.innerHTML = `<div class="muted">Could not load stats: ${escapeHtml(e.message)}</div>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
 // Render one run row plus, when a run had model failures, a hidden detail row
 // that lists each failed model and the reason it dropped out (persisted on the
 // run's settings.model_status by the runner).
@@ -307,6 +370,9 @@ function renderRunRow(tbody, r) {
   const failed = modelStatus.filter((m) => m.status === "failed");
   const skipped = Array.isArray(settings.skipped_models) ? settings.skipped_models : [];
   const pct = total ? Math.round((completed / total) * 100) : 0;
+  const cost = typeof settings.cost_usd === "number" ? settings.cost_usd : null;
+  const costText = cost != null ? "~$" + (cost < 0.01 ? cost.toFixed(4) : cost.toFixed(2)) : "";
+  const costMarkup = cost != null ? ` · <span class="muted">${costText}</span>` : "";
   const inProgress = ["queued", "running", "reporting"].includes(r.status);
 
   let resultsCell;
@@ -314,7 +380,7 @@ function renderRunRow(tbody, r) {
     const okClass = completed === total ? "s-completed" : "s-warn";
     const failMarkup = failed.length ? ` · <span class="s-failed">${failed.length} failed</span>` : "";
     const skipMarkup = skipped.length ? ` · <span class="muted">${skipped.length} skipped</span>` : "";
-    resultsCell = `<span class="${okClass}">${completed}/${total} ok · ${pct}%</span>${failMarkup}${skipMarkup}`;
+    resultsCell = `<span class="${okClass}">${completed}/${total} ok · ${pct}%</span>${failMarkup}${skipMarkup}${costMarkup}`;
   } else if (inProgress) {
     resultsCell = `<span class="muted">—</span>`;
   } else {
@@ -362,6 +428,7 @@ function renderRunRow(tbody, r) {
     ? `<div class="fail-summary">This run tested <b>${total}</b> model${total === 1 ? "" : "s"} — ` +
       `<b>${completed}</b> passed (${pct}%)${failed.length ? `, <b>${failed.length}</b> failed` : ""}.` +
       (skipped.length ? ` <b>${skipped.length}</b> skipped (already passed).` : "") +
+      (cost != null ? ` Est. cost <b>${costText}</b>.` : "") +
       `</div>`
     : "";
   detailTr.innerHTML =
@@ -398,6 +465,7 @@ function init() {
     if (e.key === "Enter") document.getElementById("save-token").click();
   });
   document.getElementById("refresh-runs").addEventListener("click", loadRuns);
+  document.getElementById("refresh-stats")?.addEventListener("click", loadStats);
 
   const changeToken = document.getElementById("change-token");
   if (changeToken) {

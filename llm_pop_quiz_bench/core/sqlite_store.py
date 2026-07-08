@@ -507,6 +507,29 @@ def fetch_ip_for_run(conn: sqlite3.Connection, run_id: str) -> str | None:
     return row["ip"] if row else None
 
 
+def fetch_audit(conn: sqlite3.Connection, since_iso: str | None = None) -> list[dict]:
+    if since_iso:
+        rows = conn.execute(
+            "SELECT * FROM audit_log WHERE created_at >= ? ORDER BY created_at ASC",
+            (since_iso,),
+        ).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM audit_log ORDER BY created_at ASC").fetchall()
+    return [
+        {
+            "created_at": r["created_at"],
+            "ip": r["ip"],
+            "event": r["event"],
+            "run_id": r["run_id"],
+            "quiz_id": r["quiz_id"],
+            "models": json.loads(r["models_json"] or "[]"),
+            "cost_usd": r["cost_usd"],
+            "detail": json.loads(r["detail_json"] or "{}"),
+        }
+        for r in rows
+    ]
+
+
 def replace_run_outcomes(
     conn: sqlite3.Connection,
     run_id: str,

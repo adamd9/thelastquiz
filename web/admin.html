@@ -45,6 +45,16 @@
       .fail-row { font-size:13px; }
       .fail-row .fail-model { color:var(--ink); font-weight:600; }
       .fail-row .fail-error { color:var(--err); font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:12px; }
+      .stat-cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; margin-top:12px; }
+      .stat-card { background:#0e121b; border:1px solid var(--line); border-radius:10px; padding:12px 14px; }
+      .stat-card .v { font-size:20px; font-weight:700; color:var(--ink); font-variant-numeric:tabular-nums; }
+      .stat-card .k { color:var(--muted); font-size:12px; margin-top:2px; }
+      .stat-charts { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-top:16px; }
+      .stat-chart h4 { margin:0 0 8px; font-size:12.5px; color:var(--muted); font-weight:600; }
+      .spark { display:flex; align-items:flex-end; gap:2px; height:56px; }
+      .spark .bar { flex:1 1 0; min-width:2px; background:var(--accent); border-radius:2px 2px 0 0; min-height:1px; opacity:.9; }
+      .spark .bar.cost { background:var(--ok); }
+      .spark .bar.views { background:var(--warn); }
       #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#20283a; border:1px solid var(--line); padding:10px 16px; border-radius:10px; opacity:0; transition:opacity .2s; }
       #toast.show { opacity:1; }
     </style>
@@ -104,6 +114,16 @@
 
       <div class="panel">
         <div class="row" style="justify-content:space-between;">
+          <h3 style="margin:0;">Stats &amp; engagement <span class="muted" style="font-weight:400;font-size:12px;">(last 30 days)</span></h3>
+          <button class="btn secondary" id="refresh-stats">Refresh</button>
+        </div>
+        <div id="stats-cards" class="stat-cards"><div class="muted">Loading…</div></div>
+        <div id="stats-charts" class="stat-charts"></div>
+        <div class="note" id="stats-paths"></div>
+      </div>
+
+      <div class="panel">
+        <div class="row" style="justify-content:space-between;">
           <h3 style="margin:0;">Recent benchmark runs</h3>
           <button class="btn secondary" id="refresh-runs">Refresh</button>
         </div>
@@ -116,6 +136,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=15"></script>
+    <script type="module" src="/static/admin.js?v=16"></script>
   </body>
 </html>

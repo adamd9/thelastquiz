@@ -351,6 +351,13 @@ class DiskDatabase(DatabaseInterface):
                 return r["ip"]
         return None
 
+    def fetch_audit(self, since_iso: str | None = None) -> list[dict]:
+        """Fetch audit-log entries (optionally only those at/after since_iso)."""
+        records = read_jsonl(self.audit_path)
+        if since_iso:
+            records = [r for r in records if str(r.get("created_at", "")) >= since_iso]
+        return records
+
     @_synchronized
     def replace_run_outcomes(
         self,

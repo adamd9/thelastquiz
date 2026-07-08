@@ -8,12 +8,12 @@ import shutil
 import time
 import traceback
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import json
 import httpx
-from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
@@ -287,6 +287,12 @@ def _record_run_cost(run_id: str, runtime_root: Path) -> None:
             cost_usd=cost_value,
             detail={"status": run.get("status") if run else None},
         )
+        # Denormalize the cost onto the run so the admin console can show it per
+        # run without a second lookup.
+        if run is not None and cost_value is not None:
+            merged = dict(run.get("settings") or {})
+            merged["cost_usd"] = cost_value
+            db.update_run_settings(run_id, merged)
         db.close()
     except Exception:
         # Auditing must never break the run pipeline.
@@ -428,6 +434,27 @@ class BenchmarkRunRequest(BaseModel):
     group: str | None = None
     reps: int = 1
     force: bool = False
+
+
+# First-party engagement events we accept from the site (allowlist keeps the
+# open ingest endpoint from being turned into arbitrary log spam).
+ENGAGEMENT_EVENTS = {
+    "pageview",
+    "view_switched",
+    "filter_changed",
+    "quiz_started",
+    "models_picked",
+    "run_started",
+    "result_viewed",
+}
+
+
+class EventRequest(BaseModel):
+    event: str
+    path: str | None = None
+    ref: str | None = None
+    session: str | None = None
+    detail: dict | None = None
 
 
 @app.get("/api/rankings")
@@ -584,6 +611,143 @@ def admin_run_benchmark(
         "run_ids": run_ids,
         "skipped": skipped_models,
     }
+
+
+@app.post("/api/events")
+def track_event(req: EventRequest) -> Response:
+    """Ingest a first-party engagement event (anonymous, no PII).
+
+    Open by design (the public site fires these), so it's tightly bounded: only
+    allow-listed event names are stored, fields are length-capped, and no IP is
+    recorded — uniqueness is by the client-supplied ephemeral session id only.
+    """
+    name = (req.event or "").strip().lower()
+    if name not in ENGAGEMENT_EVENTS:
+        # Accept-and-ignore so bots probing the endpoint learn nothing.
+        return Response(status_code=204)
+    detail = {
+        "path": (req.path or "")[:200],
+        "ref": (req.ref or "")[:200],
+        "session": (req.session or "")[:64],
+    }
+    if isinstance(req.detail, dict):
+        for key, value in list(req.detail.items())[:5]:
+            detail[str(key)[:32]] = str(value)[:120]
+    try:
+        db = connect(get_runtime_paths().db_path)
+        try:
+            db.insert_audit(event="ev:" + name, ip=None, detail=detail)
+        finally:
+            db.close()
+    except Exception:
+        pass  # Analytics must never surface an error to the visitor.
+    return Response(status_code=204)
+
+
+@app.get("/api/admin/stats", dependencies=[Depends(require_admin)])
+def admin_stats(days: int = 30) -> dict:
+    """Operational + engagement stats for the admin dashboard.
+
+    Cost comes from the ``run_completed`` audit rows (already recorded per run);
+    engagement from the ``ev:*`` rows; run/quiz counts from their tables. Tokens
+    are summed by joining each windowed run to its stored results.
+    """
+    days = max(1, min(int(days or 30), 365))
+    now = datetime.now(timezone.utc)
+    since = (now - timedelta(days=days)).isoformat()
+    day_keys = [(now - timedelta(days=i)).date().isoformat() for i in range(days - 1, -1, -1)]
+
+    db = connect(get_runtime_paths().db_path)
+    try:
+        runs = db.fetch_runs()
+        quizzes = db.fetch_quizzes()
+        audit = db.fetch_audit(since)
+
+        def day_of(iso: str) -> str:
+            return str(iso or "")[:10]
+
+        runs_series = {k: 0 for k in day_keys}
+        cost_series = {k: 0.0 for k in day_keys}
+        views_series = {k: 0 for k in day_keys}
+
+        runs_by_status: dict[str, int] = {}
+        windowed_runs = []
+        for run in runs:
+            created = run.get("created_at") or ""
+            if created < since:
+                continue
+            windowed_runs.append(run)
+            runs_by_status[run.get("status", "unknown")] = runs_by_status.get(run.get("status", "unknown"), 0) + 1
+            d = day_of(created)
+            if d in runs_series:
+                runs_series[d] += 1
+
+        cost_total = 0.0
+        pageviews = 0
+        sessions: set[str] = set()
+        path_counts: dict[str, int] = {}
+        for entry in audit:
+            event = entry.get("event") or ""
+            created = entry.get("created_at") or ""
+            d = day_of(created)
+            if event == "run_completed":
+                c = entry.get("cost_usd")
+                if isinstance(c, (int, float)):
+                    cost_total += float(c)
+                    if d in cost_series:
+                        cost_series[d] += float(c)
+            elif event.startswith("ev:"):
+                detail = entry.get("detail") or {}
+                sess = detail.get("session")
+                if sess:
+                    sessions.add(sess)
+                if event == "ev:pageview":
+                    pageviews += 1
+                    if d in views_series:
+                        views_series[d] += 1
+                    path = (detail.get("path") or "").split("?")[0] or "/"
+                    path_counts[path] = path_counts.get(path, 0) + 1
+
+        tokens_in = tokens_out = 0
+        for run in windowed_runs:
+            try:
+                for row in db.fetch_results(run["run_id"]):
+                    tokens_in += int(row.get("tokens_in") or 0)
+                    tokens_out += int(row.get("tokens_out") or 0)
+            except Exception:
+                continue
+
+        quizzes_in_window = sum(1 for q in quizzes if (q.get("created_at") or "") >= since)
+        top_paths = sorted(
+            ({"path": p, "views": n} for p, n in path_counts.items()),
+            key=lambda x: x["views"],
+            reverse=True,
+        )[:8]
+
+        return {
+            "days": days,
+            "generated_at": now.isoformat(),
+            "totals": {
+                "quizzes": len(quizzes),
+                "quizzes_new": quizzes_in_window,
+                "runs": len(windowed_runs),
+                "runs_by_status": runs_by_status,
+                "cost_usd": round(cost_total, 4),
+                "tokens_in": tokens_in,
+                "tokens_out": tokens_out,
+                "pageviews": pageviews,
+                "sessions": len(sessions),
+            },
+            "top_paths": top_paths,
+            "series": {
+                "labels": day_keys,
+                "runs": [runs_series[k] for k in day_keys],
+                "cost": [round(cost_series[k], 4) for k in day_keys],
+                "pageviews": [views_series[k] for k in day_keys],
+            },
+        }
+    finally:
+        db.close()
 
 
 @app.get("/rankings")

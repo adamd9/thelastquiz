@@ -144,6 +144,10 @@ class SQLiteDatabase(DatabaseInterface):
         """Return the earliest recorded IP associated with a run."""
         return sqlite_store.fetch_ip_for_run(self.conn, run_id)
 
+    def fetch_audit(self, since_iso: str | None = None) -> list[dict]:
+        """Fetch audit-log entries (optionally only those at/after since_iso)."""
+        return sqlite_store.fetch_audit(self.conn, since_iso)
+
     def replace_run_outcomes(
         self,
         run_id: str,
