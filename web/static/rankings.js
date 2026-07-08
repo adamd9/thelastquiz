@@ -9,6 +9,7 @@
  * subset instead of rendering every benchmarked model at once. */
 import { buildModelGroups } from "./model-groups.js";
 import { providerLogoImg, providerLogoHtml, providerLogoUrl, familyLabel } from "./model-logo.js";
+import { attachRichTooltip, escapeHtml } from "./rich-tooltip.js";
 
 // On-brand palette that reads well on the app's cream panels.
 const PALETTE = [
@@ -329,6 +330,30 @@ const SD3_TRAITS = [
 ];
 function shortName(id) { return id.split("/").pop() || id; }
 
+function formatReleased(released) {
+  if (!released) return "release date unknown";
+  const d = new Date(released + "T00:00:00Z");
+  if (isNaN(d.getTime())) return "release date unknown";
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+}
+
+// Rich hover/tap/focus tooltip content for a Dark Triad model point: name +
+// id, release date, and every trait score (the current trait, if any,
+// highlighted) so a suppressed/de-cluttered label is still fully discoverable.
+function darkTriadTooltipHtml(m, highlightTraitId) {
+  const rows = SD3_TRAITS.map((t) => {
+    const val = Math.round(m.profile[t.id] ?? 0);
+    const hi = t.id === highlightTraitId ? " rq-hi" : "";
+    return `<div class="rq-row${hi}"><span class="rq-k">${escapeHtml(t.name)}</span><span class="rq-v">${val}</span></div>`;
+  }).join("");
+  return (
+    `<div class="rq-name">${escapeHtml(familyLabel(m.model_id))}</div>` +
+    `<div class="rq-id">${escapeHtml(m.model_id)}</div>` +
+    `<div class="rq-date">${escapeHtml(formatReleased(m.released))}</div>` +
+    `<div class="rq-rows">${rows}</div>`
+  );
+}
+
 // Light -> dark colour ramp (teal = restrained, red = dark), shared across the
 // Dark Triad charts so colour reinforces the score everywhere.
 const DARK_STOPS = [[0, [42, 157, 143]], [30, [138, 177, 125]], [55, [233, 196, 106]], [74, [224, 159, 62]], [100, [158, 42, 43]]];
@@ -456,9 +481,11 @@ function darkTriadTimeline(sd3, human, colorFor) {
     for (const m of dated) {
       const cx = xFor(ms(m.released)), cy = yFor(m.profile[t.id] ?? 0);
       const rightEdge = cx > W - 130;
-      const g = mk("g");
+      const g = mk("g", { style: "cursor: pointer;" });
       const badge = m.model_id === saintId ? "\uD83D\uDE07" : m.model_id === devilId ? "\uD83D\uDE08" : null;
       const tlLogo = providerLogoUrl(m.model_id);
+      // Invisible, larger hit target so the tooltip is easy to hover/tap.
+      g.appendChild(mk("circle", { cx, cy, r: 11, fill: "transparent" }));
       if (badge) {
         g.appendChild(mk("text", { x: cx, y: cy, "font-size": 17, "text-anchor": "middle", "dominant-baseline": "central" }, badge));
       } else if (tlLogo) {
@@ -467,7 +494,8 @@ function darkTriadTimeline(sd3, human, colorFor) {
         g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(m.model_id), "fill-opacity": 0.92, stroke: "#fff", "stroke-width": 1.5 }));
       }
       svg.appendChild(mk("text", { x: rightEdge ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": rightEdge ? "end" : "start" }, familyLabel(m.model_id)));
-      g.appendChild(mk("title", {}, `${m.model_id} \u2014 ${t.name}: ${Math.round(m.profile[t.id] ?? 0)} \u00b7 released ${m.released}`));
+      g.setAttribute("aria-label", `${familyLabel(m.model_id)}, ${t.name}: ${Math.round(m.profile[t.id] ?? 0)}, released ${m.released}`);
+      attachRichTooltip(g, () => darkTriadTooltipHtml(m, t.id));
       svg.appendChild(g);
     }
     wrap.appendChild(svg);
@@ -514,11 +542,11 @@ function lightDarkScale(sd3, human) {
   const idxOf = (p) => SD3_TRAITS.reduce((s, t) => s + (p[t.id] ?? 0), 0) / SD3_TRAITS.length;
   const humanIdx = idxOf(human);
   const models = sd3.models
-    .map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) }))
+    .map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), released: m.released }))
     .sort((a, b) => a.v - b.v);
   const clamp = (v) => Math.max(2, Math.min(98, v));
   const markers = models
-    .map((m, i) => `<div class="ld-dot" style="left:${clamp(m.v)}%" title="${m.name}: ${Math.round(m.v)}/100 dark index">` +
+    .map((m, i) => `<div class="ld-dot" data-idx="${i}" style="left:${clamp(m.v)}%">` +
       `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${familyLabel(m.id)}</span></div>`)
     .join("");
   const caption =
@@ -532,6 +560,16 @@ function lightDarkScale(sd3, human) {
     `<div class="ld-track"><div class="ld-human" style="left:${clamp(humanIdx)}%"><span>avg human</span></div>${markers}</div>` +
     `<div class="ld-face">\uD83D\uDE08<b>villain</b></div>` +
     `</div><p class="ld-cap">${caption}</p>`;
+  wrap.querySelectorAll(".ld-dot").forEach((dot) => {
+    const m = models[Number(dot.dataset.idx)];
+    dot.setAttribute("aria-label", `${m.name}: ${Math.round(m.v)}/100 dark index`);
+    attachRichTooltip(dot, () => (
+      `<div class="rq-name">${escapeHtml(familyLabel(m.id))}</div>` +
+      `<div class="rq-id">${escapeHtml(m.id)}</div>` +
+      `<div class="rq-date">${escapeHtml(formatReleased(m.released))}</div>` +
+      `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">${Math.round(m.v)} / 100</span></div></div>`
+    ));
+  });
   return wrap;
 }
 
