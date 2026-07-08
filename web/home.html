@@ -417,7 +417,7 @@
   <script type="module">
   import { providerLogoUrl, familyLabel } from "/static/model-logo.js";
   import { buildModelGroups } from "/static/model-groups.js";
-  import { attachRichTooltip, escapeHtml } from "/static/rich-tooltip.js";
+  import { attachRichTooltip, escapeHtml, formatReleased } from "/static/rich-tooltip.js";
   /* Homepage rankings: pull the live snapshot the rankings page uses and render
    * the Darkness Scale + Dark Triad Index leaderboard from real data. Same-origin
    * on the apex; falls back to the API. Sections stay hidden if data is missing,
@@ -429,12 +429,6 @@
     var barW = function (v) { return Math.max(0, Math.min(100, v)); };
     var shortName = function (id) { return String(id).split("/").pop() || id; };
     var idxOf = function (p) { return (((p && p.MACH) || 0) + ((p && p.NARC) || 0) + ((p && p.PSYCH) || 0)) / 3; };
-    var formatReleased = function (released) {
-      if (!released) return "release date unknown";
-      var d = new Date(released + "T00:00:00Z");
-      if (isNaN(d.getTime())) return "release date unknown";
-      return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
-    };
 
     function load() {
       return fetch("/rankings.json").then(function (r) {

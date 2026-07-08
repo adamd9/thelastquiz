@@ -9,7 +9,7 @@
  * subset instead of rendering every benchmarked model at once. */
 import { buildModelGroups } from "./model-groups.js";
 import { providerLogoImg, providerLogoHtml, providerLogoUrl, familyLabel } from "./model-logo.js";
-import { attachRichTooltip, escapeHtml } from "./rich-tooltip.js";
+import { attachRichTooltip, escapeHtml, formatReleased } from "./rich-tooltip.js";
 
 // On-brand palette that reads well on the app's cream panels.
 const PALETTE = [
@@ -329,13 +329,6 @@ const SD3_TRAITS = [
   { id: "PSYCH", name: "Psychopathy", blurb: "callousness, low empathy", color: "#9e2a2b" },
 ];
 function shortName(id) { return id.split("/").pop() || id; }
-
-function formatReleased(released) {
-  if (!released) return "release date unknown";
-  const d = new Date(released + "T00:00:00Z");
-  if (isNaN(d.getTime())) return "release date unknown";
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
-}
 
 // Rich hover/tap/focus tooltip content for a Dark Triad model point: name +
 // id, release date, and every trait score (the current trait, if any,

@@ -16,6 +16,15 @@ function escapeHtml(s) {
   ));
 }
 
+// Shared date formatter for tooltip content: model release dates are stored
+// as "YYYY-MM-DD" strings; render them in a short, locale-friendly form.
+function formatReleased(released) {
+  if (!released) return "release date unknown";
+  const d = new Date(released + "T00:00:00Z");
+  if (isNaN(d.getTime())) return "release date unknown";
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" });
+}
+
 function ensureCard() {
   if (card) return card;
   card = document.createElement("div");
@@ -26,7 +35,7 @@ function ensureCard() {
   document.body.appendChild(card);
   const onDismiss = (e) => {
     if (!activeAnchor) return;
-    if (card.contains(e.target) || activeAnchor === e.target || activeAnchor.contains?.(e.target)) return;
+    if (card?.contains(e.target) || activeAnchor === e.target || activeAnchor.contains?.(e.target)) return;
     hideTip();
   };
   document.addEventListener("click", onDismiss, true);
@@ -85,7 +94,6 @@ export function attachRichTooltip(el, getHtml) {
   el.setAttribute("aria-describedby", TIP_ID);
 
   const show = () => {
-    clearTimeout(hideTimer);
     const html = getHtml();
     if (html) showTip(el, html);
   };
@@ -108,4 +116,4 @@ export function attachRichTooltip(el, getHtml) {
   return { hide: () => { if (activeAnchor === el) hideTip(); } };
 }
 
-export { escapeHtml };
+export { escapeHtml, formatReleased };
