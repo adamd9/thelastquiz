@@ -52,11 +52,23 @@ class OpenRouterAdapter:
                     ) from e
         latency_ms = int((time.perf_counter() - start) * 1000)
         data = resp.json()
-        text = data["choices"][0]["message"]["content"]
+        choice = (data.get("choices") or [{}])[0]
+        message = choice.get("message") or {}
+        text = message.get("content")
+        # Reasoning models sometimes return the answer only in `reasoning` with an
+        # empty `content` (especially when the completion was cut short); fall back
+        # to it so we don't mislabel a truncated reply as "no answer".
+        if not text:
+            text = message.get("reasoning") or ""
+        finish_reason = choice.get("finish_reason")
         tokens_in = data.get("usage", {}).get("prompt_tokens")
         tokens_out = data.get("usage", {}).get("completion_tokens")
         return ChatResponse(
-            text=text, tokens_in=tokens_in, tokens_out=tokens_out, latency_ms=latency_ms
+            text=text or "",
+            tokens_in=tokens_in,
+            tokens_out=tokens_out,
+            latency_ms=latency_ms,
+            finish_reason=finish_reason,
         )
 
     def _format_api_error(self, response: httpx.Response) -> str:

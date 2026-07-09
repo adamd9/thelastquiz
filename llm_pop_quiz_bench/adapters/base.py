@@ -8,6 +8,7 @@ class ChatResponse(TypedDict, total=False):
     tokens_in: Union[int, None]
     tokens_out: Union[int, None]
     latency_ms: int
+    finish_reason: Union[str, None]
 
 
 class ChatAdapter(Protocol):

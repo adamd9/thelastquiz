@@ -34,7 +34,7 @@ def _extract_actual_error(exception: Exception) -> str:
         return str(exception.__context__)
     
     # Fallback to the original exception string
-    return str(exception)
+    return str(exception) or type(exception).__name__
 
 
 def _summarize_failure_reasons(records: list[dict]) -> str:
@@ -66,11 +66,13 @@ def _get_model_params(adapter) -> dict:
     Many benchmarked models aren't listed in models.yaml, so their configured
     params are empty. Without a token cap a reasoning model will "think" at
     length about a simple 1-5 Likert item and can take minutes per question, so
-    we always bound the response length and temperature.
+    we always bound the response length and temperature. The cap is generous
+    enough that reasoning/verbose models can still finish their JSON answer —
+    too low and they get cut off mid-answer (finish_reason=length) and fail.
     """
     params = dict(getattr(adapter, "default_params", None) or {})
     params.setdefault("temperature", 0.2)
-    params.setdefault("max_tokens", 512)
+    params.setdefault("max_tokens", 2048)
     return params
 
 
@@ -169,14 +171,29 @@ async def run_quiz(
                         )
                         latency_ms = int((time.perf_counter() - start) * 1000)
                         raw_text = resp.get("text") if isinstance(resp, dict) else None
+                        finish_reason = resp.get("finish_reason") if isinstance(resp, dict) else None
                         data = parse_choice_json(raw_text)
                         if not data:
-                            # No parseable choice JSON — typically a refusal, so
-                            # keep whatever the model actually said as the reason.
+                            # No parseable choice JSON. Say *why* so it's debuggable:
+                            # a length cutoff (token cap too low), a truly empty
+                            # reply, or an actual plain-text refusal we keep verbatim.
                             refusal_text = (raw_text or "").strip()
+                            if finish_reason == "length":
+                                reason = (
+                                    "Answer cut off before it finished (finish_reason=length) — "
+                                    "the reply hit the token cap. Raise max_tokens for this model."
+                                )
+                            elif not refusal_text:
+                                reason = (
+                                    "The model returned an empty response"
+                                    + (f" (finish_reason={finish_reason})" if finish_reason else "")
+                                    + "."
+                                )
+                            else:
+                                reason = refusal_text
                             data = {
                                 "choice": "",
-                                "reason": refusal_text or "The model returned no answer.",
+                                "reason": reason,
                                 "additional_thoughts": "",
                                 "refused": True,
                             }
