@@ -10,6 +10,9 @@ const TOKEN_KEY = "tlq_admin_token";
 let selectedModels = new Set();
 let curatedGroups = {};
 let modelNames = {};
+// Benchmarks + which models already have a result, for the coverage table.
+let benchmarksData = [];
+let coverageByBench = {};
 // Run ids whose failure/skip detail is currently expanded. Tracked so a
 // background refresh re-renders them still open instead of snapping shut.
 const expandedRuns = new Set();
@@ -164,6 +167,53 @@ function updateSelectionNote() {
   const shown = names.slice(0, CAP).join(", ");
   const extra = names.length > CAP ? ` + ${names.length - CAP} more` : "";
   note.textContent = `${ids.length} selected: ${shown}${extra}`;
+  renderCoverage();
+}
+
+// A matrix of the currently-selected models (rows) against each benchmark test
+// (columns), showing which already have a completed result — so it's obvious at
+// a glance what a run would actually cover (and what would be skipped).
+function renderCoverage() {
+  const host = document.getElementById("coverage-table");
+  if (!host) return;
+  const ids = [...selectedModels];
+  if (!benchmarksData.length) {
+    host.innerHTML = '<div class="muted">Benchmarks not loaded yet.</div>';
+    return;
+  }
+  if (!ids.length) {
+    host.innerHTML = '<div class="muted">Select models (or a group) to see which tests they already have results for.</div>';
+    return;
+  }
+  const benches = benchmarksData;
+  const head =
+    "<tr><th>Model</th>" +
+    benches.map((b) => `<th class="cov-h">${escapeHtml(b.title || b.id)}</th>`).join("") +
+    "</tr>";
+  const rows = ids
+    .map((id) => {
+      const cells = benches
+        .map((b) => {
+          const has = (coverageByBench[b.id] || new Set()).has(id);
+          return has
+            ? '<td class="cov-yes" title="Has a result">✓</td>'
+            : '<td class="cov-no" title="No result yet — a run would test this">—</td>';
+        })
+        .join("");
+      return `<tr><td class="cov-model">${escapeHtml(modelNames[id] || id)}</td>${cells}</tr>`;
+    })
+    .join("");
+  // Per-test totals across the selection.
+  const totals = benches
+    .map((b) => {
+      const set = coverageByBench[b.id] || new Set();
+      const done = ids.filter((id) => set.has(id)).length;
+      return `<td class="cov-total">${done}/${ids.length}</td>`;
+    })
+    .join("");
+  host.innerHTML =
+    `<table class="cov"><thead>${head}</thead><tbody>${rows}` +
+    `<tr class="cov-totals"><td>Have a result</td>${totals}</tr></tbody></table>`;
 }
 
 // Apply the chosen group: tick exactly its models, clear the rest, and keep
@@ -195,6 +245,12 @@ async function loadBenchmarks(preloaded) {
   const host = document.getElementById("benchmarks");
   try {
     const data = preloaded || (await api("/api/admin/benchmarks"));
+    benchmarksData = data.benchmarks || [];
+    coverageByBench = {};
+    for (const b of benchmarksData) {
+      coverageByBench[b.id] = new Set(b.models || []);
+    }
+    renderCoverage();
     host.innerHTML = "";
     for (const b of data.benchmarks) {
       const row = document.createElement("div");
@@ -256,16 +312,29 @@ async function runBenchmark(benchmarkId, btn) {
 }
 
 let runsLoading = false;
+let runsAutoTimer = null;
+const IN_PROGRESS_STATUSES = ["queued", "running", "reporting"];
 
-async function loadRuns() {
+async function loadRuns(auto) {
   // Guard against overlapping loads: a slow request must not pile up behind
   // repeated clicks (or leave the button spinning twice).
   if (runsLoading) return;
+  // Auto-refreshes never yank the table out from under a detail the user is
+  // reading/copying or a text selection; just try again shortly.
+  if (auto) {
+    const sel = window.getSelection && window.getSelection();
+    if (expandedRuns.size > 0 || (sel && !sel.isCollapsed)) {
+      scheduleRunsAuto();
+      return;
+    }
+  }
   runsLoading = true;
   const tbody = document.getElementById("runs");
   const refreshBtn = document.getElementById("refresh-runs");
   const btnLabel = refreshBtn ? refreshBtn.textContent : "";
-  if (refreshBtn) {
+  // Only the manual button shows the "Refreshing…" state — auto-refreshes stay
+  // quiet so the button doesn't flicker every few seconds.
+  if (!auto && refreshBtn) {
     refreshBtn.disabled = true;
     refreshBtn.textContent = "Refreshing…";
   }
@@ -275,6 +344,12 @@ async function loadRuns() {
     // Drop expanded-state for runs no longer shown.
     const visible = new Set(runs.slice(0, 25).map((r) => r.run_id));
     for (const id of [...expandedRuns]) if (!visible.has(id)) expandedRuns.delete(id);
+    // Auto-refresh only while a run is actually in progress, then stop — a
+    // visible, self-limiting update rather than a permanent hidden timer.
+    const active = runs.some((r) => IN_PROGRESS_STATUSES.includes(r.status));
+    setRunsActivity(active);
+    clearTimeout(runsAutoTimer);
+    if (active) runsAutoTimer = setTimeout(() => loadRuns(true), 5000);
     if (!runs.length) {
       tbody.innerHTML = '<tr><td colspan="5" class="muted">No benchmark runs yet.</td></tr>';
       return;
@@ -287,11 +362,24 @@ async function loadRuns() {
     tbody.innerHTML = `<tr><td colspan="5" class="muted">Could not load runs: ${escapeHtml(e.message)}</td></tr>`;
   } finally {
     runsLoading = false;
-    if (refreshBtn) {
+    if (!auto && refreshBtn) {
       refreshBtn.disabled = false;
       refreshBtn.textContent = btnLabel || "Refresh";
     }
   }
+}
+
+function scheduleRunsAuto() {
+  clearTimeout(runsAutoTimer);
+  runsAutoTimer = setTimeout(() => loadRuns(true), 5000);
+}
+
+// Show a visible "a run is in progress — auto-updating" hint so the auto-refresh
+// is never a mystery, and clear it once everything is terminal.
+function setRunsActivity(active) {
+  const el = document.getElementById("runs-activity");
+  if (!el) return;
+  el.textContent = active ? "● a run is in progress — auto-updating" : "";
 }
 
 // Fetch and render the stats & engagement dashboard (headline numbers, per-day
