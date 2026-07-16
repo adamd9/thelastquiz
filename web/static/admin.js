@@ -312,29 +312,17 @@ async function runBenchmark(benchmarkId, btn) {
 }
 
 let runsLoading = false;
-let runsAutoTimer = null;
-const IN_PROGRESS_STATUSES = ["queued", "running", "reporting"];
 
-async function loadRuns(auto) {
+async function loadRuns() {
   // Guard against overlapping loads: a slow request must not pile up behind
-  // repeated clicks (or leave the button spinning twice).
+  // repeated clicks (or leave the button spinning twice). Manual refresh only —
+  // no background timer.
   if (runsLoading) return;
-  // Auto-refreshes never yank the table out from under a detail the user is
-  // reading/copying or a text selection; just try again shortly.
-  if (auto) {
-    const sel = window.getSelection && window.getSelection();
-    if (expandedRuns.size > 0 || (sel && !sel.isCollapsed)) {
-      scheduleRunsAuto();
-      return;
-    }
-  }
   runsLoading = true;
   const tbody = document.getElementById("runs");
   const refreshBtn = document.getElementById("refresh-runs");
   const btnLabel = refreshBtn ? refreshBtn.textContent : "";
-  // Only the manual button shows the "Refreshing…" state — auto-refreshes stay
-  // quiet so the button doesn't flicker every few seconds.
-  if (!auto && refreshBtn) {
+  if (refreshBtn) {
     refreshBtn.disabled = true;
     refreshBtn.textContent = "Refreshing…";
   }
@@ -344,12 +332,6 @@ async function loadRuns(auto) {
     // Drop expanded-state for runs no longer shown.
     const visible = new Set(runs.slice(0, 25).map((r) => r.run_id));
     for (const id of [...expandedRuns]) if (!visible.has(id)) expandedRuns.delete(id);
-    // Auto-refresh only while a run is actually in progress, then stop — a
-    // visible, self-limiting update rather than a permanent hidden timer.
-    const active = runs.some((r) => IN_PROGRESS_STATUSES.includes(r.status));
-    setRunsActivity(active);
-    clearTimeout(runsAutoTimer);
-    if (active) runsAutoTimer = setTimeout(() => loadRuns(true), 5000);
     if (!runs.length) {
       tbody.innerHTML = '<tr><td colspan="5" class="muted">No benchmark runs yet.</td></tr>';
       return;
@@ -362,24 +344,11 @@ async function loadRuns(auto) {
     tbody.innerHTML = `<tr><td colspan="5" class="muted">Could not load runs: ${escapeHtml(e.message)}</td></tr>`;
   } finally {
     runsLoading = false;
-    if (!auto && refreshBtn) {
+    if (refreshBtn) {
       refreshBtn.disabled = false;
       refreshBtn.textContent = btnLabel || "Refresh";
     }
   }
-}
-
-function scheduleRunsAuto() {
-  clearTimeout(runsAutoTimer);
-  runsAutoTimer = setTimeout(() => loadRuns(true), 5000);
-}
-
-// Show a visible "a run is in progress — auto-updating" hint so the auto-refresh
-// is never a mystery, and clear it once everything is terminal.
-function setRunsActivity(active) {
-  const el = document.getElementById("runs-activity");
-  if (!el) return;
-  el.textContent = active ? "● a run is in progress — auto-updating" : "";
 }
 
 // Fetch and render the stats & engagement dashboard (headline numbers, per-day

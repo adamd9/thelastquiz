@@ -372,7 +372,25 @@ def _run_and_report(
     runtime_root: Path,
     generate_report: bool,
 ) -> None:
-    run_sync(quiz_path, adapters, run_id, runtime_root)
+    try:
+        run_sync(quiz_path, adapters, run_id, runtime_root)
+    except Exception as exc:
+        # The runner normally finalizes its own status; if it blew up before it
+        # could, the run must NOT be left stuck showing "running" — mark it failed.
+        try:
+            runtime_paths = build_runtime_paths(runtime_root)
+            db = connect(runtime_paths.db_path)
+            run = db.fetch_run(run_id)
+            if run and run.get("status") not in ("completed", "failed"):
+                db.update_run_status(run_id, "failed")
+            db.close()
+            _append_server_log(
+                build_runtime_paths(runtime_root).logs_dir / f"{run_id}.log",
+                f"Run failed before completion: {exc}",
+            )
+        except Exception:
+            pass
+        return
     if generate_report:
         runtime_paths = build_runtime_paths(runtime_root)
         db = connect(runtime_paths.db_path)

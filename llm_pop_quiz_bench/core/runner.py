@@ -304,13 +304,18 @@ async def run_quiz(
         {"model": model_id, "status": "failed", "error": error}
         for model_id, error in failed_adapters
     ]
-    run_record = db.fetch_run(run_id)
-    settings = dict((run_record or {}).get("settings") or {})
-    settings["model_status"] = model_status
-    settings["models_total"] = len(adapters)
-    settings["models_completed"] = len(successful_adapters)
-    settings["models_failed"] = len(failed_adapters)
-    db.update_run_settings(run_id, settings)
+    # Persisting the summary must never block the run from being marked done —
+    # a hiccup here previously left runs stuck showing "running" forever.
+    try:
+        run_record = db.fetch_run(run_id)
+        settings = dict((run_record or {}).get("settings") or {})
+        settings["model_status"] = model_status
+        settings["models_total"] = len(adapters)
+        settings["models_completed"] = len(successful_adapters)
+        settings["models_failed"] = len(failed_adapters)
+        db.update_run_settings(run_id, settings)
+    except Exception as exc:
+        _append_log(log_path, f"Warning: could not persist model-status summary: {exc}")
 
     db.update_run_status(run_id, "completed")
     db.close()

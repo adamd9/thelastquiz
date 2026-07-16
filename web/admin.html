@@ -63,7 +63,6 @@
       table.cov td.cov-no { color:var(--muted); }
       table.cov tr.cov-totals td { color:var(--muted); font-variant-numeric:tabular-nums; border-top:1px solid var(--line); border-bottom:none; }
       table.cov tr.cov-totals td:first-child { text-align:left; }
-      #runs-activity { color:var(--warn); font-size:12px; font-weight:600; }
       #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#20283a; border:1px solid var(--line); padding:10px 16px; border-radius:10px; opacity:0; transition:opacity .2s; }
       #toast.show { opacity:1; }
     </style>
@@ -140,10 +139,7 @@
       <div class="panel">
         <div class="row" style="justify-content:space-between;align-items:center;">
           <h3 style="margin:0;">Recent benchmark runs</h3>
-          <div class="row" style="gap:12px;align-items:center;">
-            <span id="runs-activity"></span>
-            <button class="btn secondary" id="refresh-runs">Refresh</button>
-          </div>
+          <button class="btn secondary" id="refresh-runs">Refresh</button>
         </div>
         <table><thead><tr><th>Benchmark</th><th>Status</th><th>Tested</th><th>Results</th><th>Created</th></tr></thead>
           <tbody id="runs"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
@@ -154,6 +150,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=17"></script>
+    <script type="module" src="/static/admin.js?v=18"></script>
   </body>
 </html>
