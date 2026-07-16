@@ -21,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ..core import benchmarks, reporter
+from ..core.auth import User, frontend_config, get_current_user
 from ..core.model_config import model_config_loader
 from ..core.costs import estimate_run_cost, fetch_openrouter_pricing_map
 from ..core.openrouter import fetch_user_models, normalize_models, strip_prefix
@@ -258,6 +259,21 @@ def _client_ip(request: Request) -> str | None:
     if request.client:
         return request.client.host
     return None
+
+
+def _actor_detail(user: User | None, client_ip: str | None) -> dict:
+    """Forensic actor fields for an audit ``detail`` payload.
+
+    The audit ``ip`` column holds the quota *subject* (the authenticated user's
+    id when signed in, otherwise the client IP), so record the real client IP —
+    and the user's id/email when present — here so neither is lost.
+    """
+    detail: dict = {"client_ip": client_ip}
+    if user is not None:
+        detail["user_id"] = user.id
+        if user.email:
+            detail["user_email"] = user.email
+    return detail
 
 
 def _record_run_cost(run_id: str, runtime_root: Path) -> None:
@@ -1072,15 +1088,27 @@ async def reprocess_quiz(
     }
 
 
+@app.get("/api/auth/config")
+def auth_config() -> dict:
+    """Public Entra config for the SPA (non-secret; ``enabled: false`` until set)."""
+    return frontend_config()
+
+
 @app.post("/api/runs")
 def create_run(
     req: RunRequest,
     background_tasks: BackgroundTasks,
     request: Request,
+    user: User | None = Depends(get_current_user),
 ) -> dict:
     runtime_paths = get_runtime_paths()
     use_mocks = os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() == "mock"
     client_ip = _client_ip(request)
+    # Quotas, attribution, and cost tracking all key off a single "subject": the
+    # signed-in user's stable id when present, else the client IP. Anonymous
+    # callers are unchanged (subject == client IP). The real IP and user
+    # identity are preserved in audit ``detail`` via ``_actor_detail``.
+    subject = user.id if user else client_ip
 
     # Benchmark quizzes are the source of the public rankings. They may only be
     # run through the admin benchmark pipeline (which tags runs as official);
@@ -1137,15 +1165,17 @@ def create_run(
                 pricing_map = None
         db = connect(runtime_paths.db_path)
         decision = check_request_quota(
-            db, client_ip, quota_model_ids, pricing_map, quota_config
+            db, subject, quota_model_ids, pricing_map, quota_config
         )
         if not decision.allowed:
+            blocked_detail = {"reason": decision.reason}
+            blocked_detail.update(_actor_detail(user, client_ip))
             db.insert_audit(
                 event="run_blocked",
-                ip=client_ip,
+                ip=subject,
                 quiz_id=req.quiz_id,
                 models=quota_model_ids,
-                detail={"reason": decision.reason},
+                detail=blocked_detail,
             )
             db.close()
             raise HTTPException(status_code=429, detail=decision.reason)
@@ -1164,13 +1194,16 @@ def create_run(
         models=quota_model_ids,
         settings=run_settings,
     )
+    created_detail = _actor_detail(user, client_ip)
+    if req.group:
+        created_detail["group"] = req.group
     db.insert_audit(
         event="run_created",
-        ip=client_ip,
+        ip=subject,
         run_id=run_id,
         quiz_id=req.quiz_id,
         models=quota_model_ids,
-        detail={"group": req.group} if req.group else None,
+        detail=created_detail,
     )
     db.close()
     background_tasks.add_task(

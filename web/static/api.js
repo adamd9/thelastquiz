@@ -1,4 +1,5 @@
 import { state } from "./state.js";
+import { getToken } from "./entra-auth.js";
 
 // The SPA (Cloudflare Pages) and the API (Azure) may be on different origins;
 // window.API_BASE (set by site-links.js) points absolute API calls at the
@@ -8,8 +9,11 @@ export function apiUrl(path) {
   return typeof path === "string" && path.startsWith("/") ? base + path : path;
 }
 
-export async function fetchJSON(url, options) {
-  const resp = await fetch(apiUrl(url), options);
+export async function fetchJSON(url, options = {}) {
+  const token = await getToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  const resp = await fetch(apiUrl(url), { ...options, headers });
   if (!resp.ok) {
     const text = await resp.text();
     throw new Error(text || resp.statusText);
