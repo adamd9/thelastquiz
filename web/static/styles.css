@@ -109,8 +109,9 @@ body {
   border-color: var(--accent);
 }
 
-.auth-control,
-.auth-user {
+.auth-control:not([hidden]),
+.auth-signedout:not([hidden]),
+.auth-user:not([hidden]) {
   display: inline-flex;
   align-items: center;
   gap: 8px;

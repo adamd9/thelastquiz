@@ -67,6 +67,14 @@ export async function login() {
   if (msal) await msal.loginRedirect({ scopes: [config.api_scope] });
 }
 
+export async function signup() {
+  await ready;
+  // prompt=create jumps straight to the sign-up page of the combined
+  // sign-up/sign-in user flow; it degrades to the sign-in page (which also
+  // links to "Create account") if the tenant doesn't honor the hint.
+  if (msal) await msal.loginRedirect({ scopes: [config.api_scope], prompt: "create" });
+}
+
 export async function logout() {
   await ready;
   if (msal) await msal.logoutRedirect();
@@ -103,10 +111,10 @@ function updateControls() {
   root.hidden = !enabled;
   if (!enabled) return;
   const signedIn = Boolean(account);
-  const loginBtn = root.querySelector("[data-auth='login']");
+  const signedOutBox = root.querySelector("[data-auth='signedout']");
   const userBox = root.querySelector("[data-auth='user']");
   const emailEl = root.querySelector("[data-auth='email']");
-  if (loginBtn) loginBtn.hidden = signedIn;
+  if (signedOutBox) signedOutBox.hidden = signedIn;
   if (userBox) userBox.hidden = !signedIn;
   if (emailEl && account) {
     emailEl.textContent = account.username || account.name || "Signed in";
@@ -119,6 +127,7 @@ function wireControls() {
   root.addEventListener("click", (event) => {
     const action = event.target.closest("[data-auth]")?.getAttribute("data-auth");
     if (action === "login") login();
+    else if (action === "signup") signup();
     else if (action === "logout") logout();
   });
   updateControls();
