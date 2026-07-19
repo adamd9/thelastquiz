@@ -8,6 +8,16 @@
  * Host-derived, so no per-environment config is needed. */
 (function () {
   var loc = window.location;
+  // Canonical app origin. The Azure host (thelastquiz.drop37.com) is the API,
+  // but it also serves the app shell — and that origin is NOT a registered auth
+  // redirect URI, so sign-in (and therefore running a quiz) can't complete
+  // there. Bounce any app load on the API host to the canonical app host, path
+  // preserved, so visitors always land where authentication works. Only the app
+  // shell runs this (API/static responses don't), so the backend is untouched.
+  if (loc.hostname === "thelastquiz.drop37.com") {
+    loc.replace("https://app.thelastquiz.net" + loc.pathname + loc.search + loc.hash);
+    return;
+  }
   // The SPA is hosted on Cloudflare Pages, but the API lives on Azure
   // (thelastquiz.drop37.com). Point absolute API calls there in production;
   // stay same-origin locally and on the backend host itself.
