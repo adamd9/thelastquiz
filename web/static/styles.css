@@ -136,6 +136,152 @@ body {
   text-decoration: underline;
 }
 
+/* Sign-up gate — a friendly prompt shown when an anonymous visitor tries to run
+   a quiz (parsing/building stays free). */
+.auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2400;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+.auth-gate.open {
+  opacity: 1;
+}
+.auth-gate-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(27, 26, 23, 0.6);
+  backdrop-filter: blur(3px);
+}
+.auth-gate-panel {
+  position: relative;
+  width: min(480px, 94vw);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+  padding: 30px 28px 22px;
+  transform: translateY(8px) scale(0.985);
+  transition: transform 0.18s ease;
+}
+.auth-gate.open .auth-gate-panel {
+  transform: none;
+}
+.auth-gate-x {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 4px 8px;
+}
+.auth-gate-x:hover {
+  color: var(--ink);
+}
+.auth-gate-kicker {
+  margin: 0 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+.auth-gate-title {
+  margin: 0 0 8px;
+  font-family: "Fraunces", serif;
+  font-weight: 600;
+  font-size: 1.55rem;
+  line-height: 1.15;
+}
+.auth-gate-sub {
+  margin: 0 0 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.auth-gate-benefits {
+  list-style: none;
+  margin: 0 0 22px;
+  padding: 0;
+  display: grid;
+  gap: 11px;
+}
+.auth-gate-benefits li {
+  position: relative;
+  padding-left: 30px;
+  line-height: 1.4;
+  font-size: 0.95rem;
+}
+.auth-gate-benefits li::before {
+  content: "\2713";
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: rgba(218, 95, 53, 0.14);
+  color: var(--accent);
+  display: grid;
+  place-items: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.auth-gate-actions {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.auth-gate-primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 14px 18px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+}
+.auth-gate-primary:hover {
+  filter: brightness(1.06);
+}
+.auth-gate-secondary {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--ink);
+  padding: 12px 18px;
+  border-radius: 12px;
+  font: inherit;
+  cursor: pointer;
+}
+.auth-gate-secondary:hover {
+  border-color: var(--accent);
+}
+.auth-gate-actions button:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.auth-gate-fine {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.auth-gate-status {
+  margin: 10px 0 0;
+  min-height: 1.1em;
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
 .hero {
   display: grid;
   gap: 20px;

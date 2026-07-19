@@ -1,4 +1,5 @@
 import { fetchJSON, loadRunDetails, refreshRuns, rerunReport, selectRun } from "../api.js";
+import { needsSignIn, showAuthGate } from "../auth-gate.js";
 import { state, setCurrentStep } from "../state.js";
 import {
   buildAffinity,
@@ -932,6 +933,14 @@ class RunPanel extends HTMLElement {
     const quizId = state.selectedRunData?.quiz_id;
     if (!quizId || !modelIds || !modelIds.length) return;
     const statusEl = this.querySelector("[data-rerun-status]");
+    if (needsSignIn()) {
+      if (statusEl) statusEl.textContent = "";
+      const signedIn = await showAuthGate();
+      if (!signedIn) {
+        if (statusEl) statusEl.textContent = "Sign in to run.";
+        return;
+      }
+    }
     if (statusEl) statusEl.textContent = "Starting a new run…";
     if (sourceEl) sourceEl.disabled = true;
     try {

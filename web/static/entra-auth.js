@@ -75,6 +75,29 @@ export async function signup() {
   if (msal) await msal.loginRedirect({ scopes: [config.api_scope], prompt: "create" });
 }
 
+// Popup variants used by the sign-up gate: they keep the app page (and the
+// visitor's in-progress quiz) intact, and resolve to the signed-in account so
+// the caller can continue the run in place.
+export async function loginPopup() {
+  await ready;
+  if (!msal) return null;
+  const result = await msal.loginPopup({ scopes: [config.api_scope] });
+  account = (result && result.account) || msal.getAllAccounts()[0] || null;
+  updateControls();
+  document.dispatchEvent(new CustomEvent("auth:changed", { detail: { account } }));
+  return account;
+}
+
+export async function signupPopup() {
+  await ready;
+  if (!msal) return null;
+  const result = await msal.loginPopup({ scopes: [config.api_scope], prompt: "create" });
+  account = (result && result.account) || msal.getAllAccounts()[0] || null;
+  updateControls();
+  document.dispatchEvent(new CustomEvent("auth:changed", { detail: { account } }));
+  return account;
+}
+
 export async function logout() {
   await ready;
   if (msal) await msal.logoutRedirect();
