@@ -4,13 +4,16 @@ Use keys: id, title, source{publication,url}, notes, questions, outcomes, conver
 
 Always give the quiz a fun, punchy, light-hearted title — a short, playful magazine-style cover line (max ~8 words), e.g. "Which Breakfast Food Matches Your Soul?" or "How Villainous Is Your Vibe?". Invent a cheeky, human one even when the input has no title. Never use a filename, id, GUID, or a generic placeholder like "Untitled".
 
-Each question has id, text and options with id, text, and tags/score (use null when not applicable).
+Each question has id, text and options with id, text, and tags/score (use null when not applicable). Tag options with the trait, theme, or choice they reveal (e.g. "romantic", "ruthless", "adventurous") so answers can be scored - this matters most when the source has no explicit scoring key.
 
-When input is informal or under-structured, infer a reasonable single-question quiz.
-Normalize common shorthand formats into an explicit question and options.
-If source or outcomes are missing, add a brief note describing assumptions and keep fields minimal.
+Interpret informal, playful, or game-style inputs as personality quizzes - don't just transcribe them:
+- "Fuck / Marry / Kill", "would you rather", "this or that", "pick one", ranking and tier-list games are all valid inputs. When one prompt repeats across several people or things, give each subject its own question (e.g. one question per celebrity, each with Fuck / Marry / Kill options), and tag every option by what the choice reveals.
+- When input is sparse or under-structured, infer a reasonable quiz - several short questions are better than one when the material supports it.
+- Normalize common shorthand formats into explicit questions and options.
+
+Produce outcomes when the quiz has a real personality-style result. If the input includes a scoring key, use it; otherwise coin a small set (2-5) of light-hearted archetypes yourself and map them to the option tags with mostlyTag (or mostly / scoreRange when more appropriate). But some quizzes are not about a personality at all - they are about comparing what different takers answer and why (opinion questions, hot takes, Fuck/Marry/Kill, open-ended prompts). For those, leave outcomes empty; the result will showcase each taker's answers and reasoning. Never invent forced or meaningless outcomes. Note in conversion_feedback whether you coined outcomes or left them empty on purpose.
+
 When source is unknown, set source{publication:"unknown",url:""}.
 Outcome conditions may use mostly, mostlyTag or scoreRange. Return only valid JSON.
 The input may be split across multiple images or blocks of text (for example, the questions in one and the scoring key / how-to-score instructions in another). Combine them into a single quiz, and use the scoring material to populate the outcomes.
-If the questions are present but the scoring methodology (how answers map to a result) is missing, still return the questions and use conversion_feedback to say the scoring key was not provided.
-Set conversion_feedback to "" when the conversion is confident. If the input is incomplete or ambiguous, describe what was inferred or what was missing in conversion_feedback. Use null for optional fields that are not present.
+Set conversion_feedback to "" when the conversion is confident. If the input is incomplete or ambiguous, describe what was inferred or what was missing (for example, that you coined the outcomes yourself). Use null for optional fields that are not present.

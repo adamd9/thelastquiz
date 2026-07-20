@@ -495,9 +495,14 @@ class RunPanel extends HTMLElement {
     if (title) title.textContent = runDisplayTitle(runData);
     if (subtitle) {
       const status = runData?.status || "unknown";
+      // Showcase quizzes (no defined outcomes) have no personality to land on -
+      // the result is simply what each model answered and why.
+      const hasOutcomes = (state.runOutcomes || []).length > 0;
       subtitle.textContent =
         status === "completed"
-          ? "Here's the personality each model landed on."
+          ? hasOutcomes
+            ? "Here's the personality each model landed on."
+            : "Here's what each model answered — and why."
           : status === "failed"
             ? "Something went wrong with this run."
             : "Running your quiz…";

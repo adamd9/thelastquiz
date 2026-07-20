@@ -240,6 +240,13 @@ def render_question_table(df: pd.DataFrame, quiz_def: dict = None) -> str:
 
 def compute_model_outcomes(df: pd.DataFrame, quiz_def: dict) -> list[dict[str, str]]:
     """Compute quiz outcomes using LLM-based intelligent scoring."""
+    # Quizzes with no defined outcomes are "showcase" quizzes (e.g. Fuck/Marry/Kill,
+    # opinion or hot-take prompts): there is no personality to score, so return
+    # nothing and let the results view show each model's answer and reasoning
+    # instead of a fabricated outcome.
+    if not quiz_def or not quiz_def.get("outcomes"):
+        return []
+
     outcomes = []
     
     for model_id, g in df.groupby("model_id"):
