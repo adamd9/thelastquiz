@@ -1,7 +1,6 @@
 import { fetchJSON, refreshRuns, selectRun } from "../api.js";
 import { state, setCurrentStep } from "../state.js";
 import { getEffectiveModelInfo, getQuizTypeLabel } from "../utils.js";
-import { needsSignIn, showAuthGate } from "../auth-gate.js";
 
 class RunCreator extends HTMLElement {
   connectedCallback() {
@@ -24,17 +23,6 @@ class RunCreator extends HTMLElement {
       status.textContent = "Pick at least one model first.";
       return;
     }
-
-    // Parsing/building a quiz is free; running it requires a (free) account.
-    if (needsSignIn()) {
-      const signedIn = await showAuthGate();
-      if (!signedIn) {
-        status.textContent =
-          "No problem \u2014 your quiz is saved. Sign in whenever you're ready to run.";
-        return;
-      }
-    }
-
     const payload = {
       quiz_id: quizId,
       models: checked.length ? checked : null,
@@ -67,14 +55,6 @@ class RunCreator extends HTMLElement {
       if (runButton) {
         runButton.disabled = false;
         runButton.textContent = "Run quiz";
-      }
-      // Safety net: if the server says sign-in is required (e.g. the session
-      // lapsed after the client-side check), re-open the gate and retry.
-      if (/sign ?in|unauthor/i.test(err.message || "")) {
-        const signedIn = await showAuthGate();
-        if (signedIn) return this.createRun();
-        status.textContent = "Sign in to run your quiz.";
-        return;
       }
       status.textContent = this.friendlyError(err.message);
     }

@@ -21,7 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from ..core import benchmarks, reporter
-from ..core.auth import User, frontend_config, get_current_user, load_auth_config
+from ..core.auth import User, frontend_config, get_current_user
 from ..core.model_config import model_config_loader
 from ..core.costs import estimate_run_cost, fetch_openrouter_pricing_map
 from ..core.openrouter import fetch_user_models, normalize_models, strip_prefix
@@ -963,10 +963,8 @@ async def parse_quiz(
             image_mime = upload.content_type or "image/png"
             images.append((upload_path.read_bytes(), image_mime))
             saved_images.append({"path": str(upload_path), "mime": image_mime})
-        # Keep any text the user typed as extra context for the images.
+        text_input = None
         raw_payload = {"type": "images", "images": saved_images}
-        if text_input:
-            raw_payload["text"] = text_input
     elif text_input:
         raw_payload = {"type": "text", "text": text_input}
 
@@ -1052,8 +1050,6 @@ async def reprocess_quiz(
             images.append((image_path.read_bytes(), image.get("mime") or "image/png"))
         if not images:
             raise HTTPException(status_code=400, detail="Quiz is missing raw input data")
-        # Preserve any extra context text captured alongside the images.
-        text_input = raw_payload.get("text")
     else:
         raise HTTPException(status_code=400, detail="Unsupported raw input type")
 
@@ -1113,12 +1109,6 @@ def create_run(
     # callers are unchanged (subject == client IP). The real IP and user
     # identity are preserved in audit ``detail`` via ``_actor_detail``.
     subject = user.id if user else client_ip
-
-    # Running a quiz spends on real model calls, so it is gated behind sign-in —
-    # but only when auth is actually configured, so local/dev without Entra can
-    # still run anonymously. Parsing and building a quiz stay open to everyone.
-    if user is None and load_auth_config().configured:
-        raise HTTPException(status_code=401, detail="Sign in to run a quiz.")
 
     # Benchmark quizzes are the source of the public rankings. They may only be
     # run through the admin benchmark pipeline (which tags runs as official);

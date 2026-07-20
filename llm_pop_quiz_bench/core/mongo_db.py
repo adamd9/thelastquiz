@@ -203,31 +203,14 @@ class MongoDatabase(DatabaseInterface):
             for doc in cursor
         ]
 
-    def _quiz_titles(self, quiz_ids: list[str]) -> dict[str, str | None]:
-        """Map quiz_id -> human title in a single query (parity with the SQLite
-        ``q.title AS quiz_title`` join, so runs show the quiz's name not its id)."""
-        ids = [qid for qid in dict.fromkeys(quiz_ids) if qid]
-        if not ids:
-            return {}
-        cursor = self.quizzes.find(
-            {"quiz_id": {"$in": ids}}, {"quiz_id": 1, "title": 1, "_id": 0}
-        )
-        return {doc["quiz_id"]: doc.get("title") for doc in cursor if doc.get("quiz_id")}
-
     def fetch_runs(self) -> list[dict]:
-        """Fetch all runs, each annotated with its quiz's human title."""
-        runs = list(self.runs.find({}, {"_id": 0}).sort("created_at", -1))
-        titles = self._quiz_titles([run.get("quiz_id") for run in runs])
-        for run in runs:
-            run["quiz_title"] = titles.get(run.get("quiz_id"))
-        return runs
+        """Fetch all runs."""
+        cursor = self.runs.find({}, {"_id": 0}).sort("created_at", -1)
+        return list(cursor)
 
     def fetch_run(self, run_id: str) -> dict | None:
-        """Fetch a specific run by ID, annotated with its quiz's human title."""
+        """Fetch a specific run by ID."""
         doc = self.runs.find_one({"run_id": run_id}, {"_id": 0})
-        if doc:
-            titles = self._quiz_titles([doc.get("quiz_id")])
-            doc["quiz_title"] = titles.get(doc.get("quiz_id"))
         return doc
 
     def fetch_assets(self, run_id: str) -> list[dict]:
