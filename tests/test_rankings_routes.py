@@ -19,7 +19,10 @@ def test_public_pages_and_rankings(monkeypatch, tmp_path):
 
     rankings = client.get("/rankings")
     assert rankings.status_code == 200
-    assert "Model Personality Rankings" in rankings.text
+    # The rankings page is client-rendered, so assert on stable shell markers
+    # rather than a heading that now lives in JS.
+    assert "Do AI Models Have Personality" in rankings.text
+    assert "rankings.js" in rankings.text
 
     assert client.get("/admin").status_code == 200
 
