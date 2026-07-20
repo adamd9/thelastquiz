@@ -93,6 +93,7 @@ export function attachRichTooltip(el, getHtml) {
   if (!el.hasAttribute("role")) el.setAttribute("role", "button");
   el.setAttribute("aria-describedby", TIP_ID);
 
+  let isTouch = false;
   const show = () => {
     const html = getHtml();
     if (html) showTip(el, html);
@@ -107,11 +108,29 @@ export function attachRichTooltip(el, getHtml) {
     else show();
   };
 
-  el.addEventListener("mouseenter", show);
-  el.addEventListener("mouseleave", scheduleHide);
+  // Hover + keyboard for pointer/desktop. Guarded with isTouch so a tap (which
+  // browsers replay as synthetic mouse events) can't drive the hover path —
+  // otherwise the tip showed on touch then hid the instant the finger lifted,
+  // which is why it only stayed up while pressing-and-holding.
+  el.addEventListener("mouseenter", () => { if (!isTouch) show(); });
+  el.addEventListener("mouseleave", () => { if (!isTouch) scheduleHide(); });
   el.addEventListener("focus", show);
   el.addEventListener("blur", scheduleHide);
-  el.addEventListener("click", toggle);
+  el.addEventListener("click", (e) => { if (!isTouch) toggle(e); });
+  // Touch: a single tap toggles the tip and leaves it open (no press-and-hold,
+  // which buries the tip under your finger). preventDefault suppresses the
+  // synthetic mouseenter/click replay that would otherwise flicker it closed.
+  el.addEventListener(
+    "touchend",
+    (e) => {
+      isTouch = true;
+      e.preventDefault();
+      e.stopPropagation();
+      if (activeAnchor === el && !card.hidden) hideTip();
+      else show();
+    },
+    { passive: false }
+  );
 
   return { hide: () => { if (activeAnchor === el) hideTip(); } };
 }

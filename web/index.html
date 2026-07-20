@@ -14,7 +14,7 @@
   </head>
   <body>
     <main class="app-shell">
-      <header class="app-header">
+      <header class="app-header is-app">
         <button class="app-brand" type="button" data-nav="dashboard">
           <img class="app-logo" src="/static/logo2.png" alt="The Last Quiz logo" />
           <div>
@@ -22,7 +22,10 @@
             <div class="app-title">Do AI models have personality?</div>
           </div>
         </button>
-        <nav class="app-nav">
+        <button class="nav-toggle" type="button" aria-label="Menu" aria-expanded="false" aria-controls="app-nav">
+          <span></span><span></span><span></span>
+        </button>
+        <nav class="app-nav" id="app-nav">
           <a class="nav-link" href="/" data-dest="home">Home</a>
           <a class="nav-link" href="/rankings" data-dest="rankings">Rankings</a>
           <button class="secondary" data-nav="dashboard">Dashboard</button>
@@ -40,22 +43,6 @@
 
       <section class="workspace">
         <div class="stack step-panel" data-step="0">
-          <header class="hero">
-            <div>
-              <p class="kicker">The Last Quiz</p>
-              <h1>Think your model has personality? Let's find out!</h1>
-              <p class="subhead">
-                A very non-scientific test of model personality - upload your quiz, pick your models, and see how they respond.
-              </p>
-            </div>
-            <div class="hero-card">
-              <img
-                class="hero-logo"
-                src="/static/logo2.png"
-                alt="LLM Pop Quiz Bench logo"
-              />
-            </div>
-          </header>
           <run-dashboard></run-dashboard>
         </div>
         <div class="stack step-panel" data-step="1">

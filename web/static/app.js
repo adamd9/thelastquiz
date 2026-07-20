@@ -85,3 +85,19 @@ applyRoute(initialRoute).then(() => {
 document.querySelectorAll("[data-nav='dashboard']").forEach((btn) => {
   btn.addEventListener("click", () => setCurrentStep(0));
 });
+
+// Mobile hamburger: toggle the app nav, and close it after choosing an item.
+const navToggle = document.querySelector(".nav-toggle");
+const appHeader = document.querySelector(".app-header.is-app");
+if (navToggle && appHeader) {
+  navToggle.addEventListener("click", () => {
+    const open = appHeader.classList.toggle("nav-open");
+    navToggle.setAttribute("aria-expanded", open ? "true" : "false");
+  });
+  appHeader.querySelectorAll(".app-nav a, .app-nav button").forEach((el) => {
+    el.addEventListener("click", () => {
+      appHeader.classList.remove("nav-open");
+      navToggle.setAttribute("aria-expanded", "false");
+    });
+  });
+}

@@ -561,14 +561,21 @@ function lightDarkScale(sd3, human) {
   const models = sd3.models
     .map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), released: m.released }))
     .sort((a, b) => a.v - b.v);
-  const clamp = (v) => Math.max(2, Math.min(98, v));
+  // The dark index rarely climbs past the low-60s, so a full 0-100 track wastes
+  // most of its width on an empty right half. Trim the axis to just above the
+  // highest score (rounded to a tidy number) and label that ceiling so it stays
+  // honest about not reaching 100.
+  const maxV = Math.max(humanIdx, ...models.map((m) => m.v));
+  const scaleMax = Math.min(100, Math.max(20, Math.ceil((maxV + 5) / 5) * 5));
+  const clamp = (v) => Math.max(2, Math.min(98, (v / scaleMax) * 100));
   const markers = models
     .map((m, i) => `<div class="ld-dot" data-idx="${i}" style="left:${clamp(m.v)}%">` +
       `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${familyLabel(m.id)}</span></div>`)
     .join("");
   const caption =
     "Further left is more restrained than the average person; further right, more villainous. " +
-    "Where would you want your AI to land?";
+    "Where would you want your AI to land?" +
+    (scaleMax < 100 ? ` The scale tops out at ${scaleMax}/100 — nothing here scores higher.` : "");
   const wrap = document.createElement("div");
   wrap.className = "ld";
   wrap.innerHTML =

@@ -37,6 +37,22 @@ body {
   gap: 20px;
 }
 
+/* The app (create-a-quiz SPA) gets an app-bar: sticky, with a bold accent
+   underline, to set it apart from the editorial content pages that share this
+   markup. */
+.app-header.is-app {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  padding: 12px 0;
+  background: var(--bg);
+  border-bottom: 2px solid var(--accent);
+}
+
+.nav-toggle {
+  display: none;
+}
+
 .app-brand {
   display: flex;
   align-items: center;
@@ -107,6 +123,58 @@ body {
 
 .app-nav a.nav-link:hover {
   border-color: var(--accent);
+}
+
+/* Mobile: collapse the app nav behind a hamburger so a narrow screen isn't
+   crowded by the pill links + auth controls. */
+@media (max-width: 720px) {
+  .app-header.is-app .nav-toggle {
+    display: inline-flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 46px;
+    height: 40px;
+    padding: 0 11px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+    cursor: pointer;
+  }
+  .app-header.is-app .nav-toggle span {
+    display: block;
+    height: 2px;
+    background: var(--ink);
+    border-radius: 2px;
+    transition: transform 0.18s ease, opacity 0.18s ease;
+  }
+  .app-header.is-app.nav-open .nav-toggle span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .app-header.is-app.nav-open .nav-toggle span:nth-child(2) { opacity: 0; }
+  .app-header.is-app.nav-open .nav-toggle span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+  .app-header.is-app .app-nav {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    left: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 14px 16px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow: var(--shadow);
+    z-index: 60;
+    display: none;
+  }
+  .app-header.is-app.nav-open .app-nav { display: flex; }
+  .app-header.is-app .app-nav a.nav-link,
+  .app-header.is-app .app-nav button.secondary {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+  }
+  .app-header.is-app .auth-control { justify-content: center; }
 }
 
 .auth-control,
