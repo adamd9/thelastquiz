@@ -161,6 +161,7 @@ def image_to_quiz(
 
 def images_to_quiz(
     images: list[tuple[bytes, str]],
+    context_text: str | None = None,
     model: str | None = None,
     api_key_env: str | None = None,
 ) -> dict:
@@ -175,6 +176,17 @@ def images_to_quiz(
         else "Convert this quiz image to JSON."
     )
     content: list[dict] = [{"type": "text", "text": instruction}]
+    if context_text and context_text.strip():
+        content.append(
+            {
+                "type": "text",
+                "text": (
+                    "Additional context provided by the uploader (use it to fill gaps "
+                    "such as the scoring key, missing questions, or the intended vibe):\n"
+                    + context_text.strip()
+                ),
+            }
+        )
     for image_bytes, image_mime in images:
         encoded = base64.b64encode(image_bytes).decode("ascii")
         data_url = f"data:{image_mime};base64,{encoded}"
@@ -195,10 +207,12 @@ def convert_to_quiz(
     model: str | None = None,
     api_key_env: str | None = None,
 ) -> dict:
+    if images:
+        return images_to_quiz(images, context_text=text, model=model, api_key_env=api_key_env)
+    if image_bytes and image_mime:
+        return images_to_quiz(
+            [(image_bytes, image_mime)], context_text=text, model=model, api_key_env=api_key_env
+        )
     if text:
         return text_to_quiz(text, model=model, api_key_env=api_key_env)
-    if images:
-        return images_to_quiz(images, model=model, api_key_env=api_key_env)
-    if image_bytes and image_mime:
-        return image_to_quiz(image_bytes, image_mime, model=model, api_key_env=api_key_env)
     raise ValueError("Provide either text or image bytes for conversion")

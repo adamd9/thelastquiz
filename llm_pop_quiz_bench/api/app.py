@@ -963,8 +963,10 @@ async def parse_quiz(
             image_mime = upload.content_type or "image/png"
             images.append((upload_path.read_bytes(), image_mime))
             saved_images.append({"path": str(upload_path), "mime": image_mime})
-        text_input = None
+        # Keep any text the user typed as extra context for the images.
         raw_payload = {"type": "images", "images": saved_images}
+        if text_input:
+            raw_payload["text"] = text_input
     elif text_input:
         raw_payload = {"type": "text", "text": text_input}
 
@@ -1050,6 +1052,8 @@ async def reprocess_quiz(
             images.append((image_path.read_bytes(), image.get("mime") or "image/png"))
         if not images:
             raise HTTPException(status_code=400, detail="Quiz is missing raw input data")
+        # Preserve any extra context text captured alongside the images.
+        text_input = raw_payload.get("text")
     else:
         raise HTTPException(status_code=400, detail="Unsupported raw input type")
 

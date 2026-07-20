@@ -23,11 +23,10 @@ class QuizUploader extends HTMLElement {
 
     try {
       const body = new FormData();
-      if (fileInput.files.length > 0) {
-        for (const file of fileInput.files) {
-          body.append("files", file);
-        }
-      } else {
+      for (const file of fileInput.files) {
+        body.append("files", file);
+      }
+      if (text) {
         body.append("text", text);
       }
       const data = await fetchJSON("/api/quizzes/parse", { method: "POST", body });
@@ -127,16 +126,16 @@ class QuizUploader extends HTMLElement {
           <label>Paste the quiz text</label>
           <textarea placeholder="e.g. Which houseplant are you? 1) On a Saturday you… A) …&#10;&#10;Scoring: Mostly A → …, Mostly B → …"></textarea>
         </div>
-        <div class="or-divider"><span>or</span></div>
+        <div class="or-divider"><span>and / or</span></div>
         <div>
           <label>Upload photos or screenshots</label>
-          <input type="file" accept="image/*" capture="environment" multiple />
-          <div class="status">You can add several images at once — e.g. one for the questions and one for the scoring key.</div>
+          <input type="file" accept="image/*" multiple />
+          <div class="status">Snap new photos or attach existing ones — add several at once. You can also type extra context above (e.g. the scoring key).</div>
         </div>
         <div class="actions">
           <button data-parse>Add quiz</button>
         </div>
-        <div class="status" data-status>Paste a quiz or choose one or more photos to begin.</div>
+        <div class="status" data-status>Paste a quiz, add photos, or both — then tap Add quiz.</div>
         <button class="link-toggle" data-reuse>or reuse a past quiz</button>
         ${successCard}
       </div>
