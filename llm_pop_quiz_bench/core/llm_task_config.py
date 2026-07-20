@@ -9,15 +9,15 @@ import yaml
 
 DEFAULT_TASKS: dict[str, dict[str, str]] = {
     "quiz_scoring": {
-        "model": "gpt-4o",
+        "model": "gpt-5.6-terra",
         "api_key_env": "OPENAI_API_KEY",
     },
     "summary_generation": {
-        "model": "gpt-4o-mini",
+        "model": "gpt-5.6-luna",
         "api_key_env": "OPENAI_API_KEY",
     },
     "quiz_conversion": {
-        "model": "gpt-4o",
+        "model": "gpt-5.6-terra",
         "api_key_env": "OPENAI_API_KEY",
     },
 }

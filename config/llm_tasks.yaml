@@ -1,11 +1,13 @@
 # Task-specific LLM defaults used for scoring, summaries, and quiz conversion.
+# These are modern GPT-5.6 reasoning models (Chat Completions API): they take
+# reasoning_effort + max_completion_tokens and reject temperature/max_tokens.
 llm_tasks:
   quiz_scoring:
-    model: gpt-4o
+    model: gpt-5.6-terra
     api_key_env: OPENAI_API_KEY
   summary_generation:
-    model: gpt-4o-mini
+    model: gpt-5.6-luna
     api_key_env: OPENAI_API_KEY
   quiz_conversion:
-    model: gpt-4.1
+    model: gpt-5.6-terra
     api_key_env: OPENAI_API_KEY

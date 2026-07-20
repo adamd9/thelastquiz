@@ -107,7 +107,7 @@ def _get_quiz_conversion_settings(
     api_key_env: str | None,
 ) -> tuple[str, str]:
     task_config = llm_task_config.get_task("quiz_conversion")
-    resolved_model = model or task_config.get("model", "gpt-4o")
+    resolved_model = model or task_config.get("model", "gpt-5.6-terra")
     resolved_api_env = api_key_env or task_config.get("api_key_env", "OPENAI_API_KEY")
     return resolved_model, resolved_api_env
 
@@ -120,7 +120,8 @@ def _request_quiz_conversion(
     resp = client.chat.completions.create(
         model=model,
         messages=messages,
-        temperature=0,
+        reasoning_effort="low",
+        max_completion_tokens=16000,
         response_format={
             "type": "json_schema",
             "json_schema": {"name": "quiz_conversion", "schema": QUIZ_JSON_SCHEMA, "strict": True},

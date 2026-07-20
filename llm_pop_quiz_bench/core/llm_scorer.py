@@ -37,7 +37,7 @@ def score_quiz_with_llm(
         The determined outcome/personality as a string
     """
     task_config = llm_task_config.get_task("quiz_scoring")
-    model_name = model_name or task_config.get("model", "gpt-4o")
+    model_name = model_name or task_config.get("model", "gpt-5.6-terra")
     api_key_env = api_key_env or task_config.get("api_key_env", "OPENAI_API_KEY")
 
     api_key = os.environ.get(api_key_env)
@@ -67,8 +67,8 @@ def score_quiz_with_llm(
                 {"role": "system", "content": "You are a quiz scoring expert."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.1,  # Low temperature for consistent scoring
-            max_tokens=50     # Short response expected
+            reasoning_effort="low",       # Light reasoning for consistent scoring
+            max_completion_tokens=4000,   # Room for reasoning + a short outcome label
         )
         
         result = response.choices[0].message.content.strip()
@@ -99,7 +99,7 @@ def generate_summary_with_llm(
         Generated markdown summary text
     """
     task_config = llm_task_config.get_task("summary_generation")
-    model_name = model_name or task_config.get("model", "gpt-4o-mini")
+    model_name = model_name or task_config.get("model", "gpt-5.6-luna")
     api_key_env = task_config.get("api_key_env", "OPENAI_API_KEY")
 
     api_key = os.environ.get(api_key_env)
@@ -130,8 +130,8 @@ def generate_summary_with_llm(
                 {"role": "system", "content": "You are an expert analyst specializing in AI model behavior and personality assessment."},
                 {"role": "user", "content": prompt}
             ],
-            temperature=0.3,  # Some creativity but still focused
-            max_tokens=1500   # Longer response for comprehensive summary
+            reasoning_effort="low",        # Some reasoning for a focused summary
+            max_completion_tokens=6000,    # Room for reasoning + ~1500-token summary
         )
         
         result = response.choices[0].message.content.strip()
