@@ -902,7 +902,9 @@ def get_quiz(quiz_id: str) -> dict:
         "quiz": record["quiz"],
         "quiz_json": record["quiz_json"],
         "quiz_meta": build_quiz_meta(record["quiz"]),
-        "raw_payload": record.get("raw_payload"),
+        # Normalize an empty payload to None so the UI doesn't offer "view raw"
+        # or re-parse for quizzes whose original input was never captured.
+        "raw_payload": record.get("raw_payload") or None,
         "raw_preview": raw_preview,
     }
 

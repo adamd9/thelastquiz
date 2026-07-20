@@ -681,7 +681,9 @@ export function getScoringSummary(quiz, quizMeta) {
   if (score.length) {
     return score.join(", ");
   }
-  return "No explicit outcomes; defaulting to mostly-letter.";
+  // No outcomes means this is a "showcase" quiz (Fuck/Marry/Kill, opinion
+  // prompts): there is nothing to score, so callers hide the scoring note.
+  return "";
 }
 
 export function getEffectiveModelInfo() {
@@ -915,7 +917,7 @@ export function renderQuizPreview(
         ${renderRawInput(rawPreview)}
       </details>
     `
-    : "";
+    : `<div class="status">The original input wasn't saved for this quiz, so it can't be re-parsed here. Re-upload it to apply the latest parsing.</div>`;
 
   const metaRows = [
     ["Quiz type", getQuizTypeLabel(quiz, quizMeta)],
