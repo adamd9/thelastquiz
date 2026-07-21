@@ -423,8 +423,9 @@ function renderRunRow(tbody, r) {
   const total = settings.models_total != null ? settings.models_total : attempted;
   const completed = settings.models_completed != null
     ? settings.models_completed
-    : modelStatus.filter((m) => m.status === "completed").length;
+    : modelStatus.filter((m) => m.status === "completed" || m.status === "completed_with_errors").length;
   const failed = modelStatus.filter((m) => m.status === "failed");
+  const warned = modelStatus.filter((m) => m.status === "completed_with_errors");
   const skipped = Array.isArray(settings.skipped_models) ? settings.skipped_models : [];
   const pct = total ? Math.round((completed / total) * 100) : 0;
   const cost = typeof settings.cost_usd === "number" ? settings.cost_usd : null;
@@ -445,7 +446,7 @@ function renderRunRow(tbody, r) {
   }
 
   const created = r.created_at ? new Date(r.created_at).toLocaleString() : "";
-  const hasDetail = failed.length > 0 || skipped.length > 0;
+  const hasDetail = failed.length > 0 || skipped.length > 0 || warned.length > 0;
   const tr = document.createElement("tr");
   tr.className = "run-row" + (hasDetail ? " expandable" : "");
   tr.innerHTML =
@@ -481,6 +482,16 @@ function renderRunRow(tbody, r) {
   const skipBlock = skipped.length
     ? `<div class="fail-title" style="margin-top:8px;">Skipped — already have a result (${skipped.length})</div>${skipRows}`
     : "";
+  const warnRows = warned
+    .map(
+      (m) =>
+        `<div class="fail-row"><span class="fail-model">${escapeHtml(m.model)}</span> — ` +
+        `<span class="muted">${escapeHtml(m.error || "completed with errors")}</span></div>`
+    )
+    .join("");
+  const warnBlock = warned.length
+    ? `<div class="fail-title" style="margin-top:8px;">Completed with errors (${warned.length})</div>${warnRows}`
+    : "";
   const summaryBlock = modelStatus.length
     ? `<div class="fail-summary">This run tested <b>${total}</b> model${total === 1 ? "" : "s"} — ` +
       `<b>${completed}</b> passed (${pct}%)${failed.length ? `, <b>${failed.length}</b> failed` : ""}.` +
@@ -489,7 +500,7 @@ function renderRunRow(tbody, r) {
       `</div>`
     : "";
   detailTr.innerHTML =
-    `<td colspan="5"><div class="fail-detail">${summaryBlock}${failBlock}${skipBlock}</div></td>`;
+    `<td colspan="5"><div class="fail-detail">${summaryBlock}${failBlock}${warnBlock}${skipBlock}</div></td>`;
   tbody.appendChild(detailTr);
 
   const caret = tr.querySelector(".caret");

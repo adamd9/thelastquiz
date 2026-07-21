@@ -105,3 +105,54 @@ def fetch_release_dates(
     if model_ids is None:
         return dict(_release_cache)
     return {m: _release_cache[m] for m in model_ids if m in _release_cache}
+
+
+_reasoning_cache: set[str] | None = None
+
+
+def _load_reasoning_models(api_key: str | None = None) -> set[str]:
+    """Fetch the set of model ids that support reasoning from OpenRouter's index.
+
+    A model advertises ``"reasoning"`` in its ``supported_parameters`` when it
+    "thinks" before answering. We use this authoritative signal (rather than
+    guessing from the id) to give such models a reasoning budget + token
+    headroom, so their JSON answer isn't truncated (finish_reason=length).
+    """
+    headers = {}
+    key = api_key or os.environ.get("OPENROUTER_API_KEY")
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    with httpx.Client(base_url=OPENROUTER_BASE_URL, timeout=20) as client:
+        resp = client.get("/models", headers=headers)
+        resp.raise_for_status()
+        data = resp.json()
+    models = data.get("data") if isinstance(data, dict) else None
+    out: set[str] = set()
+    if isinstance(models, list):
+        for entry in models:
+            mid = entry.get("id")
+            supported = entry.get("supported_parameters")
+            if not mid or not isinstance(supported, list):
+                continue
+            if "reasoning" in supported:
+                out.add(strip_prefix(mid))
+    return out
+
+
+def fetch_reasoning_models(*, force: bool = False) -> set[str]:
+    """Set of reasoning-capable model ids from OpenRouter, cached.
+
+    Best-effort: returns an empty set if OpenRouter is unreachable, and only
+    caches a successful, non-empty fetch so failures are retried.
+    """
+    global _reasoning_cache
+    if _reasoning_cache is None or force:
+        try:
+            loaded = _load_reasoning_models()
+        except Exception:
+            loaded = set()
+        if not loaded:
+            return set()
+        _reasoning_cache = loaded
+    return set(_reasoning_cache)
+

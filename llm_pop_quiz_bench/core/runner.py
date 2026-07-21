@@ -12,11 +12,11 @@ from ..adapters.base import ChatAdapter
 from .dimensional import normalize_quiz
 from .prompt import PromptContext, render_prompt
 from .types import QAResult
-from .utils import parse_choice_json
+from .utils import parse_choice_json, salvage_choice
 from .runtime_data import build_runtime_paths, get_runtime_paths
 from .logging_utils import rotate_log_if_needed
 from .db_factory import connect
-from .openrouter import fetch_release_dates
+from .openrouter import fetch_release_dates, fetch_reasoning_models
 
 
 def _extract_actual_error(exception: Exception) -> str:
@@ -60,20 +60,34 @@ def _summarize_failure_reasons(records: list[dict]) -> str:
     return top
 
 
-def _get_model_params(adapter) -> dict:
+def _get_model_params(adapter, reasoning_models: set[str] | None = None) -> dict:
     """Get model parameters, with safe defaults so no request is unbounded.
 
     Many benchmarked models aren't listed in models.yaml, so their configured
     params are empty. Without a token cap a reasoning model will "think" at
     length about a simple 1-5 Likert item and can take minutes per question, so
-    we always bound the response length and temperature. The cap is generous
-    enough that reasoning/verbose models can still finish their JSON answer —
-    too low and they get cut off mid-answer (finish_reason=length) and fail.
+    we always bound the response length and temperature.
+
+    Reasoning models (per OpenRouter's ``supported_parameters``) get extra token
+    headroom plus a capped thinking budget: a plain 512/2048 cap lets the
+    chain-of-thought eat the whole allowance and truncates the JSON answer
+    (finish_reason=length), which previously failed the model outright. The
+    budget keeps them fast while leaving room to actually answer.
     """
     params = dict(getattr(adapter, "default_params", None) or {})
     params.setdefault("temperature", 0.2)
-    params.setdefault("max_tokens", 2048)
+    model_key = getattr(adapter, "model", None) or getattr(adapter, "id", "")
+    is_reasoning = bool(reasoning_models) and (
+        model_key in reasoning_models or getattr(adapter, "id", "") in reasoning_models
+    )
+    if "max_tokens" not in params:
+        params["max_tokens"] = 3000 if is_reasoning else 2048
+    if is_reasoning:
+        # Bound the thinking so a 1-5 item still returns within the per-question
+        # timeout, while leaving the rest of max_tokens for the JSON answer.
+        params.setdefault("reasoning", {"max_tokens": 1500})
     return params
+
 
 
 def _append_log(path: Path, message: str) -> None:
@@ -127,6 +141,13 @@ async def run_quiz(
         released = fetch_release_dates(model_ids)
     except Exception:
         released = {}
+    # Which of these models "think" before answering (OpenRouter metadata), so
+    # the per-question params can give them a reasoning budget + token headroom
+    # instead of truncating their JSON answer. Best-effort: empty on failure.
+    try:
+        reasoning_models = fetch_reasoning_models()
+    except Exception:
+        reasoning_models = set()
     # Merge into any settings the caller already stored on the run (e.g. the
     # API records ``public``/``benchmark_id``/``rep`` at queue time). Re-inserting
     # with only ``model_released`` here would clobber those and, for example,
@@ -153,6 +174,7 @@ async def run_quiz(
             try:
                 _append_log(log_path, f"Testing model: {adapter.id}")
                 model_records: list[dict] = []
+                recovered = 0
                 for idx, q in enumerate(questions, start=1):
                     try:
                         ctx = PromptContext(
@@ -164,7 +186,7 @@ async def run_quiz(
                         )
                         prompt = render_prompt(ctx)
                         messages = [{"role": "user", "content": prompt}]
-                        params = _get_model_params(adapter)
+                        params = _get_model_params(adapter, reasoning_models)
                         start = time.perf_counter()
                         resp = await asyncio.wait_for(
                             adapter.send(messages, params=params), timeout=60
@@ -174,7 +196,22 @@ async def run_quiz(
                         finish_reason = resp.get("finish_reason") if isinstance(resp, dict) else None
                         data = parse_choice_json(raw_text)
                         if not data:
-                            # No parseable choice JSON. Say *why* so it's debuggable:
+                            # Strict JSON failed. Before giving up, try to salvage
+                            # the model's actual pick: a valid choice with a
+                            # malformed/truncated *reason* (e.g. unescaped quotes)
+                            # is still a real answer — we keep the choice and dump
+                            # the raw text as the reason rather than discarding it.
+                            data = salvage_choice(raw_text)
+                            if data:
+                                recovered += 1
+                                _append_log(
+                                    log_path,
+                                    f"Question {idx} for {adapter.id}: recovered "
+                                    f"choice '{data['choice']}' from unparseable "
+                                    f"JSON (kept raw text as reason).",
+                                )
+                        if not data:
+                            # No choice to recover. Say *why* so it's debuggable:
                             # a length cutoff (token cap too low), a truly empty
                             # reply, or an actual plain-text refusal we keep verbatim.
                             refusal_text = (raw_text or "").strip()
@@ -254,18 +291,36 @@ async def run_quiz(
                     return (
                         adapter,
                         f"Incomplete result: answered {answered}/{total} questions{detail}",
+                        None,
                     )
+                if recovered:
+                    # Every question has a real choice, but some had to be
+                    # recovered from malformed/truncated JSON — the model is
+                    # complete and counts for scoring, but flag it so the run
+                    # shows it finished "with errors" (raw text kept as reason).
+                    warning = (
+                        f"Completed with errors: recovered {recovered} of {total} "
+                        f"answer{'s' if recovered != 1 else ''} from malformed JSON "
+                        f"(raw response kept as the explanation)."
+                    )
+                    _append_log(log_path, f"Model {adapter.id} {warning}")
+                    return (adapter, None, warning)
                 _append_log(log_path, f"Model {adapter.id} completed successfully")
-                return (adapter, None)
+                return (adapter, None, None)
             except Exception as e:
                 actual_error = _extract_actual_error(e)
                 _append_log(log_path, f"Model {adapter.id} failed completely: {actual_error}")
-                return (adapter, actual_error)
+                return (adapter, actual_error, None)
 
     results = await asyncio.gather(*(run_one_model(a) for a in adapters))
-    for adapter, error in results:
+    # Warnings map a successful model -> a "completed with errors" note (e.g.
+    # answers recovered from malformed JSON), so the summary can flag it.
+    warnings: dict[str, str] = {}
+    for adapter, error, warning in results:
         if error is None:
             successful_adapters.append(adapter)
+            if warning:
+                warnings[adapter.id] = warning
         else:
             failed_adapters.append((adapter.id, error))
 
@@ -277,7 +332,8 @@ async def run_quiz(
     if successful_adapters:
         _append_log(log_path, f"Successful models ({len(successful_adapters)}):")
         for adapter in successful_adapters:
-            _append_log(log_path, f" - {adapter.id}")
+            suffix = f" (with errors: {warnings[adapter.id]})" if adapter.id in warnings else ""
+            _append_log(log_path, f" - {adapter.id}{suffix}")
     
     if failed_adapters:
         _append_log(log_path, f"Failed models ({len(failed_adapters)}):")
@@ -297,7 +353,11 @@ async def run_quiz(
     # show which models produced results and *why* the rest did not, without
     # anyone having to open the raw log file.
     model_status = [
-        {"model": adapter.id, "status": "completed", "error": None}
+        {
+            "model": adapter.id,
+            "status": "completed_with_errors" if adapter.id in warnings else "completed",
+            "error": warnings.get(adapter.id),
+        }
         for adapter in successful_adapters
     ]
     model_status += [
