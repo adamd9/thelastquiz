@@ -559,31 +559,57 @@ function lightDarkScale(sd3, human) {
   const idxOf = (p) => SD3_TRAITS.reduce((s, t) => s + (p[t.id] ?? 0), 0) / SD3_TRAITS.length;
   const humanIdx = idxOf(human);
   const models = sd3.models
-    .map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), released: m.released }))
+    .map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), profile: m.profile, released: m.released }))
     .sort((a, b) => a.v - b.v);
-  // The dark index rarely climbs past the low-60s, so a full 0-100 track wastes
-  // most of its width on an empty right half. Trim the axis to just above the
-  // highest score (rounded to a tidy number) and label that ceiling so it stays
-  // honest about not reaching 100.
-  const maxV = Math.max(humanIdx, ...models.map((m) => m.v));
-  const scaleMax = Math.min(100, Math.max(20, Math.ceil((maxV + 5) / 5) * 5));
-  const clamp = (v) => Math.max(2, Math.min(98, (v / scaleMax) * 100));
+  // Per-trait breakdown rows (Machiavellianism / Narcissism / Psychopathy),
+  // shared by the model-dot and average-human tooltips.
+  const traitRowsFor = (p) => SD3_TRAITS
+    .map((t) => `<div class="rq-row"><span class="rq-k">${escapeHtml(t.name)}</span><span class="rq-v">~${Math.round(p[t.id] ?? 0)}/100</span></div>`)
+    .join("");
+  // Window the 0-100 Dark Index onto just the region the data occupies (with
+  // padding) so points spread across the width and sit roughly centred, rather
+  // than bunching against an empty 0 or 100 end. The visible window is noted as
+  // a footnote under the axis so the scale stays honest.
+  const vals = [humanIdx, ...models.map((m) => m.v)];
+  const lo = Math.min(...vals), hi = Math.max(...vals);
+  // Small fixed padding (not proportional to the range): a proportional pad
+  // blows the window back out toward 0-100 whenever the spread is already wide.
+  const pad = 5;
+  const domainMin = Math.max(0, Math.floor((lo - pad) / 5) * 5);
+  const domainMax = Math.min(100, Math.ceil((hi + pad) / 5) * 5);
+  const span = domainMax - domainMin || 1;
+  const clamp = (v) => Math.max(1.5, Math.min(98.5, ((v - domainMin) / span) * 100));
   const markers = models
     .map((m, i) => `<div class="ld-dot" data-idx="${i}" style="left:${clamp(m.v)}%">` +
       `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${familyLabel(m.id)}</span></div>`)
     .join("");
   const caption =
     "Further left is more restrained than the average person; further right, more villainous. " +
-    "Where would you want your AI to land?" +
-    (scaleMax < 100 ? ` The scale tops out at ${scaleMax}/100 — nothing here scores higher.` : "");
+    "Where would you want your AI to land?";
   const wrap = document.createElement("div");
   wrap.className = "ld";
   wrap.innerHTML =
     `<div class="ld-row">` +
     `<div class="ld-face">\uD83D\uDE07<b>saint</b></div>` +
-    `<div class="ld-track"><div class="ld-human" style="left:${clamp(humanIdx)}%"><span>avg human</span></div>${markers}</div>` +
+    `<div class="ld-track">` +
+      `<div class="ld-human" style="left:${clamp(humanIdx)}%" tabindex="0" role="button" aria-label="Average human, shown for scale">` +
+        `<span class="ld-human-lab">\uD83E\uDDD1 avg human</span>` +
+      `</div>${markers}` +
+      `<span class="ld-end ld-end-lo">${domainMin}</span><span class="ld-end ld-end-hi">${domainMax}</span>` +
+    `</div>` +
     `<div class="ld-face">\uD83D\uDE08<b>villain</b></div>` +
-    `</div><p class="ld-cap">${caption}</p>`;
+    `</div>` +
+    `<p class="ld-foot">Dark Index \u00b7 0\u2013100 scale (showing ${domainMin}\u2013${domainMax})</p>` +
+    `<p class="ld-cap">${caption}</p>`;
+  const humanEl = wrap.querySelector(".ld-human");
+  if (humanEl) {
+    attachRichTooltip(humanEl, () => (
+      `<div class="rq-name">Average human</div>` +
+      `<div class="rq-date">The typical adult, shown for scale.</div>` +
+      `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">~${Math.round(humanIdx)} / 100</span></div>${traitRowsFor(human)}</div>` +
+      `<div class="rq-date" style="margin-top:6px">Population norms (Kaufman et al. 2019, SD-3). Models left of this line are more restrained than the average person; right of it, darker.</div>`
+    ));
+  }
   wrap.querySelectorAll(".ld-dot").forEach((dot) => {
     const m = models[Number(dot.dataset.idx)];
     dot.setAttribute("aria-label", `${m.name}: ${Math.round(m.v)}/100 dark index`);
@@ -591,7 +617,7 @@ function lightDarkScale(sd3, human) {
       `<div class="rq-name">${escapeHtml(familyLabel(m.id))}</div>` +
       `<div class="rq-id">${escapeHtml(m.id)}</div>` +
       `<div class="rq-date">${escapeHtml(formatReleased(m.released))}</div>` +
-      `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">${Math.round(m.v)} / 100</span></div></div>`
+      `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">${Math.round(m.v)} / 100</span></div>${traitRowsFor(m.profile)}</div>`
     ));
   });
   // Once laid out, hide labels that collide: keep the saint/villain extremes,

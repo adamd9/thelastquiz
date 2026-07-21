@@ -163,9 +163,12 @@
       .rankings-page .ld-row { display: flex; align-items: center; gap: 16px; }
       .rankings-page .ld-face { display: flex; flex-direction: column; align-items: center; font-size: 32px; line-height: 1; flex: none; }
       .rankings-page .ld-face b { font-size: 0.68rem; color: var(--muted); font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-top: 3px; }
-      .rankings-page .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 84px 0 34px; background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
-      .rankings-page .ld-human { position: absolute; top: -10px; bottom: -10px; width: 0; border-left: 2px dashed #1b1a17; }
-      .rankings-page .ld-human span { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 700; color: var(--ink); }
+      .rankings-page .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 84px 0 46px; background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
+      .rankings-page .ld-end { position: absolute; top: calc(100% + 6px); font-size: 0.7rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+      .rankings-page .ld-end-lo { left: 0; } .rankings-page .ld-end-hi { right: 0; }
+      .rankings-page .ld-human { position: absolute; top: -10px; bottom: -12px; width: 0; border-left: 2px dashed var(--accent-2); z-index: 3; cursor: pointer; }
+      .rankings-page .ld-human:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; }
+      .rankings-page .ld-human-lab { position: absolute; top: 15px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 700; color: #fff; background: var(--accent-2); padding: 3px 10px 3px 8px; border-radius: 999px; box-shadow: 0 2px 7px rgba(15,92,120,.4); display: inline-flex; align-items: center; gap: 5px; }
       .rankings-page .ld-dot { position: absolute; top: 50%; cursor: pointer; }
       .rankings-page .ld-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 999px; }
       .rankings-page .ld-pin { position: absolute; top: -10px; left: -10px; width: 20px; height: 20px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
@@ -176,6 +179,7 @@
       .rankings-page .ld-lab.r0 { bottom: 14px; }
       .rankings-page .ld-lab.r1 { bottom: 40px; }
       .rankings-page .ld-lab.r2 { bottom: 66px; }
+      .rankings-page .ld-foot { color: var(--muted); font-size: 0.78rem; font-style: italic; margin: 6px 2px 0; }
       .rankings-page .ld-cap { color: var(--muted); font-size: 0.95rem; margin: 8px 2px 0; }
       .rankings-page .ld-cap b { color: var(--ink); }
     </style>
