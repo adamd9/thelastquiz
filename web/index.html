@@ -13,8 +13,8 @@
     <script type="module" src="/static/app.js"></script>
   </head>
   <body>
-    <main class="app-shell">
-      <header class="app-header is-app">
+    <header class="app-bar">
+      <div class="app-bar-inner">
         <button class="app-brand" type="button" data-nav="dashboard">
           <img class="app-logo" src="/static/logo2.png" alt="The Last Quiz logo" />
           <div>
@@ -37,8 +37,10 @@
             </span>
           </span>
         </nav>
-      </header>
+      </div>
+    </header>
 
+    <main class="app-shell">
       <stepper-nav></stepper-nav>
 
       <section class="workspace">

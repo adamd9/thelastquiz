@@ -88,7 +88,7 @@ document.querySelectorAll("[data-nav='dashboard']").forEach((btn) => {
 
 // Mobile hamburger: toggle the app nav, and close it after choosing an item.
 const navToggle = document.querySelector(".nav-toggle");
-const appHeader = document.querySelector(".app-header.is-app");
+const appHeader = document.querySelector(".app-bar");
 if (navToggle && appHeader) {
   navToggle.addEventListener("click", () => {
     const open = appHeader.classList.toggle("nav-open");
