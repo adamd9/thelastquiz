@@ -39,13 +39,17 @@ body {
 
 /* The app (create-a-quiz SPA) gets an app-bar: sticky, with a bold accent
    underline, to set it apart from the editorial content pages that share this
-   markup. */
+   markup. It's frosted rather than a flat fill — a solid colour would paint a
+   hard band over the page's radial gradient; semi-transparent + blur reads as
+   an app-bar and lets the gradient continue through it. */
 .app-header.is-app {
   position: sticky;
   top: 0;
   z-index: 50;
   padding: 12px 0;
-  background: var(--bg);
+  background: rgba(252, 247, 240, 0.72);
+  -webkit-backdrop-filter: saturate(1.2) blur(10px);
+  backdrop-filter: saturate(1.2) blur(10px);
   border-bottom: 2px solid var(--accent);
 }
 
