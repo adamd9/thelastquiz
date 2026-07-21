@@ -169,6 +169,10 @@ async def run_quiz(
     # semaphore caps how many run at once for larger custom selections.
     sem = asyncio.Semaphore(6)
 
+    # Live progress for the admin console: bumped as each model finishes so an
+    # in-flight run reports "X/N models" instead of an opaque "running".
+    progress = {"done": 0}
+
     async def run_one_model(adapter):
         async with sem:
             try:
@@ -311,6 +315,19 @@ async def run_quiz(
                 actual_error = _extract_actual_error(e)
                 _append_log(log_path, f"Model {adapter.id} failed completely: {actual_error}")
                 return (adapter, actual_error, None)
+            finally:
+                # Best-effort live progress: bump the finished-model count so the
+                # admin can see how far along a run is. A settings-write hiccup
+                # must never stall or fail the run.
+                progress["done"] += 1
+                try:
+                    rec = db.fetch_run(run_id)
+                    s = dict((rec or {}).get("settings") or {})
+                    s["models_done"] = progress["done"]
+                    s["models_total"] = len(adapters)
+                    db.update_run_settings(run_id, s)
+                except Exception:
+                    pass
 
     results = await asyncio.gather(*(run_one_model(a) for a in adapters))
     # Warnings map a successful model -> a "completed with errors" note (e.g.
@@ -371,6 +388,7 @@ async def run_quiz(
         settings = dict((run_record or {}).get("settings") or {})
         settings["model_status"] = model_status
         settings["models_total"] = len(adapters)
+        settings["models_done"] = len(adapters)
         settings["models_completed"] = len(successful_adapters)
         settings["models_failed"] = len(failed_adapters)
         db.update_run_settings(run_id, settings)

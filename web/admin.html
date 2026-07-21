@@ -34,6 +34,8 @@
       th { color:var(--muted); font-weight:600; }
       .s-completed { color:var(--ok); } .s-failed { color:var(--err); } .s-running,.s-queued,.s-reporting { color:var(--warn); }
       .s-warn { color:var(--warn); }
+      .progress-bar { display:inline-block; width:84px; height:6px; background:var(--line); border-radius:4px; overflow:hidden; vertical-align:middle; margin-left:8px; }
+      .progress-bar > span { display:block; height:100%; background:var(--accent); border-radius:4px; transition:width .3s ease; }
       .note { font-size:12.5px; color:var(--muted); margin-top:8px; }
       tr.run-row.expandable { cursor:pointer; }
       tr.run-row.expandable:hover td { background:rgba(124,92,255,.06); }

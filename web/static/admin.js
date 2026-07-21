@@ -440,7 +440,12 @@ function renderRunRow(tbody, r) {
     const skipMarkup = skipped.length ? ` · <span class="muted">${skipped.length} skipped</span>` : "";
     resultsCell = `<span class="${okClass}">${completed}/${total} ok · ${pct}%</span>${failMarkup}${skipMarkup}${costMarkup}`;
   } else if (inProgress) {
-    resultsCell = `<span class="muted">—</span>`;
+    const done = settings.models_done != null ? settings.models_done : 0;
+    const totalM = total || attempted;
+    const p = totalM ? Math.round((done / totalM) * 100) : 0;
+    resultsCell =
+      `<span class="s-running">${done}/${totalM} models \u00b7 ${p}%</span>` +
+      `<span class="progress-bar"><span style="width:${p}%"></span></span>`;
   } else {
     resultsCell = `<span class="muted">${completed}/${total}</span>`;
   }
