@@ -22,6 +22,68 @@ function pretty(modelId) {
     .replace(/\b\w/g, (ch) => ch.toUpperCase());
 }
 
+// ===========================================================================
+// FRONTIER MODELS — HAND-CURATED. Review and edit this list directly.
+// ---------------------------------------------------------------------------
+// "Frontier" is an editorial judgement (which models the field currently treats
+// as state-of-the-art). It CANNOT be derived from ids or release dates — labs
+// ship many SKUs and silently refresh old ones — so we hard-code one flagship
+// per lab and refresh it by hand every few months.
+//
+// Rules for editing:
+//   • Every `id` MUST be copied exactly from https://openrouter.ai/models so it
+//     can actually be selected and benchmarked.
+//   • If a lab has NO suitable model on OpenRouter yet, set `id: null` and
+//     explain in `note`. Run `node scripts/check-frontier-models.mjs` to verify
+//     the whole list against the live catalogue — it loudly flags every null id
+//     and every id that has gone missing, and suggests that lab's newest models.
+//
+// Last reviewed: 2026-07-22 · source: Artificial Analysis Intelligence Index
+// leaderboard (https://artificialanalysis.ai/models) + provider announcements.
+// ===========================================================================
+export const FRONTIER_MODELS = [
+  {
+    lab: "OpenAI",
+    id: "openai/gpt-5.6-sol",
+    note: "GPT-5.6 Sol — #2 on the AA Intelligence Index (Terra/Luna/-pro are siblings)",
+  },
+  {
+    lab: "Anthropic",
+    id: "anthropic/claude-fable-5",
+    note: "Claude Fable 5 — currently #1 on the AA Intelligence Index (newer than Opus 4.8)",
+  },
+  {
+    lab: "Google",
+    id: "google/gemini-3.1-pro-preview",
+    note: "Frontier 'Pro'. NB: Gemini 3.6 exists but is a Flash (cheap) tier, NOT frontier",
+  },
+  {
+    lab: "xAI",
+    id: "x-ai/grok-4.5",
+    note: "Grok 4.5 — newest xAI flagship",
+  },
+  {
+    lab: "Moonshot",
+    id: "moonshotai/kimi-k3",
+    note: "Kimi K3 — #4 on the AA Intelligence Index",
+  },
+  {
+    lab: "Alibaba",
+    id: "qwen/qwen3.7-max",
+    note: "Qwen3.7 Max (there is no Qwen 3.8 on OpenRouter yet)",
+  },
+  {
+    lab: "DeepSeek",
+    id: "deepseek/deepseek-v4-pro",
+    note: "DeepSeek V4 Pro — NOT R1 (R1 is no longer frontier)",
+  },
+  {
+    lab: "Meta",
+    id: "meta/muse-spark-1.1",
+    note: "Muse Spark 1.1 (Meta Superintelligence Labs) — top 10 on the AA Intelligence Index. NB: lives under the 'meta/' author prefix, NOT 'meta-llama/'.",
+  },
+];
+
 export function buildModelGroups(models) {
   const available = (models || []).filter((m) => m.available);
   const exclude = /(image|embed|tts|audio|whisper|vision|moderation|rerank|guard)/i;
@@ -131,14 +193,20 @@ export function buildModelGroups(models) {
     6
   );
 
-  const frontierRe =
-    /(gpt-5|gpt-4\.1|gpt-4o(?!-mini)|(^|\/)o[134]\b|o3|o4|claude.*(opus|sonnet)|claude-3\.7|gemini-(2\.5|3)[.\- ]?pro|grok-[34]|deepseek-r1|deepseek.*(v3|chat-v3)|llama-3\.1-405|mistral-large|qwen.*max)/;
+  // "Frontier models" — from the hand-curated FRONTIER_MODELS list at the top of
+  // this file, narrowed to whatever is present in this payload. On the admin
+  // console (live OpenRouter catalogue) that's every curated model, so the group
+  // can be selected to benchmark them; on the public rankings page it's only the
+  // curated models that already have results.
+  const frontierPicked = FRONTIER_MODELS.filter((f) => f.id)
+    .map((f) => chat.find((m) => m.id === f.id))
+    .filter(Boolean);
   add(
     "frontier",
     "Frontier models",
     "The most capable flagship model from each major lab.",
-    chat.filter((m) => frontierRe.test(idl(m))),
-    6
+    frontierPicked,
+    frontierPicked.length || 1
   );
 
   const ossRe =
