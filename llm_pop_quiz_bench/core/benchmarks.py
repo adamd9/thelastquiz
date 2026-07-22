@@ -163,6 +163,7 @@ def aggregate_benchmark(db, benchmark_id: str) -> dict[str, Any] | None:
             "profile": profile,
             "type_code": _type_from_profile(dims, profile),
             "runs": len(runs),
+            "updated_at": runs[-1][0],
         }
 
     summary = _benchmark_summary(bench)
@@ -206,6 +207,7 @@ def benchmark_coverage(db) -> list[dict[str, Any]]:
                 **bench,
                 "model_count": len(models),
                 "models": sorted(models.keys()),
+                "model_dates": {mid: m.get("updated_at") for mid, m in models.items()},
                 "total_runs": sum(m["runs"] for m in models.values()),
                 "updated_at": agg["updated_at"] if agg else None,
             }

@@ -61,7 +61,8 @@
       table.cov th, table.cov td { padding:6px 10px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; }
       table.cov th.cov-h { color:var(--muted); font-weight:600; }
       table.cov td.cov-model { text-align:left; color:var(--ink); font-weight:600; }
-      table.cov td.cov-yes { color:var(--ok); font-weight:700; }
+      table.cov td.cov-yes { color:var(--ok); font-weight:700; line-height:1.15; }
+      table.cov td.cov-yes .cov-date { display:block; font-size:10.5px; font-weight:600; color:var(--muted); font-variant-numeric:tabular-nums; margin-top:1px; }
       table.cov td.cov-no { color:var(--muted); }
       table.cov tr.cov-totals td { color:var(--muted); font-variant-numeric:tabular-nums; border-top:1px solid var(--line); border-bottom:none; }
       table.cov tr.cov-totals td:first-child { text-align:left; }
@@ -152,6 +153,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=18"></script>
+    <script type="module" src="/static/admin.js?v=19"></script>
   </body>
 </html>

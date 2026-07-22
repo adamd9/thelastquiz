@@ -13,6 +13,9 @@ let modelNames = {};
 // Benchmarks + which models already have a result, for the coverage table.
 let benchmarksData = [];
 let coverageByBench = {};
+// Per benchmark, model_id -> ISO timestamp of the model's latest result, so the
+// coverage table can show WHEN each tick was produced (spot rerun freshness).
+let coverageDatesByBench = {};
 // Run ids whose failure/skip detail is currently expanded. Tracked so a
 // background refresh re-renders them still open instead of snapping shut.
 const expandedRuns = new Set();
@@ -195,9 +198,15 @@ function renderCoverage() {
       const cells = benches
         .map((b) => {
           const has = (coverageByBench[b.id] || new Set()).has(id);
-          return has
-            ? '<td class="cov-yes" title="Has a result">✓</td>'
-            : '<td class="cov-no" title="No result yet — a run would test this">—</td>';
+          if (!has) {
+            return '<td class="cov-no" title="No result yet — a run would test this">—</td>';
+          }
+          const iso = (coverageDatesByBench[b.id] || {})[id];
+          const d = iso ? new Date(iso) : null;
+          const valid = d && !isNaN(d.getTime());
+          const short = valid ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
+          const title = valid ? `Result from ${d.toLocaleString()}` : "Has a result";
+          return `<td class="cov-yes" title="${escapeHtml(title)}">✓${short ? `<span class="cov-date">${escapeHtml(short)}</span>` : ""}</td>`;
         })
         .join("");
       return `<tr><td class="cov-model">${escapeHtml(modelNames[id] || id)}</td>${cells}</tr>`;
@@ -247,8 +256,10 @@ async function loadBenchmarks(preloaded) {
     const data = preloaded || (await api("/api/admin/benchmarks"));
     benchmarksData = data.benchmarks || [];
     coverageByBench = {};
+    coverageDatesByBench = {};
     for (const b of benchmarksData) {
       coverageByBench[b.id] = new Set(b.models || []);
+      coverageDatesByBench[b.id] = b.model_dates || {};
     }
     renderCoverage();
     host.innerHTML = "";
