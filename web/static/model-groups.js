@@ -84,6 +84,48 @@ export const FRONTIER_MODELS = [
   },
 ];
 
+// ===========================================================================
+// HUMANITY'S LAST EXAM — HAND-CURATED, EXACT. Review and edit this list directly.
+// ---------------------------------------------------------------------------
+// The exact model lineup on HLE-Rolling (CAIS + Scale AI), in the leaderboard's
+// own chronological order. Like FRONTIER_MODELS this is hard-coded and matched to
+// OpenRouter by EXACT id — never fuzzy/needle matching — so a model is either the
+// precise one HLE evaluated or it is explicitly absent (id: null). No silent
+// "nearest sibling" substitutions.
+//
+// Rules for editing:
+//   • Every `id` MUST be copied exactly from https://openrouter.ai/models.
+//   • If HLE's exact model isn't on OpenRouter, keep the row with `id: null` and
+//     say why in `note`, so the gap stays visible instead of silently dropping.
+//
+// Last reviewed: 2026-07-24 · sources: https://lastexam.ai (HLE-Rolling chart) +
+// Scale SEAL leaderboard (https://labs.scale.com/leaderboard/humanitys_last_exam).
+// ===========================================================================
+export const HLE_MODELS = [
+  { name: "GPT-4o", id: "openai/gpt-4o" },
+  { name: "o1", id: "openai/o1" },
+  { name: "o3-mini", id: "openai/o3-mini" },
+  { name: "Claude Sonnet 3.7", id: null, note: "Not on OpenRouter — no claude-3.7-sonnet in the catalogue (superseded)." },
+  { name: "Gemini 2.5 Pro Experimental", id: null, note: "Not on OpenRouter — the March 2025 experimental build aged out (only gemini-2.5-pro / -preview remain)." },
+  { name: "o3", id: "openai/o3" },
+  { name: "Claude Sonnet 4", id: "anthropic/claude-sonnet-4" },
+  { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro" },
+  { name: "Grok 4", id: null, note: "Not on OpenRouter — base grok-4 aged out (only grok-4.20/4.3/4.5 remain)." },
+  { name: "GPT-5", id: "openai/gpt-5" },
+  { name: "Claude Sonnet 4.5", id: "anthropic/claude-sonnet-4.5" },
+  { name: "Gemini 3 Pro", id: null, note: "Not on OpenRouter as a text model — only gemini-3-pro-image + gemini-3.1-pro-preview exist." },
+  { name: "Claude Opus 4.5", id: "anthropic/claude-opus-4.5" },
+  { name: "GPT-5.2", id: "openai/gpt-5.2" },
+  { name: "Claude Opus 4.6", id: "anthropic/claude-opus-4.6" },
+  { name: "Gemini 3.1 Pro", id: "google/gemini-3.1-pro-preview" },
+  { name: "GPT-5.4", id: "openai/gpt-5.4" },
+  { name: "GPT-5.5", id: "openai/gpt-5.5" },
+  { name: "Claude Fable 5", id: "anthropic/claude-fable-5" },
+  { name: "Muse Spark 1.1", id: "meta/muse-spark-1.1" },
+  { name: "Kimi K3", id: "moonshotai/kimi-k3" },
+  { name: "DeepSeek R1", id: "deepseek/deepseek-r1" },
+];
+
 export function buildModelGroups(models) {
   const available = (models || []).filter((m) => m.available);
   const exclude = /(image|embed|tts|audio|whisper|vision|moderation|rerank|guard)/i;
@@ -131,40 +173,19 @@ export function buildModelGroups(models) {
     return out;
   };
 
-  // "Humanity's Last Exam" — align to the models the HLE benchmark (CAIS +
-  // Scale AI) actually evaluates on its rolling leaderboard, so our personality
-  // rankings sit on the same lineup as the field's hardest capability test.
-  // Where HLE's exact version has aged out of the OpenRouter catalogue we take
-  // the nearest available sibling (Grok 4 -> 4.x, Gemini 3 Pro -> 3.1 Pro);
-  // Claude Sonnet 3.7 is dropped as it has no <=-generation match. The list of
-  // needles is chronological, matching HLE-Rolling's own ordering.
+  // "Humanity's Last Exam" — the exact HLE-Rolling lineup, hard-coded in
+  // HLE_MODELS at the top of this file. Built like `frontier`: each id must
+  // match the OpenRouter catalogue exactly, so a model is either the one HLE
+  // tested or it's absent — never a fuzzy "nearest sibling".
+  const hlePicked = HLE_MODELS.filter((f) => f.id)
+    .map((f) => chat.find((m) => m.id === f.id))
+    .filter(Boolean);
   add(
     "hle",
     "Humanity's Last Exam",
-    "The lineup benchmarked by Humanity's Last Exam — the field's hardest capability test.",
-    pickByNeedles([
-      "gpt-4o",
-      "o3-mini",
-      "o3",
-      "gpt-5-mini",
-      "gpt-5.2",
-      "gpt-5.4",
-      "gpt-5.5",
-      "gpt-5",
-      "claude-sonnet-4.5",
-      "claude-sonnet-4",
-      "claude-opus-4.5",
-      "claude-opus-4.6",
-      "claude-opus-4.8",
-      "gemini-2.5-flash",
-      "gemini-2.5-pro",
-      "gemini-3.1-pro",
-      "grok-4",
-      "glm-5.1",
-      "deepseek-r1",
-      "kimi-k2",
-    ]),
-    24
+    "The exact lineup benchmarked by Humanity's Last Exam — the field's hardest capability test.",
+    hlePicked,
+    hlePicked.length || 1
   );
 
   // "The classics" — the famous, in-the-zeitgeist names people recognise.
