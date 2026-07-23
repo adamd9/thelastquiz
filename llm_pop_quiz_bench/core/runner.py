@@ -19,22 +19,30 @@ from .db_factory import connect
 from .openrouter import fetch_release_dates, fetch_reasoning_models
 
 
+def _describe_exception(exc: BaseException) -> str:
+    """A never-empty description of an exception. Some exceptions stringify to
+    "" (e.g. TimeoutError / CancelledError carry no message), which previously
+    left the admin console showing a bare ``Error:`` with nothing after it."""
+    return str(exc).strip() or type(exc).__name__
+
+
 def _extract_actual_error(exception: Exception) -> str:
-    """Extract the actual error message from RetryError and other exception wrappers."""
+    """Extract the actual error message from RetryError and other exception
+    wrappers, always returning a non-empty, human-readable string."""
     # Handle RetryError from tenacity
     if hasattr(exception, 'last_attempt') and exception.last_attempt:
         if hasattr(exception.last_attempt, 'exception') and exception.last_attempt.exception():
-            return str(exception.last_attempt.exception())
+            return _describe_exception(exception.last_attempt.exception())
     
     # Handle other wrapped exceptions
-    if hasattr(exception, '__cause__') and exception.__cause__:
-        return str(exception.__cause__)
+    if getattr(exception, '__cause__', None):
+        return _describe_exception(exception.__cause__)
     
-    if hasattr(exception, '__context__') and exception.__context__:
-        return str(exception.__context__)
+    if getattr(exception, '__context__', None):
+        return _describe_exception(exception.__context__)
     
-    # Fallback to the original exception string
-    return str(exception) or type(exception).__name__
+    # Fallback to the original exception
+    return _describe_exception(exception)
 
 
 def _summarize_failure_reasons(records: list[dict]) -> str:
@@ -53,7 +61,7 @@ def _summarize_failure_reasons(records: list[dict]) -> str:
         return ""
     counts = Counter(reasons)
     top, _ = counts.most_common(1)[0]
-    top = top[:180]
+    top = top[:280]
     extra = len(counts) - 1
     if extra > 0:
         return f"{top} (+{extra} other reason{'s' if extra > 1 else ''})"
@@ -249,15 +257,18 @@ async def run_quiz(
                             tokens_out=resp.get("tokens_out"),
                         ).__dict__)
                     except Exception as e:
-                        actual_error = _extract_actual_error(e)
+                        if isinstance(e, (asyncio.TimeoutError, TimeoutError)):
+                            actual_error = "Timed out after 60s waiting for the model to respond"
+                        else:
+                            actual_error = _extract_actual_error(e)
                         _append_log(
                             log_path,
-                            f"Question {idx} failed for {adapter.id}: {actual_error[:150]}",
+                            f"Question {idx} failed for {adapter.id}: {actual_error[:280]}",
                         )
                         model_records.append(QAResult(
                             question_id=q["id"],
                             choice="",
-                            reason=f"Error: {actual_error[:150]}",
+                            reason=f"Error: {actual_error[:280]}",
                             additional_thoughts="",
                             refused=True,
                             latency_ms=0,
