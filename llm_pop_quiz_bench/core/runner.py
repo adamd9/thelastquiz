@@ -122,6 +122,38 @@ def _touch_liveness(path: Path) -> None:
         pass
 
 
+# A single Likert / multiple-choice answer should come back in seconds. A request
+# that runs past this cap is stuck or the provider is degraded rather than
+# "thinking", so we abandon it and retry on a fresh connection instead of waiting
+# longer. Worst case per question is QUESTION_ATTEMPTS * QUESTION_TIMEOUT_S, which
+# stays well under the stale-run watchdog window.
+QUESTION_TIMEOUT_S = 40
+QUESTION_ATTEMPTS = 3  # 1 initial attempt + 2 retries
+QUESTION_RETRY_BACKOFF_S = 1.5
+
+
+async def _send_with_retries(adapter, messages, params, log_path: Path, idx: int) -> dict:
+    """Send one question, retrying only on timeout. A wait past QUESTION_TIMEOUT_S
+    means the request is stuck or the provider is degraded rather than slow, so we
+    abandon it and try again on a fresh connection instead of waiting longer. The
+    final timeout propagates once every attempt is exhausted; non-timeout errors
+    are not retried (a retry wouldn't clear a real fault like an auth/credit error)."""
+    for attempt in range(1, QUESTION_ATTEMPTS + 1):
+        try:
+            return await asyncio.wait_for(
+                adapter.send(messages, params=params), timeout=QUESTION_TIMEOUT_S
+            )
+        except TimeoutError:
+            if attempt >= QUESTION_ATTEMPTS:
+                raise
+            _append_log(
+                log_path,
+                f"Question {idx} for {adapter.id} timed out after {QUESTION_TIMEOUT_S}s "
+                f"(attempt {attempt}/{QUESTION_ATTEMPTS}) \u2014 retrying on a fresh request.",
+            )
+            await asyncio.sleep(QUESTION_RETRY_BACKOFF_S)
+
+
 async def run_quiz(
     quiz_path: Path, adapters: list[ChatAdapter], run_id: str, runtime_dir: Path | None = None
 ) -> None:
@@ -200,9 +232,7 @@ async def run_quiz(
                         messages = [{"role": "user", "content": prompt}]
                         params = _get_model_params(adapter, reasoning_models)
                         start = time.perf_counter()
-                        resp = await asyncio.wait_for(
-                            adapter.send(messages, params=params), timeout=60
-                        )
+                        resp = await _send_with_retries(adapter, messages, params, log_path, idx)
                         latency_ms = int((time.perf_counter() - start) * 1000)
                         raw_text = resp.get("text") if isinstance(resp, dict) else None
                         finish_reason = resp.get("finish_reason") if isinstance(resp, dict) else None
@@ -258,7 +288,10 @@ async def run_quiz(
                         ).__dict__)
                     except Exception as e:
                         if isinstance(e, (asyncio.TimeoutError, TimeoutError)):
-                            actual_error = "Timed out after 60s waiting for the model to respond"
+                            actual_error = (
+                                f"No response after {QUESTION_ATTEMPTS} attempts "
+                                f"({QUESTION_TIMEOUT_S}s each) \u2014 the request kept timing out"
+                            )
                         else:
                             actual_error = _extract_actual_error(e)
                         _append_log(
