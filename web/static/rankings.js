@@ -553,6 +553,39 @@ function darkIndexLeaderboard(sd3, human) {
   return wrap;
 }
 
+/* Mobile Dark Triad scale: a vertical spectrum listing every model on its own
+   row, saint (top) to villain (bottom), so all models stay legible instead of
+   crowding one narrow axis. The average-human line is spliced in at the
+   crossover; dots reuse .ld-dot[data-idx]/.ld-pin so the shared tooltip wiring
+   in lightDarkScale() applies unchanged. */
+function verticalScaleHtml(models, humanIdx, caption) {
+  const row = (m, i) =>
+    `<div class="ld-dot${m.v > humanIdx ? " dark" : ""}" data-idx="${i}" tabindex="0" role="button">` +
+      `<span class="ld-pin">${providerLogoHtml(m.id, 14)}</span>` +
+      `<span class="ld-vname">${familyLabel(m.id)}</span>` +
+      `<span class="ld-vval">${Math.round(m.v)}</span>` +
+    `</div>`;
+  const humanRow =
+    `<div class="ld-human" tabindex="0" role="button" aria-label="Average human, shown for scale">` +
+      `<span class="ld-vhuman-line"></span>` +
+      `<span class="ld-vhuman-lab">\uD83E\uDDD1 avg human \u00b7 ${Math.round(humanIdx)}</span>` +
+    `</div>`;
+  let body = "", inserted = false;
+  for (let i = 0; i < models.length; i++) {
+    if (!inserted && models[i].v > humanIdx) { body += humanRow; inserted = true; }
+    body += row(models[i], i);
+  }
+  if (!inserted) body += humanRow;
+  return `<div class="ld-vert">` +
+    `<span class="ld-vspine" aria-hidden="true"></span>` +
+    `<div class="ld-vend"><span class="ld-vface">\uD83D\uDE07</span><b>saint</b></div>` +
+    body +
+    `<div class="ld-vend"><span class="ld-vface">\uD83D\uDE08</span><b>villain</b></div>` +
+  `</div>` +
+  `<p class="ld-foot">Dark Index \u00b7 0\u2013100 \u00b7 lower = more restrained</p>` +
+  `<p class="ld-cap">${caption}</p>`;
+}
+
 /* Angel–devil scale: every model on one light→dark continuum by its Dark Index,
    with the average human marked. The at-a-glance, lighten-the-mood hero. */
 function lightDarkScale(sd3, human) {
@@ -584,30 +617,32 @@ function lightDarkScale(sd3, human) {
       `<span class="ld-pin">${providerLogoHtml(m.id, 13)}</span><span class="ld-lab r${i % 3}">${familyLabel(m.id)}</span></div>`)
     .join("");
   const caption =
-    "Further left is more restrained than the average person; further right, more villainous. " +
+    "Each model sits on one restrained-to-villainous scale, with the average human marked. " +
     "Where would you want your AI to land?";
+  const isVert = window.matchMedia("(max-width: 640px)").matches;
   const wrap = document.createElement("div");
   wrap.className = "ld";
-  wrap.innerHTML =
-    `<div class="ld-row">` +
-    `<div class="ld-face">\uD83D\uDE07<b>saint</b></div>` +
-    `<div class="ld-track">` +
-      `<div class="ld-human" style="left:${clamp(humanIdx)}%" tabindex="0" role="button" aria-label="Average human, shown for scale">` +
-        `<span class="ld-human-lab">\uD83E\uDDD1 avg human</span>` +
-      `</div>${markers}` +
-      `<span class="ld-end ld-end-lo">${domainMin}</span><span class="ld-end ld-end-hi">${domainMax}</span>` +
-    `</div>` +
-    `<div class="ld-face">\uD83D\uDE08<b>villain</b></div>` +
-    `</div>` +
-    `<p class="ld-foot">Dark Index \u00b7 0\u2013100 scale (showing ${domainMin}\u2013${domainMax})</p>` +
-    `<p class="ld-cap">${caption}</p>`;
+  wrap.innerHTML = isVert
+    ? verticalScaleHtml(models, humanIdx, caption)
+    : `<div class="ld-row">` +
+      `<div class="ld-face">\uD83D\uDE07<b>saint</b></div>` +
+      `<div class="ld-track">` +
+        `<div class="ld-human" style="left:${clamp(humanIdx)}%" tabindex="0" role="button" aria-label="Average human, shown for scale">` +
+          `<span class="ld-human-lab">\uD83E\uDDD1 avg human</span>` +
+        `</div>${markers}` +
+        `<span class="ld-end ld-end-lo">${domainMin}</span><span class="ld-end ld-end-hi">${domainMax}</span>` +
+      `</div>` +
+      `<div class="ld-face">\uD83D\uDE08<b>villain</b></div>` +
+      `</div>` +
+      `<p class="ld-foot">Dark Index \u00b7 0\u2013100 scale (showing ${domainMin}\u2013${domainMax})</p>` +
+      `<p class="ld-cap">${caption}</p>`;
   const humanEl = wrap.querySelector(".ld-human");
   if (humanEl) {
     attachRichTooltip(humanEl, () => (
       `<div class="rq-name">Average human</div>` +
       `<div class="rq-date">The typical adult, shown for scale.</div>` +
       `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">~${Math.round(humanIdx)} / 100</span></div>${traitRowsFor(human)}</div>` +
-      `<div class="rq-date" style="margin-top:6px">Population norms (Kaufman et al. 2019, SD-3). Models left of this line are more restrained than the average person; right of it, darker.</div>`
+      `<div class="rq-date" style="margin-top:6px">Population norms (Kaufman et al. 2019, SD-3). Models toward \uD83D\uDE07 are more restrained than the average person; toward \uD83D\uDE08, darker.</div>`
     ));
   }
   wrap.querySelectorAll(".ld-dot").forEach((dot) => {
@@ -620,10 +655,9 @@ function lightDarkScale(sd3, human) {
       `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">${Math.round(m.v)} / 100</span></div>${traitRowsFor(m.profile)}</div>`
     ));
   });
-  // Once laid out, hide labels that collide: keep the saint/villain extremes,
-  // then greedily drop any name whose box overlaps one already kept. Every dot
-  // keeps its logo + hover tooltip, and the ranked list below names them all.
-  decollideScaleLabels(wrap);
+  // Desktop only: hide horizontal labels that collide (extremes kept). The
+  // vertical (mobile) layout is an evenly-spaced list, so nothing overlaps.
+  if (!isVert) decollideScaleLabels(wrap);
   return wrap;
 }
 
@@ -940,6 +974,11 @@ async function main() {
   window.addEventListener("hashchange", () => {
     if (window.tlqTrack) window.tlqTrack("view_switched", { view: currentView() });
   });
+  // Re-render when crossing the mobile breakpoint so the Dark Triad scale swaps
+  // between the horizontal axis (desktop) and the vertical list (mobile).
+  const mqMobile = window.matchMedia("(max-width: 640px)");
+  if (mqMobile.addEventListener) mqMobile.addEventListener("change", render);
+  else if (mqMobile.addListener) mqMobile.addListener(render);
   render();
 }
 
