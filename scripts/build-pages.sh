@@ -45,6 +45,16 @@ cp "$web/admin.html" "$dist/app/admin.html"
 cp "$web/home.html" "$dist/rankings/index.html"
 cp "$web/rankings.html" "$dist/rankings/rankings.html"
 
+# SEO content pages: the guides hub + long-form articles, served at clean URLs
+# (e.g. /dark-triad-ai) exactly like rankings.html at /rankings.
+for f in guides dark-triad-ai big-five-ai mbti-ai; do
+  cp "$web/$f.html" "$dist/rankings/$f.html"
+done
+
+# Crawl files for the public site (robots + sitemap point at the apex).
+cp "$web/robots.txt" "$dist/rankings/robots.txt"
+cp "$web/sitemap.xml" "$dist/rankings/sitemap.xml"
+
 # Snapshot the rankings into the bundle so the public page is served entirely
 # from Cloudflare's CDN (no backend call per visit). Refreshed on every deploy;
 # the page falls back to the live API if this snapshot is missing.
