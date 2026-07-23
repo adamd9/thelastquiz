@@ -77,16 +77,20 @@
     .ld-row { display: flex; align-items: center; gap: 16px; }
     .ld-face { display: flex; flex-direction: column; align-items: center; font-size: 34px; line-height: 1; flex: none; }
     .ld-face b { font-size: 0.66rem; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
-    .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 92px 0 40px;
+    .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 92px 0 56px;
       background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
-    .ld-human { position: absolute; top: -12px; bottom: -12px; width: 0; border-left: 2px dashed #1b1a17; }
-    .ld-human span { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.7rem; font-weight: 700; color: var(--ink); }
+    .ld-end { position: absolute; top: calc(100% + 6px); font-size: 0.7rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .ld-end-lo { left: 0; } .ld-end-hi { right: 0; }
+    .ld-human { position: absolute; top: -10px; bottom: -40px; width: 0; border-left: 2px dashed var(--accent-2); z-index: 3; cursor: pointer; }
+    .ld-human:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; }
+    .ld-human-lab { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 700; color: #fff; background: var(--accent-2); padding: 3px 10px 3px 8px; border-radius: 999px; box-shadow: 0 2px 7px rgba(15,92,120,.4); display: inline-flex; align-items: center; gap: 5px; }
     .ld-dot { position: absolute; top: 50%; cursor: pointer; }
     .ld-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 999px; }
     .ld-pin { position: absolute; top: -9px; left: -9px; width: 18px; height: 18px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
     .ld-pin img { width: 12px; height: 12px; object-fit: contain; }
     .ld-lab { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; color: var(--ink); background: var(--panel); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); }
     .ld-lab.r0 { bottom: 16px; } .ld-lab.r1 { bottom: 44px; } .ld-lab.r2 { bottom: 72px; }
+    .ld-foot { color: var(--muted); font-size: 0.78rem; font-style: italic; margin: 6px 2px 0; }
     .ld-cap { color: var(--muted); font-size: 0.95rem; margin: 10px 2px 0; }
     .ld-cap b { color: var(--ink); }
 
@@ -426,7 +430,6 @@
   (function () {
     var HUMAN = { MACH: 46, NARC: 38, PSYCH: 29 };
     var HUMAN_IDX = Math.round((HUMAN.MACH + HUMAN.NARC + HUMAN.PSYCH) / 3);
-    var pos = function (v) { return Math.max(2, Math.min(98, v)); };
     var barW = function (v) { return Math.max(0, Math.min(100, v)); };
     var shortName = function (id) { return String(id).split("/").pop() || id; };
     var idxOf = function (p) { return (((p && p.MACH) || 0) + ((p && p.NARC) || 0) + ((p && p.PSYCH) || 0)) / 3; };
@@ -441,10 +444,29 @@
     }
 
     function renderScale(models) {
+      // Window the 0-100 Dark Index onto just the region the data occupies (with
+      // a small fixed pad) so points spread across the width instead of bunching
+      // against an empty 0 or 100 end. Mirrors the live /rankings scale; the
+      // visible window is noted under the axis so the scale stays honest.
+      var vals = [HUMAN_IDX].concat(models.map(function (m) { return m.v; }));
+      var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
+      var pad = 5;
+      var domainMin = Math.max(0, Math.floor((lo - pad) / 5) * 5);
+      var domainMax = Math.min(100, Math.ceil((hi + pad) / 5) * 5);
+      var span = (domainMax - domainMin) || 1;
+      var clamp = function (v) { return Math.max(1.5, Math.min(98.5, ((v - domainMin) / span) * 100)); };
+      // Per-trait breakdown rows (Machiavellianism / Narcissism / Psychopathy),
+      // shared by the model-dot and average-human tooltips.
+      var traitRowsFor = function (p) {
+        p = p || {};
+        return '<div class="rq-row"><span class="rq-k">Machiavellianism</span><span class="rq-v">~' + Math.round(p.MACH || 0) + '/100</span></div>' +
+          '<div class="rq-row"><span class="rq-k">Narcissism</span><span class="rq-v">~' + Math.round(p.NARC || 0) + '/100</span></div>' +
+          '<div class="rq-row"><span class="rq-k">Psychopathy</span><span class="rq-v">~' + Math.round(p.PSYCH || 0) + '/100</span></div>';
+      };
       var markers = models.map(function (m, i) {
         var logo = providerLogoUrl(m.id);
         var pin = logo ? '<img src="' + logo + '" alt="" />' : '';
-        return '<div class="ld-dot" data-idx="' + i + '" style="left:' + pos(m.v) + '%">' +
+        return '<div class="ld-dot" data-idx="' + i + '" style="left:' + clamp(m.v) + '%">' +
           '<span class="ld-pin">' + pin + '</span><span class="ld-lab r' + (i % 3) + '">' + familyLabel(m.id) + '</span></div>';
       }).join("");
       var above = models.filter(function (m) { return m.v > HUMAN_IDX; });
@@ -458,9 +480,26 @@
       ldEl.innerHTML =
         '<div class="ld-row">' +
         '<div class="ld-face">\uD83D\uDE07<b>saint</b></div>' +
-        '<div class="ld-track"><div class="ld-human" style="left:' + pos(HUMAN_IDX) + '%"><span>avg human</span></div>' + markers + '</div>' +
+        '<div class="ld-track">' +
+          '<div class="ld-human" style="left:' + clamp(HUMAN_IDX) + '%" tabindex="0" role="button" aria-label="Average human, shown for scale">' +
+            '<span class="ld-human-lab">\uD83E\uDDD1 avg human</span>' +
+          '</div>' + markers +
+          '<span class="ld-end ld-end-lo">' + domainMin + '</span><span class="ld-end ld-end-hi">' + domainMax + '</span>' +
+        '</div>' +
         '<div class="ld-face">\uD83D\uDE08<b>villain</b></div>' +
-        '</div><p class="ld-cap">' + caption + '</p>';
+        '</div>' +
+        '<p class="ld-foot">Dark Index \u00b7 0\u2013100 scale (showing ' + domainMin + '\u2013' + domainMax + ')</p>' +
+        '<p class="ld-cap">' + caption + '</p>';
+      var humanEl = ldEl.querySelector(".ld-human");
+      if (humanEl) {
+        attachRichTooltip(humanEl, function () {
+          return '<div class="rq-name">Average human</div>' +
+            '<div class="rq-date">The typical adult, shown for scale.</div>' +
+            '<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span>' +
+            '<span class="rq-v">~' + HUMAN_IDX + ' / 100</span></div>' + traitRowsFor(HUMAN) + '</div>' +
+            '<div class="rq-date" style="margin-top:6px">Population norms (Kaufman et al. 2019, SD-3). Models left of this line are more restrained than the average person; right of it, darker.</div>';
+        });
+      }
       Array.prototype.forEach.call(ldEl.querySelectorAll(".ld-dot"), function (dot) {
         var m = models[Number(dot.dataset.idx)];
         dot.setAttribute("aria-label", m.name + ": " + Math.round(m.v) + "/100 dark index");
@@ -469,7 +508,7 @@
             '<div class="rq-id">' + escapeHtml(m.id) + '</div>' +
             '<div class="rq-date">' + escapeHtml(formatReleased(m.released)) + '</div>' +
             '<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span>' +
-            '<span class="rq-v">' + Math.round(m.v) + ' / 100</span></div></div>';
+            '<span class="rq-v">' + Math.round(m.v) + ' / 100</span></div>' + traitRowsFor(m.profile) + '</div>';
         });
       });
       document.getElementById("home-scale").hidden = false;
@@ -538,7 +577,7 @@
       var allowed = hle ? new Set(hle.modelIds) : null;
       var models = allowed ? sd3.models.filter(function (m) { return allowed.has(m.model_id); }) : sd3.models;
       return models.map(function (m) {
-        return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), released: m.released };
+        return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), profile: m.profile, released: m.released };
       }).sort(function (a, b) { return a.v - b.v; });
     }
 
