@@ -89,14 +89,16 @@ export const FRONTIER_MODELS = [
 // ---------------------------------------------------------------------------
 // The exact model lineup on HLE-Rolling (CAIS + Scale AI), in the leaderboard's
 // own chronological order. Like FRONTIER_MODELS this is hard-coded and matched to
-// OpenRouter by EXACT id — never fuzzy/needle matching — so a model is either the
-// precise one HLE evaluated or it is explicitly absent (id: null). No silent
-// "nearest sibling" substitutions.
+// OpenRouter by EXACT id — never fuzzy/needle matching. Each row is HLE's exact
+// build, or — when that build has aged off OpenRouter — the nearest NEWER build,
+// always spelled out in `note` (never a silent swap). If the only newer build is
+// already another row, this one stays id: null so the gap stays visible.
 //
 // Rules for editing:
 //   • Every `id` MUST be copied exactly from https://openrouter.ai/models.
-//   • If HLE's exact model isn't on OpenRouter, keep the row with `id: null` and
-//     say why in `note`, so the gap stays visible instead of silently dropping.
+//   • Prefer HLE's exact build. If it's gone, use the nearest newer build and
+//     note the swap; if that newer build already appears in another row, leave
+//     this row id: null (documented) rather than duplicating it.
 //
 // Last reviewed: 2026-07-24 · sources: https://lastexam.ai (HLE-Rolling chart) +
 // Scale SEAL leaderboard (https://labs.scale.com/leaderboard/humanitys_last_exam).
@@ -105,15 +107,15 @@ export const HLE_MODELS = [
   { name: "GPT-4o", id: "openai/gpt-4o" },
   { name: "o1", id: "openai/o1" },
   { name: "o3-mini", id: "openai/o3-mini" },
-  { name: "Claude Sonnet 3.7", id: null, note: "Not on OpenRouter — no claude-3.7-sonnet in the catalogue (superseded)." },
-  { name: "Gemini 2.5 Pro Experimental", id: null, note: "Not on OpenRouter — the March 2025 experimental build aged out (only gemini-2.5-pro / -preview remain)." },
+  { name: "Claude Sonnet 3.7", id: "anthropic/claude-sonnet-4.6", note: "Base claude-3.7-sonnet aged off OpenRouter; Sonnet 4 & 4.5 hold their own HLE rows, so this slot uses the next newer distinct build, Sonnet 4.6." },
+  { name: "Gemini 2.5 Pro Experimental", id: null, note: "March 2025 experimental build is gone; the newer GA Gemini 2.5 Pro (listed below) already covers it — no distinct newer Pro to substitute without duplicating that row." },
   { name: "o3", id: "openai/o3" },
   { name: "Claude Sonnet 4", id: "anthropic/claude-sonnet-4" },
   { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro" },
-  { name: "Grok 4", id: null, note: "Not on OpenRouter — base grok-4 aged out (only grok-4.20/4.3/4.5 remain)." },
+  { name: "Grok 4", id: "x-ai/grok-4.20", note: "Base grok-4 aged off OpenRouter; substituted with the nearest newer build, grok-4.20 (grok-4.3 / 4.5 also available)." },
   { name: "GPT-5", id: "openai/gpt-5" },
   { name: "Claude Sonnet 4.5", id: "anthropic/claude-sonnet-4.5" },
-  { name: "Gemini 3 Pro", id: null, note: "Not on OpenRouter as a text model — only gemini-3-pro-image + gemini-3.1-pro-preview exist." },
+  { name: "Gemini 3 Pro", id: null, note: "No text Gemini 3 Pro on OpenRouter; the newer Gemini 3.1 Pro (listed below) already covers it — no distinct newer Pro to substitute without duplicating that row." },
   { name: "Claude Opus 4.5", id: "anthropic/claude-opus-4.5" },
   { name: "GPT-5.2", id: "openai/gpt-5.2" },
   { name: "Claude Opus 4.6", id: "anthropic/claude-opus-4.6" },
