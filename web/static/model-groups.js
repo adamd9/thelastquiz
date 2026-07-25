@@ -128,6 +128,39 @@ export const HLE_MODELS = [
   { name: "DeepSeek R1", id: "deepseek/deepseek-r1" },
 ];
 
+// ===========================================================================
+// BEST OPEN SOURCE — HAND-CURATED, EXACT. Review and edit this list directly.
+// ---------------------------------------------------------------------------
+// The strongest open-weight (self-hostable) models, one flagship per major open
+// lab, ordered best -> most modest. Like FRONTIER_MODELS this is hard-coded and
+// matched to OpenRouter by EXACT id — NOT a vendor-prefix regex sorted by price,
+// which missed today's leaders entirely (GLM, MiniMax, Kimi, MiMo, Hunyuan).
+//
+// Rules for editing:
+//   • Every `id` MUST be copied exactly from https://openrouter.ai/models and be
+//     genuinely open-weight (downloadable). Exclude API-only tiers (Qwen "Max",
+//     proprietary "pro" endpoints, etc.).
+//   • Keep it ordered strongest-first so the showcase leads with the best.
+//
+// Last reviewed: 2026-07-24 · sources: Artificial Analysis open-weights
+// Intelligence Index (https://artificialanalysis.ai/models/open-source) +
+// OpenRouter usage rankings (https://openrouter.ai/rankings).
+// ===========================================================================
+export const OSS_MODELS = [
+  { name: "GLM-5.2", id: "z-ai/glm-5.2", note: "Z AI (Zhipu) — #1 open-weight on the AA Intelligence Index." },
+  { name: "MiniMax-M3", id: "minimax/minimax-m3", note: "MiniMax — #2 open-weight." },
+  { name: "DeepSeek V4 Pro", id: "deepseek/deepseek-v4-pro", note: "DeepSeek — 1.6T-param MoE flagship." },
+  { name: "Kimi K2.6", id: "moonshotai/kimi-k2.6", note: "Moonshot — strongest open-weight Kimi (K3 is not open-weight)." },
+  { name: "MiMo-V2.5-Pro", id: "xiaomi/mimo-v2.5-pro", note: "Xiaomi — also the most-used open model on OpenRouter." },
+  { name: "Hunyuan 3", id: "tencent/hy3", note: "Tencent — high intelligence and very widely used." },
+  { name: "Nemotron 3 Ultra", id: "nvidia/nemotron-3-ultra-550b-a55b", note: "NVIDIA — 550B open flagship." },
+  { name: "Qwen3.6 27B", id: "qwen/qwen3.6-27b", note: "Alibaba — best open Qwen (the 'Max' tiers are API-only)." },
+  { name: "Mistral Medium 3.5", id: "mistralai/mistral-medium-3-5", note: "Mistral — strongest open Mistral." },
+  { name: "Gemma 4 31B", id: "google/gemma-4-31b-it", note: "Google — flagship open Gemma." },
+  { name: "gpt-oss-120b", id: "openai/gpt-oss-120b", note: "OpenAI — its open-weight release." },
+  { name: "Llama 4 Maverick", id: "meta-llama/llama-4-maverick", note: "Meta — best open Llama (now behind the field)." },
+];
+
 export function buildModelGroups(models) {
   const available = (models || []).filter((m) => m.available);
   const exclude = /(image|embed|tts|audio|whisper|vision|moderation|rerank|guard)/i;
@@ -232,13 +265,21 @@ export function buildModelGroups(models) {
     frontierPicked.length || 1
   );
 
-  const ossRe =
-    /^(meta-llama|mistralai|deepseek|qwen|google\/gemma|microsoft\/phi|nvidia|nousresearch|teknium|01-ai|databricks|allenai|cognitivecomputations)/;
-  const ossProprietary = /(qwen.*max|mistral-(large|medium)|codestral)/; // API-only tiers
-  const oss = chat
-    .filter((m) => ossRe.test(idl(m)) && !ossProprietary.test(idl(m)))
-    .sort((a, b) => (price(b) || 0) - (price(a) || 0));
-  add("oss", "Best open source", "Top open-weight models you could self-host.", oss, 6);
+  // "Best open source" — the strongest open-weight models, hard-coded in
+  // OSS_MODELS at the top of this file and matched by EXACT OpenRouter id
+  // (like `frontier`), ordered by capability. Replaces the old vendor-prefix
+  // regex + price-descending sort, which missed the current leaders and used
+  // price as a bogus proxy for quality.
+  const ossPicked = OSS_MODELS.filter((f) => f.id)
+    .map((f) => chat.find((m) => m.id === f.id))
+    .filter(Boolean);
+  add(
+    "oss",
+    "Best open source",
+    "The strongest open-weight models you could self-host, ranked by capability.",
+    ossPicked,
+    ossPicked.length || 1
+  );
 
   const priced = chat.filter((m) => price(m) !== null && price(m) > 0);
   add(
