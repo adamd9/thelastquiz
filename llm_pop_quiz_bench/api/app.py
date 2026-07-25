@@ -24,7 +24,7 @@ from ..core import benchmarks, reporter
 from ..core.auth import User, frontend_config, get_current_user
 from ..core.model_config import model_config_loader
 from ..core.costs import estimate_run_cost, fetch_openrouter_pricing_map
-from ..core.openrouter import fetch_user_models, normalize_models, strip_prefix
+from ..core.openrouter import APP_API_KEY_ENV, fetch_user_models, normalize_models, strip_prefix
 from ..core.quiz_meta import build_quiz_meta
 from ..core.quiz_converter import convert_to_quiz
 from ..core.quotas import check_request_quota, load_quota_config
@@ -1138,18 +1138,25 @@ def create_run(
     if not req.models and not req.group:
         raise HTTPException(status_code=400, detail="Select at least one model or group")
 
-    if not use_mocks and not os.environ.get("OPENROUTER_API_KEY"):
-        raise HTTPException(status_code=400, detail="OPENROUTER_API_KEY is required")
+    # Public app runs authenticate with the app's OWN OpenRouter key so their
+    # spend stays isolated from admin/official runs. No fallback to the admin key:
+    # a missing app key rejects the run rather than silently billing the wrong key.
+    if not use_mocks and not os.environ.get(APP_API_KEY_ENV):
+        raise HTTPException(status_code=400, detail=f"{APP_API_KEY_ENV} is required")
 
     if req.models:
         model_ids = [strip_prefix(model_id) for model_id in req.models]
-        adapters = model_config_loader.create_adapters(model_ids, use_mocks)
+        adapters = model_config_loader.create_adapters(
+            model_ids, use_mocks, api_key_env=APP_API_KEY_ENV
+        )
     elif req.group:
         try:
             model_ids = model_config_loader.model_groups[req.group]
         except KeyError as exc:
             raise HTTPException(status_code=400, detail=f"Unknown model group: {req.group}") from exc
-        adapters = model_config_loader.create_adapters(model_ids, use_mocks)
+        adapters = model_config_loader.create_adapters(
+            model_ids, use_mocks, api_key_env=APP_API_KEY_ENV
+        )
 
     if not adapters:
         raise HTTPException(status_code=400, detail="No available models to run")

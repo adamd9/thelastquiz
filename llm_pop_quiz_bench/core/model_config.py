@@ -10,7 +10,7 @@ import yaml
 
 from ..adapters.mock_adapter import MockAdapter
 from ..adapters.openrouter_adapter import OpenRouterAdapter
-from .openrouter import strip_prefix
+from .openrouter import ADMIN_API_KEY_ENV, strip_prefix
 
 
 class ModelConfig:
@@ -19,23 +19,28 @@ class ModelConfig:
     def __init__(self, config_dict: dict):
         self.id = config_dict["id"]
         self.model = strip_prefix(self.id)
-        self.api_key_env = "OPENROUTER_API_KEY"
+        self.api_key_env = ADMIN_API_KEY_ENV
         self.description = config_dict.get("description", "")
         self.default_params = config_dict.get("defaultParams", {})
         self.max_concurrency = config_dict.get("maxConcurrency", 1)
 
-    def is_available(self, use_mocks: bool = False) -> bool:
+    def is_available(self, use_mocks: bool = False, api_key_env: Optional[str] = None) -> bool:
         """Check if this model is available (has API key or is in mock mode)."""
         if use_mocks:
             return True
-        return bool(os.environ.get(self.api_key_env))
+        return bool(os.environ.get(api_key_env or self.api_key_env))
 
-    def create_adapter(self, use_mocks: bool = False):
-        """Create the appropriate adapter for this model."""
+    def create_adapter(self, use_mocks: bool = False, api_key_env: Optional[str] = None):
+        """Create the appropriate adapter for this model.
+
+        ``api_key_env`` overrides which OpenRouter key the adapter authenticates
+        with (defaults to ``OPENROUTER_API_KEY``), so the public app can run on a
+        different key from admin/official benchmark runs.
+        """
         if use_mocks:
             adapter = MockAdapter(model=self.id)
         else:
-            adapter = OpenRouterAdapter(model=self.model, api_key_env=self.api_key_env)
+            adapter = OpenRouterAdapter(model=self.model, api_key_env=api_key_env or self.api_key_env)
 
         # Override the adapter's ID to use our unique model ID
         adapter.id = self.id
@@ -99,13 +104,20 @@ class ModelConfigLoader:
         model_ids = self.model_groups[group_name]
         return [self.get_model(model_id) or ModelConfig({"id": model_id}) for model_id in model_ids]
     
-    def create_adapters(self, model_ids: List[str], use_mocks: bool = False) -> List:
-        """Create adapters for the specified model IDs."""
+    def create_adapters(
+        self, model_ids: List[str], use_mocks: bool = False, api_key_env: Optional[str] = None
+    ) -> List:
+        """Create adapters for the specified model IDs.
+
+        ``api_key_env`` selects which OpenRouter key the adapters authenticate
+        with (defaults to ``OPENROUTER_API_KEY``), letting the public app path run
+        on a separate key from admin/official benchmark runs.
+        """
         adapters = []
         for model_id in model_ids:
             model_config = self.get_model(model_id) or ModelConfig({"id": model_id})
-            if model_config.is_available(use_mocks):
-                adapter = model_config.create_adapter(use_mocks)
+            if model_config.is_available(use_mocks, api_key_env):
+                adapter = model_config.create_adapter(use_mocks, api_key_env)
                 adapters.append(adapter)
         return adapters
 

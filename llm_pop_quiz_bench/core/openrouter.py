@@ -15,6 +15,15 @@ def strip_prefix(model_id: str) -> str:
     return model_id
 
 
+# OpenRouter keys are split by surface so admin/official benchmark spend and
+# public-app spend are billed and rate-limited independently on OpenRouter.
+# There is deliberately NO fallback between them: the public app path requires
+# its own key (APP_API_KEY_ENV) so its spend can never be silently attributed to
+# the admin/official key.
+ADMIN_API_KEY_ENV = "OPENROUTER_API_KEY"
+APP_API_KEY_ENV = "OPENROUTER_APP_API_KEY"
+
+
 def fetch_user_models(api_key: str | None = None) -> list[dict[str, Any]]:
     key = api_key or os.environ.get("OPENROUTER_API_KEY")
     if not key:

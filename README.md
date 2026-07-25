@@ -83,7 +83,8 @@ Example quizzes are available in the `quizzes/` directory.
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OPENROUTER_API_KEY` | API key for OpenRouter service | Required |
+| `OPENROUTER_API_KEY` | OpenRouter API key for admin/official benchmark runs and infra calls (catalogue, pricing) | Required |
+| `OPENROUTER_APP_API_KEY` | Separate OpenRouter key for public app runs, so their spend/limits stay isolated. No fallback — required for the app's run path | Required for app runs |
 | `OPENAI_API_KEY` | API key for OpenAI (for quiz conversion) | Required for conversion |
 | `LLM_POP_QUIZ_ENV` | Environment mode: `real` or `mock` | `real` |
 | `LLM_POP_QUIZ_RUNTIME_DIR` | Directory for runtime data and database | `runtime-data/` |
