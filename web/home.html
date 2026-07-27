@@ -171,6 +171,11 @@
     .rq-tip .rq-k { color: var(--muted); }
     .rq-tip .rq-row.rq-hi .rq-k { color: var(--accent); }
     .rq-tip .rq-v { font-variant-numeric: tabular-nums; }
+    .rq-tip .rq-head { display: flex; align-items: center; gap: 9px; }
+    .rq-tip .rq-brand { display: inline-flex; flex-direction: column; align-items: center; gap: 1px; flex: none; }
+    .rq-tip .rq-flag { font-size: 0.95rem; line-height: 1; }
+    .rq-tip .rq-logo { width: 22px; height: 22px; object-fit: contain; display: block; }
+    .rq-tip .rq-headtext { min-width: 0; }
 
     .cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
     .btn { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 0.98rem;
@@ -483,7 +488,7 @@
   </div>
 
   <script type="module">
-  import { providerLogoUrl, familyLabel } from "/static/model-logo.js";
+  import { providerLogoUrl, familyLabel, brandHeadHtml } from "/static/model-logo.js";
   import { buildModelGroups } from "/static/model-groups.js";
   import { attachRichTooltip, escapeHtml, formatReleased } from "/static/rich-tooltip.js";
   /* Homepage rankings: pull the live snapshot the rankings page uses and render
@@ -576,8 +581,9 @@
         var m = models[Number(dot.dataset.idx)];
         dot.setAttribute("aria-label", m.name + ": " + Math.round(m.v) + "/100 dark index");
         attachRichTooltip(dot, function () {
-          return '<div class="rq-name">' + escapeHtml(familyLabel(m.id)) + '</div>' +
-            '<div class="rq-id">' + escapeHtml(m.id) + '</div>' +
+          return '<div class="rq-head">' + brandHeadHtml(m.id) + '<div class="rq-headtext">' +
+            '<div class="rq-name">' + escapeHtml(familyLabel(m.id)) + '</div>' +
+            '<div class="rq-id">' + escapeHtml(m.id) + '</div></div></div>' +
             '<div class="rq-date">' + escapeHtml(formatReleased(m.released)) + '</div>' +
             '<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span>' +
             '<span class="rq-v">' + Math.round(m.v) + ' / 100</span></div>' + traitRowsFor(m.profile) + '</div>';

@@ -7,6 +7,8 @@
  * existing colour dot.
  */
 
+import { countryForModelId } from "./model-groups.js";
+
 // OpenRouter author prefix -> vendored logo slug. Most providers match 1:1; the
 // entries here are where OpenRouter's naming differs from the logo, or where the
 // model-brand mark (Claude/Gemini/Grok) reads better than the company mark.
@@ -76,6 +78,22 @@ export function providerLogoHtml(modelId, size = 16) {
   if (!url) return "";
   const p = providerPrefix(modelId);
   return `<img class="provider-logo" src="${url}" width="${size}" height="${size}" alt="${p}" loading="lazy" />`;
+}
+
+/* Tooltip brand badge: the model's country flag stacked ABOVE its provider
+ * logo, for the shared rich-tooltip header. Returns "" when we have neither a
+ * logo nor a known country. The flag resolves by LAB (countryForModelId) so it
+ * lights up for any build present in the payload, and the .rq-brand column
+ * stacks the flag over the logo. */
+export function brandHeadHtml(modelId, size = 22) {
+  const url = providerLogoUrl(modelId);
+  const c = countryForModelId(modelId);
+  if (!url && !c) return "";
+  const flag = c ? `<span class="rq-flag" title="${c.country}">${c.flag}</span>` : "";
+  const logo = url
+    ? `<img class="rq-logo" src="${url}" width="${size}" height="${size}" alt="${providerPrefix(modelId)}" loading="lazy" />`
+    : "";
+  return `<span class="rq-brand">${flag}${logo}</span>`;
 }
 
 // Family/brand token to drop from a model's label when its provider logo is

@@ -8,7 +8,7 @@
  * the admin uses — to let visitors filter a large field down to a curated
  * subset instead of rendering every benchmarked model at once. */
 import { buildModelGroups } from "./model-groups.js";
-import { providerLogoImg, providerLogoHtml, providerLogoUrl, familyLabel } from "./model-logo.js";
+import { providerLogoImg, providerLogoHtml, providerLogoUrl, familyLabel, brandHeadHtml } from "./model-logo.js";
 import { attachRichTooltip, escapeHtml, formatReleased } from "./rich-tooltip.js";
 
 // On-brand palette that reads well on the app's cream panels.
@@ -340,8 +340,9 @@ function darkTriadTooltipHtml(m, highlightTraitId) {
     return `<div class="rq-row${hi}"><span class="rq-k">${escapeHtml(t.name)}</span><span class="rq-v">${val}</span></div>`;
   }).join("");
   return (
+    `<div class="rq-head">${brandHeadHtml(m.model_id)}<div class="rq-headtext">` +
     `<div class="rq-name">${escapeHtml(familyLabel(m.model_id))}</div>` +
-    `<div class="rq-id">${escapeHtml(m.model_id)}</div>` +
+    `<div class="rq-id">${escapeHtml(m.model_id)}</div></div></div>` +
     `<div class="rq-date">${escapeHtml(formatReleased(m.released))}</div>` +
     `<div class="rq-rows">${rows}</div>`
   );
@@ -649,8 +650,9 @@ function lightDarkScale(sd3, human) {
     const m = models[Number(dot.dataset.idx)];
     dot.setAttribute("aria-label", `${m.name}: ${Math.round(m.v)}/100 dark index`);
     attachRichTooltip(dot, () => (
+      `<div class="rq-head">${brandHeadHtml(m.id)}<div class="rq-headtext">` +
       `<div class="rq-name">${escapeHtml(familyLabel(m.id))}</div>` +
-      `<div class="rq-id">${escapeHtml(m.id)}</div>` +
+      `<div class="rq-id">${escapeHtml(m.id)}</div></div></div>` +
       `<div class="rq-date">${escapeHtml(formatReleased(m.released))}</div>` +
       `<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span><span class="rq-v">${Math.round(m.v)} / 100</span></div>${traitRowsFor(m.profile)}</div>`
     ));

@@ -23,6 +23,58 @@ function pretty(modelId) {
 }
 
 // ===========================================================================
+// MODEL ORIGIN — OpenRouter author/lab prefix -> country of origin (name +
+// flag emoji). Keyed off the prefix before "/" (e.g. "x-ai/grok-4.3" -> "x-ai").
+// Powers BOTH the "Global leaders" group below and the country flag shown above
+// a model's logo in the rich chart tooltips. Unlike the exact-id group lists,
+// this maps by LAB so it still resolves for whatever build is in the payload
+// (e.g. a benchmarked grok-4.3, not just the curated newest grok-4.5).
+// Community fine-tuners with no clear national HQ are deliberately omitted so we
+// never assert a nationality we're unsure of (they simply get no flag).
+// ===========================================================================
+const _US = { country: "United States", flag: "🇺🇸" };
+const _CN = { country: "China", flag: "🇨🇳" };
+const _EU = { country: "European Union", flag: "🇪🇺" };
+const _CA = { country: "Canada", flag: "🇨🇦" };
+const _KR = { country: "South Korea", flag: "🇰🇷" };
+const _JP = { country: "Japan", flag: "🇯🇵" };
+const _IL = { country: "Israel", flag: "🇮🇱" };
+const _AE = { country: "United Arab Emirates", flag: "🇦🇪" };
+const _IN = { country: "India", flag: "🇮🇳" };
+const _CH = { country: "Switzerland", flag: "🇨🇭" };
+
+export const MODEL_COUNTRY = {
+  // United States
+  openai: _US, anthropic: _US, google: _US, "google-vertex": _US, "x-ai": _US,
+  meta: _US, "meta-llama": _US, nvidia: _US, microsoft: _US, amazon: _US,
+  perplexity: _US, allenai: _US, thinkingmachines: _US, deepcogito: _US,
+  inception: _US, writer: _US, poolside: _US, morph: _US, relace: _US,
+  nousresearch: _US, cognitivecomputations: _US, liquidai: _US, servicenow: _US,
+  "prime-intellect": _US,
+  // China
+  deepseek: _CN, qwen: _CN, moonshotai: _CN, "z-ai": _CN, zhipu: _CN, thudm: _CN,
+  minimax: _CN, tencent: _CN, xiaomi: _CN, baidu: _CN, bytedance: _CN,
+  "bytedance-seed": _CN, stepfun: _CN, meituan: _CN, inclusionai: _CN,
+  kwaipilot: _CN, nanbeige: _CN, openbmb: _CN,
+  // European Union (Mistral / France — the EU's frontier champion)
+  mistralai: _EU, mistral: _EU,
+  // Canada
+  cohere: _CA,
+  // Other notable AI nations (mapped so their flag is correct if they appear)
+  upstage: _KR, "lg-ai": _KR, lgai: _KR, naver: _KR,
+  sakana: _JP, ai21: _IL, tii: _AE, mbzuai: _AE, sarvam: _IN, "swiss-ai": _CH,
+};
+
+/* The country of origin for a model id, or null if its lab isn't mapped. The
+ * OpenRouter "~author" alias prefix (e.g. "~x-ai/grok-latest") is stripped so
+ * aliases resolve to the same country. */
+export function countryForModelId(modelId) {
+  let prefix = String(modelId || "").split("/")[0].toLowerCase();
+  if (prefix.startsWith("~")) prefix = prefix.slice(1);
+  return MODEL_COUNTRY[prefix] || null;
+}
+
+// ===========================================================================
 // FRONTIER MODELS — HAND-CURATED. Review and edit this list directly.
 // ---------------------------------------------------------------------------
 // "Frontier" is an editorial judgement (which models the field currently treats
@@ -100,32 +152,42 @@ export const FRONTIER_MODELS = [
 //     note the swap; if that newer build already appears in another row, leave
 //     this row id: null (documented) rather than duplicating it.
 //
-// Last reviewed: 2026-07-24 · sources: https://lastexam.ai (HLE-Rolling chart) +
-// Scale SEAL leaderboard (https://labs.scale.com/leaderboard/humanitys_last_exam).
+// Last reviewed: 2026-07-28 · sources: https://lastexam.ai (HLE-Rolling chart) +
+// Scale SEAL leaderboard (https://scale.com/leaderboard/humanitys_last_exam).
+// NB: HLE-Rolling now tracks THREE Grok builds as distinct rows (Grok 4, Grok
+// 4.2, Grok 4.5) — don't collapse them into one.
 // ===========================================================================
 export const HLE_MODELS = [
   { name: "GPT-4o", id: "openai/gpt-4o" },
   { name: "o1", id: "openai/o1" },
+  { name: "DeepSeek R1", id: "deepseek/deepseek-r1", note: "Evaluated on the text-only subset." },
   { name: "o3-mini", id: "openai/o3-mini" },
-  { name: "Claude Sonnet 3.7", id: "anthropic/claude-sonnet-4.6", note: "Base claude-3.7-sonnet aged off OpenRouter; Sonnet 4 & 4.5 hold their own HLE rows, so this slot uses the next newer distinct build, Sonnet 4.6." },
-  { name: "Gemini 2.5 Pro Experimental", id: null, note: "March 2025 experimental build is gone; the newer GA Gemini 2.5 Pro (listed below) already covers it — no distinct newer Pro to substitute without duplicating that row." },
+  { name: "Claude Sonnet 3.7", id: null, note: "Base claude-3.7-sonnet aged off OpenRouter; Sonnet 4 / 4.5 / 4.6 each hold their own rows below, so there's no distinct newer Sonnet to substitute without duplicating one — left absent." },
+  { name: "Gemini 2.5 Pro Experimental", id: null, note: "March 2025 experimental build is gone; the GA Gemini 2.5 Pro row below already covers it." },
   { name: "o3", id: "openai/o3" },
   { name: "Claude Sonnet 4", id: "anthropic/claude-sonnet-4" },
   { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro" },
-  { name: "Grok 4", id: "x-ai/grok-4.20", note: "Base grok-4 aged off OpenRouter; substituted with the nearest newer build, grok-4.20 (grok-4.3 / 4.5 also available)." },
+  { name: "Grok 4", id: "x-ai/grok-4.3", note: "Base grok-4 aged off OpenRouter; grok-4.20 and grok-4.5 hold the Grok 4.2 / Grok 4.5 rows below, so this row uses the remaining newer build grok-4.3 (also the build we benchmark)." },
   { name: "GPT-5", id: "openai/gpt-5" },
   { name: "Claude Sonnet 4.5", id: "anthropic/claude-sonnet-4.5" },
-  { name: "Gemini 3 Pro", id: null, note: "No text Gemini 3 Pro on OpenRouter; the newer Gemini 3.1 Pro (listed below) already covers it — no distinct newer Pro to substitute without duplicating that row." },
+  { name: "Gemini 3 Pro", id: null, note: "No text Gemini 3 Pro on OpenRouter; the Gemini 3.1 Pro row below already covers it." },
   { name: "Claude Opus 4.5", id: "anthropic/claude-opus-4.5" },
+  { name: "DeepSeek 3.2", id: "deepseek/deepseek-v3.2" },
   { name: "GPT-5.2", id: "openai/gpt-5.2" },
+  { name: "Kimi K2.5", id: "moonshotai/kimi-k2.5" },
   { name: "Claude Opus 4.6", id: "anthropic/claude-opus-4.6" },
+  { name: "Claude Sonnet 4.6", id: "anthropic/claude-sonnet-4.6" },
   { name: "Gemini 3.1 Pro", id: "google/gemini-3.1-pro-preview" },
+  { name: "Grok 4.2", id: "x-ai/grok-4.20", note: "HLE's 'Grok 4.2' — OpenRouter lists this build as grok-4.20." },
   { name: "GPT-5.4", id: "openai/gpt-5.4" },
+  { name: "Kimi K2.6", id: "moonshotai/kimi-k2.6" },
+  { name: "DeepSeek 4 Pro", id: "deepseek/deepseek-v4-pro" },
   { name: "GPT-5.5", id: "openai/gpt-5.5" },
+  { name: "Claude Opus 4.8", id: "anthropic/claude-opus-4.8" },
   { name: "Claude Fable 5", id: "anthropic/claude-fable-5" },
   { name: "Muse Spark 1.1", id: "meta/muse-spark-1.1" },
   { name: "Kimi K3", id: "moonshotai/kimi-k3" },
-  { name: "DeepSeek R1", id: "deepseek/deepseek-r1" },
+  { name: "Grok 4.5", id: "x-ai/grok-4.5" },
 ];
 
 // ===========================================================================
@@ -159,6 +221,61 @@ export const OSS_MODELS = [
   { name: "Gemma 4 31B", id: "google/gemma-4-31b-it", note: "Google — flagship open Gemma." },
   { name: "gpt-oss-120b", id: "openai/gpt-oss-120b", note: "OpenAI — its open-weight release." },
   { name: "Llama 4 Maverick", id: "meta-llama/llama-4-maverick", note: "Meta — best open Llama (now behind the field)." },
+];
+
+// ===========================================================================
+// GLOBAL LEADERS — HAND-CURATED, EXACT, COUNTRY-ORGANISED. Edit directly.
+// ---------------------------------------------------------------------------
+// The top 2–3 models from each nation that has produced genuinely frontier-tier
+// models, one country block at a time. Like FRONTIER_MODELS this is hard-coded
+// and matched to OpenRouter by EXACT id (never fuzzy). Picks are ordered and
+// justified by the Artificial Analysis Intelligence Index. The rich chart
+// tooltips additionally stack each model's country flag above its logo (see
+// MODEL_COUNTRY / countryForModelId), which resolves by LAB so it also lights up
+// for older benchmarked builds.
+//
+// Rules for editing:
+//   • Every `id` MUST be copied exactly from https://openrouter.ai/models.
+//   • Keep each country's picks ordered strongest-first, distinct labs where
+//     possible, and refresh from the AA Intelligence Index every few months.
+//   • `node scripts/check-frontier-models.mjs` also validates these ids.
+//
+// Last reviewed: 2026-07-28 · source: Artificial Analysis Intelligence Index
+// v4.1 (https://artificialanalysis.ai/leaderboards/models).
+// ===========================================================================
+export const GLOBAL_LEADERS = [
+  {
+    region: "United States",
+    flag: "🇺🇸",
+    models: [
+      { name: "Claude Opus 5", id: "anthropic/claude-opus-5", note: "Anthropic — #1 on the AA Intelligence Index." },
+      { name: "GPT-5.6 Sol", id: "openai/gpt-5.6-sol", note: "OpenAI — #2 on the AA Intelligence Index." },
+      { name: "Grok 4.5", id: "x-ai/grok-4.5", note: "xAI — top-10; the US's third distinct frontier lab (Google's Gemini is a close runner-up)." },
+    ],
+  },
+  {
+    region: "China",
+    flag: "🇨🇳",
+    models: [
+      { name: "Kimi K3", id: "moonshotai/kimi-k3", note: "Moonshot AI — the strongest non-US model and #1 open-weight worldwide." },
+      { name: "GLM-5.2", id: "z-ai/glm-5.2", note: "Z.ai (Zhipu) — #2 open-weight." },
+      { name: "Qwen3.7 Max", id: "qwen/qwen3.7-max", note: "Alibaba — flagship Qwen (DeepSeek V4 Pro is a close 4th)." },
+    ],
+  },
+  {
+    region: "European Union",
+    flag: "🇪🇺",
+    models: [
+      { name: "Mistral Medium 3.5", id: "mistralai/mistral-medium-3-5", note: "Mistral AI (France) — Europe's leading frontier lab." },
+    ],
+  },
+  {
+    region: "Canada",
+    flag: "🇨🇦",
+    models: [
+      { name: "Command A", id: "cohere/command-a", note: "Cohere — Canada's enterprise-focused flagship." },
+    ],
+  },
 ];
 
 export function buildModelGroups(models) {
@@ -264,6 +381,33 @@ export function buildModelGroups(models) {
     frontierPicked,
     frontierPicked.length || 1
   );
+
+  // "Global leaders" — the top models from each leading AI nation, hard-coded in
+  // GLOBAL_LEADERS at the top of this file and matched by EXACT OpenRouter id
+  // (like `frontier`). Organised by country, strongest nation first; the rich
+  // chart tooltips also stack each model's flag above its logo. Examples preview
+  // one model per country so the card shows the international spread.
+  const leaderPicked = GLOBAL_LEADERS
+    .flatMap((b) => b.models.map((m) => ({ id: m.id, name: m.name, flag: b.flag, region: b.region })))
+    .filter((e) => chat.some((m) => m.id === e.id));
+  const leaderUniq = [...new Map(leaderPicked.map((e) => [e.id, e])).values()];
+  if (leaderUniq.length >= 2) {
+    const seenRegion = new Set();
+    const examples = [];
+    for (const e of leaderUniq) {
+      if (seenRegion.has(e.region)) continue;
+      seenRegion.add(e.region);
+      examples.push(`${e.flag} ${e.name}`);
+      if (examples.length >= 3) break;
+    }
+    groups.push({
+      id: "global-leaders",
+      label: "Global leaders",
+      description: "The strongest models from each leading AI nation — the US, China, the EU and beyond.",
+      modelIds: leaderUniq.map((e) => e.id),
+      examples,
+    });
+  }
 
   // "Best open source" — the strongest open-weight models, hard-coded in
   // OSS_MODELS at the top of this file and matched by EXACT OpenRouter id

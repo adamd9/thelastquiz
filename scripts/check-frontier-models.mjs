@@ -13,7 +13,7 @@
 // so you (or a coding agent) can eyeball a replacement. Exits non-zero if any
 // row needs attention, so it doubles as a CI / pre-review guard.
 
-import { FRONTIER_MODELS } from "../web/static/model-groups.js";
+import { FRONTIER_MODELS, GLOBAL_LEADERS, HLE_MODELS } from "../web/static/model-groups.js";
 
 const OPENROUTER = "https://openrouter.ai/api/v1/models";
 
@@ -73,9 +73,40 @@ for (const f of FRONTIER_MODELS) {
   }
 }
 
+// Also validate the country-organised GLOBAL_LEADERS list (exact ids, like
+// FRONTIER_MODELS) so a stale pick in either list is caught in one run.
+console.log(`\nGlobal leaders — by country:`);
+for (const block of GLOBAL_LEADERS) {
+  console.log(`  ${block.flag} ${block.region}`);
+  for (const m of block.models) {
+    const name = m.name.padEnd(20);
+    if (byId.has(m.id)) {
+      console.log(`  OK       ${name} ${m.id}  (${dateOf(byId.get(m.id))})`);
+    } else {
+      problems++;
+      console.log(`  MISSING  ${name} ${m.id}  — NOT ON OPENROUTER`);
+    }
+  }
+}
+
+// Validate the HLE-Rolling lineup too (exact ids; null = intentionally absent,
+// documented in `note`, and never counts as a problem).
+console.log(`\nHumanity's Last Exam — HLE-Rolling lineup (${HLE_MODELS.length} rows):`);
+for (const m of HLE_MODELS) {
+  const name = m.name.padEnd(24);
+  if (!m.id) {
+    console.log(`  --       ${name} (intentionally absent)`);
+  } else if (byId.has(m.id)) {
+    console.log(`  OK       ${name} ${m.id}  (${dateOf(byId.get(m.id))})`);
+  } else {
+    problems++;
+    console.log(`  MISSING  ${name} ${m.id}  — NOT ON OPENROUTER`);
+  }
+}
+
 console.log(
   problems
-    ? `\n${problems} item(s) need attention — edit FRONTIER_MODELS in web/static/model-groups.js`
-    : `\nAll curated frontier models are present on OpenRouter.`
+    ? `\n${problems} item(s) need attention — edit web/static/model-groups.js`
+    : `\nAll curated frontier + global-leaders + HLE models are present on OpenRouter.`
 );
 process.exit(problems ? 1 : 0);
