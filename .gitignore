@@ -8,3 +8,8 @@ venv/
 .DS_Store
 dist/
 .wrangler/
+
+# Local secret scratch files — never commit
+.auth_secrets.txt
+*.secrets.txt
+*.p8
