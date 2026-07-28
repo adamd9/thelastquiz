@@ -28,6 +28,7 @@
       "creator": { "@type": "Organization", "name": "The Last Quiz", "url": "https://thelastquiz.net/" }
     }
     </script>
+    <script src="/static/feature-flags.js"></script>
     <link rel="stylesheet" href="/static/styles.css" />
     <style>
       /* Rankings-specific styling, scoped to .rankings-page and built on the
@@ -241,7 +242,7 @@
           </div>
         </a>
         <nav class="app-nav rk-nav">
-          <a href="/" data-dest="app">Make your own</a>
+          <a href="/" data-dest="app" data-create>Make your own</a>
         </nav>
       </header>
 
@@ -265,7 +266,7 @@
       <div class="rk-filter" id="filter" hidden></div>
       <div id="content"></div>
 
-      <div class="cta">
+      <div class="cta" data-create>
         <div>
           <h3>Think your favourite model has a personality?</h3>
           <p>Upload any magazine-style quiz and run it across the models yourself.</p>
@@ -280,7 +281,7 @@
           <a href="#big-five">Big Five</a>
           <a href="#type">Jungian Type</a>
           <a href="#about">About &amp; method</a>
-          <a href="/" data-dest="app">Make your own →</a>
+          <a href="/" data-dest="app" data-create>Make your own →</a>
         </nav>
         <p class="rk-foot-tagline">The Last Quiz — do AI models have personality?</p>
         <div id="footer"></div>
@@ -288,6 +289,6 @@
     </main>
     <script src="/static/site-links.js"></script>
     <script src="/static/track.js"></script>
-    <script type="module" src="/static/rankings.js?v=19"></script>
+    <script type="module" src="/static/rankings.js?v=20"></script>
   </body>
 </html>

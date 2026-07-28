@@ -39,6 +39,7 @@
     ]
   }
   </script>
+  <script src="/static/feature-flags.js"></script>
   <script src="/static/site-links.js"></script>
   <script src="/static/track.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -304,7 +305,7 @@
         <a href="/rankings#type">Jungian Type</a>
         <a href="/guides">Guides</a>
         <a href="/rankings#about">About</a>
-        <a href="/" data-dest="app">Make your own</a>
+        <a href="/" data-dest="app" data-create>Make your own</a>
       </nav>
     </header>
 
@@ -350,7 +351,7 @@
     </section>
 
     <!-- ===================== Create your own (second hero) ===================== -->
-    <section class="make">
+    <section class="make" data-create>
       <span class="kicker">Your turn</span>
       <h2>Got a quiz? <em>Put the robots through it.</em></h2>
       <p>
@@ -391,7 +392,7 @@
     </section>
 
     <!-- ===================== Ideas / starting points ===================== -->
-    <section class="block" id="ideas">
+    <section class="block" id="ideas" data-create>
       <div class="sec-head">
         <div>
           <span class="kicker">Need a starting point?</span>
@@ -477,7 +478,7 @@
         <a href="/mbti-ai">MBTI guide</a>
         <a href="/rankings">Rankings</a>
         <a href="/rankings#about">Method</a>
-        <a href="/" data-dest="app">Make your own →</a>
+        <a href="/" data-dest="app" data-create>Make your own →</a>
       </nav>
       <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
       Instruments: the Big Five via the public-domain IPIP-50; an open, OEJTS-inspired Jungian type test;
