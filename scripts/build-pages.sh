@@ -21,6 +21,9 @@ mkdir -p "$dist/app" "$dist/rankings"
 cp -R "$web/static" "$dist/app/static"
 cp -R "$web/static" "$dist/rankings/static"
 
+# The favicon source SVGs and build script under static/favicons are dev-only.
+rm -rf "$dist/app/static/favicons" "$dist/rankings/static/favicons"
+
 # --- App SPA (app.<domain>) ---
 # No _redirects file on purpose. Cloudflare Pages' native routing already does
 # exactly what we need, and a hand-rolled _redirects here caused an
@@ -36,6 +39,7 @@ cp -R "$web/static" "$dist/rankings/static"
 # unmatched client routes (/create-run, /run/<id>, ...).
 cp "$web/index.html" "$dist/app/index.html"
 cp "$web/admin.html" "$dist/app/admin.html"
+cp "$web/favicon.ico" "$dist/app/favicon.ico"
 
 # --- Public site (rankings.<domain> / apex): home.html IS the root ---
 # home.html is served at /, and rankings.html is served at the clean URL
@@ -54,6 +58,7 @@ done
 # Crawl files for the public site (robots + sitemap point at the apex).
 cp "$web/robots.txt" "$dist/rankings/robots.txt"
 cp "$web/sitemap.xml" "$dist/rankings/sitemap.xml"
+cp "$web/favicon.ico" "$dist/rankings/favicon.ico"
 
 # Snapshot the rankings into the bundle so the public page is served entirely
 # from Cloudflare's CDN (no backend call per visit). Refreshed on every deploy;

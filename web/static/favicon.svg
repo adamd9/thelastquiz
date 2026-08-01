@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="The Last Quiz">
+  <defs>
+    <linearGradient id="tile" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7566a8"/>
+      <stop offset="1" stop-color="#4d4380"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.46" r="0.55">
+      <stop offset="0" stop-color="#ffe9a8" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#ffe9a8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="head" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8ecd0"/>
+      <stop offset="1" stop-color="#e9d3a0"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#tile)"/>
+  <circle cx="32" cy="32" r="22" fill="url(#glow)"/>
+
+  <!-- devil horns emerging from behind the head -->
+  <g fill="#e2554e" stroke="#bd3a37" stroke-width="0.8" stroke-linejoin="round">
+    <path d="M19 22 C 16.5 18 15 14 15 10 C 17 15 20 18.5 23.5 22 Z"/>
+    <path d="M45 22 C 47.5 18 49 14 49 10 C 47 15 44 18.5 40.5 22 Z"/>
+  </g>
+
+  <!-- halo -->
+  <ellipse cx="32" cy="12.5" rx="11" ry="3.4" fill="none" stroke="#f7d873" stroke-width="3.2"/>
+  <ellipse cx="32" cy="12.5" rx="11" ry="3.4" fill="none" stroke="#fff0bf" stroke-width="1"/>
+
+  <!-- ears -->
+  <rect x="10.5" y="30" width="5.5" height="12" rx="2.75" fill="#e6cf98"/>
+  <rect x="48" y="30" width="5.5" height="12" rx="2.75" fill="#e6cf98"/>
+
+  <!-- head -->
+  <rect x="15" y="21" width="34" height="30" rx="10" fill="url(#head)" stroke="#d8bd82" stroke-width="1"/>
+
+  <!-- visor -->
+  <rect x="19" y="27" width="26" height="18" rx="8" fill="#2c2742"/>
+
+  <!-- eyes: left open, right winking -->
+  <circle cx="26" cy="35" r="3.2" fill="#ffe6a0"/>
+  <path d="M34.6 35.4 q3.4 3.6 6.8 0" fill="none" stroke="#ffe6a0" stroke-width="2.6" stroke-linecap="round"/>
+
+  <!-- cheeky smile -->
+  <path d="M25 40.5 q7 5 14 0" fill="none" stroke="#ffe6a0" stroke-width="2" stroke-linecap="round"/>
+</svg>
