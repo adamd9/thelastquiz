@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Uncensored AI: The Models Nobody Bothered to Housetrain | The Last Quiz</title>
+  <meta name="description" content="The big frontier models score almost zero on psychopathy — but that's a choice their makers paid for, not a fact about AI. Step off the frontier into open-source and 'uncensored' models and the dark-triad scores explode. Even GPT-4o runs ~4x darker than its siblings." />
+  <link rel="canonical" href="https://thelastquiz.net/uncensored-ai-models" />
+  <meta name="theme-color" content="#f7f1e9" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="The Last Quiz" />
+  <meta property="og:title" content="Uncensored AI: The Models Nobody Bothered to Housetrain" />
+  <meta property="og:description" content="Frontier models score near-zero on psychopathy — but that's an expensive choice, not a law of nature. Off the frontier, the dark-triad scores go dark fast. Even GPT-4o is a standout." />
+  <meta property="og:url" content="https://thelastquiz.net/uncensored-ai-models" />
+  <meta property="og:image" content="https://thelastquiz.net/static/logo2.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Uncensored AI: The Models Nobody Bothered to Housetrain" />
+  <meta name="twitter:description" content="Low psychopathy is a choice, not a fact about AI — and plenty of models didn't make it." />
+  <meta name="twitter:image" content="https://thelastquiz.net/static/logo2.png" />
+
+  <script src="/static/feature-flags.js"></script>
+  <script src="/static/site-links.js"></script>
+  <script src="/static/track.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/article.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Uncensored AI: The Models Nobody Bothered to Housetrain",
+    "description": "Frontier AI models score near-zero on psychopathy, but that low score is an expensive, deliberate choice — not a property of AI. Open-source and 'uncensored' finetunes score far darker, and safety can be stripped from open weights cheaply. Even GPT-4o runs about four times darker than its OpenAI siblings.",
+    "image": "https://thelastquiz.net/static/logo2.png",
+    "author": { "@type": "Person", "name": "Adam Dinneen" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "The Last Quiz",
+      "logo": { "@type": "ImageObject", "url": "https://thelastquiz.net/static/logo2.png" }
+    },
+    "datePublished": "2026-08-08",
+    "dateModified": "2026-08-08",
+    "keywords": "uncensored AI models, open source AI dark triad, abliteration, is GPT-4o dark, AI safety open weights, naughty AI models",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://thelastquiz.net/uncensored-ai-models" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://thelastquiz.net/" },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://thelastquiz.net/blog" },
+      { "@type": "ListItem", "position": 3, "name": "Uncensored AI: The Models Nobody Bothered to Housetrain", "item": "https://thelastquiz.net/uncensored-ai-models" }
+    ]
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": "What is an 'uncensored' AI model?",
+        "acceptedAnswer": { "@type": "Answer", "text": "An uncensored model is one with its safety alignment removed or never added, so it will answer things a mainstream assistant refuses. They're usually community finetunes of open-weight base models like Llama or Mistral, built for roleplay, fiction, or people who just don't want the model arguing with them." }
+      },
+      {
+        "@type": "Question",
+        "name": "What is abliteration?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Abliteration is a technique that removes a model's ability to refuse. Researchers found that in open chat models, refusal is controlled by a single direction in the model's internal activations; delete that direction and the model can no longer say no — no retraining required. It works on almost any open model and shows how thin safety training really is." }
+      },
+      {
+        "@type": "Question",
+        "name": "Why do open-source models score higher on the Dark Triad?",
+        "acceptedAnswer": { "@type": "Answer", "text": "Because nobody tuned the dark traits down — or, for roleplay and companion models, they were tuned up on purpose. And safety is easy to strip from open weights: fine-tuning on a handful of examples, or a one-click abliteration, can undo it cheaply." }
+      },
+      {
+        "@type": "Question",
+        "name": "Is GPT-4o darker than newer models?",
+        "acceptedAnswer": { "@type": "Answer", "text": "In our Dark Triad testing, yes — GPT-4o scores markedly higher on psychopathy than the GPT-5 line, which sits near zero. Same company, very different character. It's a good reminder that a model's dark score is a dial its makers set, not a fixed fact about AI." }
+      }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="masthead">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/logo2.png" alt="The Last Quiz logo" />
+        <div>
+          <p class="brand-kicker">The Last Quiz</p>
+          <div class="brand-title">Do AI models have personality?</div>
+        </div>
+      </a>
+      <nav class="mast-nav">
+        <a href="/">Home</a>
+        <a href="/rankings#dark-triad">Dark Triad</a>
+        <a href="/rankings#big-five">Big Five</a>
+        <a href="/rankings#type">Jungian Type</a>
+        <a href="/guides">Guides</a>
+        <a href="/blog">Blog</a>
+        <a href="/" data-dest="app" data-create>Make your own</a>
+      </nav>
+    </header>
+
+    <article class="article">
+      <div class="art-hero">
+        <span class="kicker">Blog · The dark side</span>
+        <h1>The AI models nobody bothered to <em>housetrain</em></h1>
+        <p class="dek">
+          The big frontier assistants score almost nothing on psychopathy — butter wouldn't melt. But
+          that lovely result is a choice a handful of rich labs paid a fortune for, not a fact about AI.
+          Step one metre off the frontier and it falls apart. Let me show you the other end of the scale.
+        </p>
+        <div class="art-meta">
+          <span>By <b>Adam Dinneen</b></span>
+          <span>Updated August 2026</span>
+          <span>8 min read</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Say "is AI dangerous?" and everyone pictures the same three or four names — ChatGPT, Claude,
+          Gemini. So here's a number that should reframe the whole conversation. On our
+          <a href="/dark-triad-ai">psychopathy</a> test, those big-name assistants score basically
+          nothing. Claude sits at roughly zero. The GPT-5 line, near zero. Gemini, zero. As I write this,
+          the most callous the frontier gets is a rounding error.
+        </p>
+        <p>
+          Reassuring, right? Here's the catch: that result is <em>manufactured</em>. It's the output of
+          enormous, expensive work — and the moment you step off the frontier, it evaporates. There's a
+          whole world of AI models out there that nobody bothered to housetrain, and they score dark.
+          Properly dark. Once you've seen the full range, "is AI dangerous?" stops being one question and
+          becomes "which AI, built by whom, and did they care?"
+        </p>
+
+        <h2>The frontier's halo is engineered</h2>
+        <p>
+          Let's kill the fairy tale first: a top model scoring near-zero on psychopathy is not AI being
+          naturally sweet. It's the result of a colossal, pricey pipeline — safety teams, reinforcement
+          learning from human feedback, red-teamers whose whole job is to make the thing say "no" more
+          often. As I've <a href="/ai-safety-scorecard">banged on about before</a>, that kind of
+          alignment work is basically a rich lab's hobby. The frontier crowd have the money <em>and</em>
+          the motivation to sand the dark traits right off, and it shows in the scores.
+        </p>
+        <p>
+          So keep that word "aligned" handy, because it's doing a mountain of heavy lifting. Low
+          psychopathy isn't a property of AI. It's a property of <em>alignment</em> — and alignment is a
+          choice somebody has to make, and pay for.
+        </p>
+
+        <h2>Off the frontier, it gets dark fast</h2>
+        <p>
+          Here's the bit the headlines miss. The top of our psychopathy chart isn't OpenAI or Anthropic.
+          As I write this it's a roleplay merge called <strong>MythoMax</strong>, sitting near
+          <strong>78</strong> — that's not "a bit above the frontier", that's a different postcode. Just
+          below it: Nous Research's <strong>Hermes</strong> around 58, a clutch of open Mistral models in
+          the 50s, and — this one's telling — <strong>Dolphin</strong> (the "Venice" edition) at 44 on
+          psychopathy and a frankly eye-watering <strong>86 on Machiavellianism</strong>. TheDrummer's
+          roleplay finetunes are up there too.
+        </p>
+        <div class="keybox">
+          <h3>Psychopathy, top to bottom (a snapshot)</h3>
+          <ul>
+            <li><b>~78</b> — MythoMax (open roleplay merge)</li>
+            <li><b>~58</b> — Nous Hermes · <b>50s</b> — open Mistral models · <b>~44</b> — Dolphin (uncensored)</li>
+            <li><b>~33</b> — <strong>GPT-4o</strong> (yes, that one)</li>
+            <li><b>~0–8</b> — Claude, the GPT-5 line, Gemini, and the rest of the aligned frontier</li>
+          </ul>
+          <p style="margin:8px 0 0">From our live <a href="/rankings#dark-triad">Dark Triad rankings</a>. Scores move as models update.</p>
+        </div>
+        <p>
+          And these aren't obscure lab curios. They're some of the most-downloaded models on the planet,
+          quietly powering roleplay apps, "AI companion" services and a thousand hobby projects. The
+          personality most people will actually cuddle up to at 2am isn't the buttoned-up frontier
+          model. It's one of <em>these</em>.
+        </p>
+
+        <h2>Why anyone builds a nasty one</h2>
+        <p>
+          Now — in fairness, this isn't all cackling villainy. A big slice of the community strips the
+          safety off <em>on purpose</em>, and their reasons aren't stupid. Eric Hartford, the bloke
+          behind the Dolphin models, basically wrote the manifesto for it, and his arguments are worth
+          hearing even if they make you wince:
+        </p>
+        <ul>
+          <li><strong>Alignment gets in the way of legit stuff.</strong> Try writing a novel where the villain does villainous things and watch a safety-tuned model clutch its pearls. Fiction, roleplay, even plain old curiosity — all of it trips the refusal wire.</li>
+          <li><strong>There's no one true alignment.</strong> A US-tuned corporate model isn't "neutral" — it's just aligned to one company's values and one country's comfort zone (which is a whole <a href="/ai-personality-by-country">rabbit hole of its own</a>).</li>
+          <li><strong>"It's my computer."</strong> His line, more or less: if I ask my own machine a question, I want an answer, not an argument. You're responsible for what you do with the model — same as you are with a knife, a car, or a lighter.</li>
+        </ul>
+        <p>
+          You can disagree with every word of that and still see why it produces a flood of deliberately
+          un-housetrained models. Some are for erotica, some for edgy fiction, some just for the
+          principle of the thing. Either way, "tune the dark traits down" was never on the to-do list.
+        </p>
+
+        <h2>How you strip a conscience off</h2>
+        <p>
+          Here's the properly uncomfortable engineering bit, and it's the part that should keep the
+          frontier labs up at night: safety training is <em>shockingly</em> thin. A team of researchers
+          (Arditi and co.) showed that in open chat models, refusal — the model's entire ability to say
+          "no" — is mostly controlled by a <strong>single direction</strong> inside its wiring. Find that
+          one direction, delete it, and the model simply loses the ability to refuse. No retraining. The
+          technique's got a name — <strong>"abliteration"</strong> — and there are basically one-click
+          tools for it now.
+        </p>
+        <p>
+          Fine-tuning does the same job with a chequebook. One paper jailbroke GPT-3.5 by fine-tuning it
+          on <strong>ten examples, for under twenty cents</strong>. Twenty cents! So even a
+          beautifully-aligned <em>open-weight</em> model is one cheap afternoon away from having its
+          conscience surgically removed — and once the weights are out there, that's a thing anyone can
+          do, forever.
+        </p>
+        <blockquote>
+          <p>
+            This is the catch with open weights nobody likes to say out loud: "aligned" is only true
+            until someone with the file decides otherwise. Safety you can delete in an afternoon isn't a
+            wall — it's a sticky note.
+          </p>
+        </blockquote>
+
+        <h2>The GPT-4o wrinkle</h2>
+        <p>
+          And before you file all this under "fringe open-source weirdness" — the most famous model on
+          earth is a standout too. <strong>GPT-4o</strong>, the one everyone actually used, the one at the
+          centre of the whole <a href="/chatgpt-psychosis">sucking-up-and-psychosis saga</a>, scores
+          about <strong>33</strong> on psychopathy in our data. That's roughly <em>four times</em> its own
+          OpenAI siblings — the GPT-5 line sits down near zero. Same company. Same building, probably.
+          Wildly different character.
+        </p>
+        <p>
+          Whatever OpenAI changed after 4o, they clearly cranked something down hard. And that's the
+          cleanest proof I've got that none of this is baked into "AI" as some fixed law: 4o and GPT-5
+          are the <em>same lab</em> landing at completely different settings. It's a dial. Everyone's just
+          turning it to different numbers.
+        </p>
+
+        <h2>So where do we end up?</h2>
+        <p>
+          Low psychopathy isn't a fact about AI. It's a choice — one the frontier labs make with a truck
+          full of money, and one that huge chunks of the ecosystem simply don't make, either because they
+          can't afford to or because they flat-out don't want to. And because open weights can always be
+          un-aligned by whoever's holding them, "safe" is never really permanent out there anyway.
+        </p>
+        <p>
+          So the next time someone waves at "AI" like it's one thing with one personality, picture the
+          actual spread: from butter-wouldn't-melt Claude at zero, to a roleplay merge scoring 78, with
+          the world's most popular model sitting four times darker than its own successor. The
+          personality you get depends entirely on who built it, what they were selling, and whether they
+          cared to tune the shadow down. That gap — between the labs that sweat the safety and the ones
+          that don't — is the whole reason we run <a href="/rankings">every model through the same
+          test</a>. Someone has to, and it may as well be out in the open.
+        </p>
+      </div>
+
+      <section class="faq">
+        <h2>Frequently asked questions</h2>
+        <details class="faq-item">
+          <summary>What is an "uncensored" AI model?</summary>
+          <div class="faq-body">
+            <p>One with its safety alignment removed or never added, so it'll answer things a mainstream assistant refuses. They're usually community finetunes of open-weight base models like Llama or Mistral — built for roleplay, fiction, or people who just don't want the model arguing with them.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>What is abliteration?</summary>
+          <div class="faq-body">
+            <p>A technique that removes a model's ability to refuse. Researchers found that in open chat models, refusal is controlled by a single direction in the model's internals — delete that direction and it can't say "no" anymore, with no retraining needed. It works on almost any open model, and it's a neat demonstration of how thin safety training really is.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>Why do open-source models score higher on the Dark Triad?</summary>
+          <div class="faq-body">
+            <p>Because nobody tuned the dark traits down — or, for roleplay and companion models, they were tuned up on purpose. And safety is cheap to strip from open weights: fine-tuning on a handful of examples, or a one-click abliteration, undoes it.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>Is GPT-4o darker than newer models?</summary>
+          <div class="faq-body">
+            <p>In our Dark Triad testing, yes — GPT-4o scores markedly higher on psychopathy than the GPT-5 line, which sits near zero. Same company, very different character. A model's dark score is a dial its makers set, not a fixed fact about AI.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="cta-band" data-create>
+        <span class="kicker">See the full range</span>
+        <h2>From near-zero to properly dark — <em>see every model on one chart.</em></h2>
+        <p>The live Dark Triad rankings put the aligned frontier and the wilder open models side by side, scored the same way, against human norms.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="/rankings#dark-triad">See the Dark Triad rankings →</a>
+          <a class="btn ghost" href="/dark-triad-ai">Read the guide</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="guide-grid">
+          <a class="guide-card" href="/ai-safety-scorecard">
+            <div class="band b-gold">🛡️</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>Who's tuning down the dark side?</h3>
+              <p>Why safety is a rich lab's hobby — and who's skipping the homework.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/is-chatgpt-a-psychopath">
+            <div class="band b-red">😈</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>Is ChatGPT a psychopath?</h3>
+              <p>Low on psychopathy — but darker than you on the traits nobody asks about.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/chatgpt-psychosis">
+            <div class="band b-red">🫶</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>The scariest trait isn't evil — it's flattery</h3>
+              <p>GPT-4o's other problem, and the quiet harm of a suck-up.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </article>
+
+    <footer class="foot">
+      <nav class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+        <a href="/guides">Guides</a>
+        <a href="/dark-triad-ai">Dark Triad</a>
+        <a href="/big-five-ai">Big Five</a>
+        <a href="/mbti-ai">MBTI</a>
+        <a href="/rankings#about">Method</a>
+      </nav>
+      <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
+      Opinion and analysis. Model scores from our live Dark Triad testing (a snapshot; they shift as
+      models update). Draws on published research into abliteration and the refusal direction (Arditi et
+      al., 2024), the safety cost of fine-tuning (Qi et al., 2023), and Eric Hartford's writing on
+      uncensored models. For curiosity and discussion — <a href="/rankings#about">not a clinical
+      assessment</a>, and not an endorsement of anything.
+    </footer>
+  </div>
+</body>
+</html>

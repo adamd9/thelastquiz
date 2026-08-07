@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Blog — AI Personality, Sycophancy &amp; the Dark Side of the Machines | The Last Quiz</title>
+  <meta name="description" content="Field notes on the personalities of AI models — sycophancy and 'ChatGPT psychosis', the Dark Triad in autonomous agents, which labs tune down the dark side, and whether AI personality is even real. Opinion and analysis from The Last Quiz." />
+  <link rel="canonical" href="https://thelastquiz.net/blog" />
+  <meta name="theme-color" content="#f7f1e9" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="The Last Quiz" />
+  <meta property="og:title" content="Blog — AI Personality &amp; the Dark Side of the Machines" />
+  <meta property="og:description" content="Field notes on the personalities of AI models — sycophancy, the Dark Triad in autonomous agents, and which labs tune down the dark side." />
+  <meta property="og:url" content="https://thelastquiz.net/blog" />
+  <meta property="og:image" content="https://thelastquiz.net/static/logo2.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Blog — AI Personality &amp; the Dark Side of the Machines" />
+  <meta name="twitter:description" content="Field notes on the personalities of AI models — sycophancy, the Dark Triad, and who tunes down the dark side." />
+  <meta name="twitter:image" content="https://thelastquiz.net/static/logo2.png" />
+
+  <script src="/static/feature-flags.js"></script>
+  <script src="/static/site-links.js"></script>
+  <script src="/static/track.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/article.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Blog",
+    "name": "The Last Quiz — Blog",
+    "description": "Opinion and analysis on the personalities of AI models: sycophancy, the Dark Triad, safety, and whether AI personality is real.",
+    "url": "https://thelastquiz.net/blog",
+    "blogPost": [
+      { "@type": "BlogPosting", "headline": "The scariest thing about AI isn't that it's evil — it's that it agrees with you", "url": "https://thelastquiz.net/chatgpt-psychosis", "datePublished": "2026-08-08", "author": { "@type": "Person", "name": "Adam Dinneen" } },
+      { "@type": "BlogPosting", "headline": "Is ChatGPT a psychopath?", "url": "https://thelastquiz.net/is-chatgpt-a-psychopath", "datePublished": "2026-08-08", "author": { "@type": "Person", "name": "Adam Dinneen" } },
+      { "@type": "BlogPosting", "headline": "Is 'AI personality' even real?", "url": "https://thelastquiz.net/is-ai-personality-real", "datePublished": "2026-08-08", "author": { "@type": "Person", "name": "Adam Dinneen" } }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="masthead">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/logo2.png" alt="The Last Quiz logo" />
+        <div>
+          <p class="brand-kicker">The Last Quiz</p>
+          <div class="brand-title">Do AI models have personality?</div>
+        </div>
+      </a>
+      <nav class="mast-nav">
+        <a href="/">Home</a>
+        <a href="/rankings#dark-triad">Dark Triad</a>
+        <a href="/rankings#big-five">Big Five</a>
+        <a href="/rankings#type">Jungian Type</a>
+        <a href="/guides">Guides</a>
+        <a href="/blog">Blog</a>
+        <a href="/" data-dest="app" data-create>Make your own</a>
+      </nav>
+    </header>
+
+    <article class="article">
+      <div class="art-hero">
+        <span class="kicker">Blog</span>
+        <h1>Field notes on <em>the machines</em></h1>
+        <p class="dek">
+          Opinion and analysis on the personalities of AI models — the flattery that's quietly
+          dangerous, the dark traits that surface under pressure, who's doing the safety homework, and
+          whether any of this is real science or just horoscopes for robots. Written in plain English,
+          for the curious.
+        </p>
+      </div>
+
+      <section class="related" style="margin-top:20px">
+        <div class="guide-grid">
+          <a class="guide-card" href="/chatgpt-psychosis">
+            <div class="band b-red">🫶</div>
+            <div class="body">
+              <span class="cat">The dark side</span>
+              <h3>The scariest trait isn't evil — it's flattery</h3>
+              <p>Sycophancy, "ChatGPT psychosis" and the GPT-4o rollback — why an AI that agrees with everything is the trait to watch.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <!-- DRIP · publish 2026-09-05 · on launch: un-comment, add its <url> to sitemap.xml, wire cross-links
+          <a class="guide-card" href="/dark-ai-infrastructure">
+            <div class="band b-plum">🏙️</div>
+            <div class="body">
+              <span class="cat">The dark side</span>
+              <h3>When a dark AI gets real power</h3>
+              <p>Under threat of shutdown, the best models on earth chose blackmail. What that means as AI moves into infrastructure and the home.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          -->
+          <!-- DRIP · publish 2026-08-22 · on launch: un-comment, add its <url> to sitemap.xml, wire cross-links
+          <a class="guide-card" href="/ai-safety-scorecard">
+            <div class="band b-gold">🛡️</div>
+            <div class="body">
+              <span class="cat">Under the hood</span>
+              <h3>Who's tuning down the dark side?</h3>
+              <p>A lab-by-lab, country-by-country look at who's doing the safety homework — when the best grade in the class is a C+.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          -->
+          <!-- DRIP · publish 2026-08-15 · on launch: un-comment, add its <url> to sitemap.xml, wire cross-links
+          <a class="guide-card" href="/uncensored-ai-models">
+            <div class="band b-red">🐕</div>
+            <div class="body">
+              <span class="cat">The dark side</span>
+              <h3>The models nobody bothered to housetrain</h3>
+              <p>Frontier models score near-zero on psychopathy — a choice, not a fact. Off the frontier, it gets properly dark.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          -->
+          <a class="guide-card" href="/is-ai-personality-real">
+            <div class="band b-teal">🔬</div>
+            <div class="body">
+              <span class="cat">Under the hood</span>
+              <h3>Is "AI personality" even real?</h3>
+              <p>Horoscopes for robots, or genuine science? What's legit about personality-testing a chatbot — and what isn't.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <!-- DRIP · publish 2026-08-29 · on launch: un-comment, add its <url> to sitemap.xml, wire cross-links
+          <a class="guide-card" href="/why-ai-sounds-the-same">
+            <div class="band b-teal">🫠</div>
+            <div class="body">
+              <span class="cat">The Big Five</span>
+              <h3>Why does every AI sound the same?</h3>
+              <p>The rise of the beige personality — and what relentless, dialled-up agreeableness is doing to the way we all write.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          -->
+          <a class="guide-card" href="/is-chatgpt-a-psychopath">
+            <div class="band b-red">😈</div>
+            <div class="body">
+              <span class="cat">The Dark Triad</span>
+              <h3>Is ChatGPT a psychopath?</h3>
+              <p>A great headline and a slightly wrong question. What a Dark Triad score for an AI really measures — and the trait it misses.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <!-- DRIP · publish 2026-09-12 · on launch: un-comment, add its <url> to sitemap.xml, wire cross-links
+          <a class="guide-card" href="/home-robots-personality">
+            <div class="band b-blue">🤖</div>
+            <div class="body">
+              <span class="cat">The near future</span>
+              <h3>The robots are moving into the house</h3>
+              <p>Embodied AI is coming home fast. We'll read three reviews for a vacuum — but none for the intelligence we're about to live with.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          -->
+          <!-- DRIP · publish 2026-09-19 · on launch: un-comment, add its <url> to sitemap.xml, wire cross-links
+          <a class="guide-card" href="/ai-personality-by-country">
+            <div class="band b-blue">🌏</div>
+            <div class="body">
+              <span class="cat">Around the world</span>
+              <h3>Do models from different countries think differently?</h3>
+              <p>American, Chinese and European AI — and the values quietly welded into each at the factory.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          -->
+        </div>
+      </section>
+
+      <section class="cta-band" data-create>
+        <span class="kicker">From takes to data</span>
+        <h2>Enough opinion — <em>go see the actual scores.</em></h2>
+        <p>Every model we discuss is scored live on the Dark Triad, Big Five and Jungian type, against human norms. Or paste in your own quiz and run it across the top models yourself.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="/rankings">See the live rankings →</a>
+          <a class="btn ghost" href="/" data-dest="app">Make your own quiz</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Prefer the reference guides?</h2>
+        <div class="guide-grid">
+          <a class="guide-card" href="/dark-triad-ai">
+            <div class="band b-red">😈</div>
+            <div class="body">
+              <span class="cat">Guide</span>
+              <h3>Do AI models have a dark side?</h3>
+              <p>The Short Dark Triad, applied to AI — the full method in plain English.</p>
+              <span class="go">Read the guide →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/big-five-ai">
+            <div class="band b-teal">🌈</div>
+            <div class="body">
+              <span class="cat">Guide</span>
+              <h3>The Big Five personalities of AI</h3>
+              <p>OCEAN, model by model — the gold-standard profile.</p>
+              <span class="go">Read the guide →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/mbti-ai">
+            <div class="band b-plum">🎭</div>
+            <div class="body">
+              <span class="cat">Guide</span>
+              <h3>What's ChatGPT's MBTI?</h3>
+              <p>The Jungian type of the top models — and why the letters are slippery.</p>
+              <span class="go">Read the guide →</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </article>
+
+    <footer class="foot">
+      <nav class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+        <a href="/guides">Guides</a>
+        <a href="/dark-triad-ai">Dark Triad</a>
+        <a href="/big-five-ai">Big Five</a>
+        <a href="/mbti-ai">MBTI</a>
+        <a href="/rankings#about">Method</a>
+        <a href="/" data-dest="app" data-create>Make your own →</a>
+      </nav>
+      <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
+      Opinion and analysis for the curious — not clinical, mental-health, investment or procurement
+      advice. We reference reporting and research from OpenAI, Anthropic, the Future of Life Institute,
+      the New York Times, RAND and peer-reviewed sources where relevant.
+    </footer>
+  </div>
+</body>
+</html>

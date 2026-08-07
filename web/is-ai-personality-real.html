@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Is "AI Personality" Even Real? The Science of Personality-Testing a Chatbot | The Last Quiz</title>
+  <meta name="description" content="Giving a chatbot a personality test sounds like horoscopes for robots. But there's real peer-reviewed science here: researchers have shown LLM personality can be measured reliably — and even deliberately shaped. Here's what's legit and what isn't." />
+  <link rel="canonical" href="https://thelastquiz.net/is-ai-personality-real" />
+  <meta name="theme-color" content="#f7f1e9" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="The Last Quiz" />
+  <meta property="og:title" content="Is 'AI Personality' Even Real? The Science of Personality-Testing a Chatbot" />
+  <meta property="og:description" content="It sounds like horoscopes for robots — but peer-reviewed research shows LLM personality can be measured reliably and even shaped. What's legit, and what isn't." />
+  <meta property="og:url" content="https://thelastquiz.net/is-ai-personality-real" />
+  <meta property="og:image" content="https://thelastquiz.net/static/logo2.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Is 'AI Personality' Even Real?" />
+  <meta name="twitter:description" content="The actual science of giving a chatbot a personality test — what holds up, and what's just vibes." />
+  <meta name="twitter:image" content="https://thelastquiz.net/static/logo2.png" />
+
+  <script src="/static/feature-flags.js"></script>
+  <script src="/static/site-links.js"></script>
+  <script src="/static/track.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/article.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Is 'AI Personality' Even Real? The Science of Personality-Testing a Chatbot",
+    "description": "Peer-reviewed research shows large language model personality can be measured reliably and even deliberately shaped. A plain-English look at what's scientifically legitimate about testing AI personality — and what isn't.",
+    "image": "https://thelastquiz.net/static/logo2.png",
+    "author": { "@type": "Person", "name": "Adam Dinneen" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "The Last Quiz",
+      "logo": { "@type": "ImageObject", "url": "https://thelastquiz.net/static/logo2.png" }
+    },
+    "datePublished": "2026-08-01",
+    "dateModified": "2026-08-01",
+    "keywords": "AI personality test, can AI have personality, LLM psychometrics, is AI personality real, personality traits in large language models",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://thelastquiz.net/is-ai-personality-real" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://thelastquiz.net/" },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://thelastquiz.net/blog" },
+      { "@type": "ListItem", "position": 3, "name": "Is AI Personality Even Real?", "item": "https://thelastquiz.net/is-ai-personality-real" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="masthead">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/logo2.png" alt="The Last Quiz logo" />
+        <div>
+          <p class="brand-kicker">The Last Quiz</p>
+          <div class="brand-title">Do AI models have personality?</div>
+        </div>
+      </a>
+      <nav class="mast-nav">
+        <a href="/">Home</a>
+        <a href="/rankings#dark-triad">Dark Triad</a>
+        <a href="/rankings#big-five">Big Five</a>
+        <a href="/rankings#type">Jungian Type</a>
+        <a href="/guides">Guides</a>
+        <a href="/blog">Blog</a>
+        <a href="/" data-dest="app" data-create>Make your own</a>
+      </nav>
+    </header>
+
+    <article class="article">
+      <div class="art-hero">
+        <span class="kicker">Blog · Under the hood</span>
+        <h1>Is "AI personality" even real, <em>or is this horoscopes for robots?</em></h1>
+        <p class="dek">
+          Fair question. Giving a chatbot a Myers-Briggs test sounds like exactly the kind of thing
+          that should come with a pinch of salt. So let me be honest about what's actually
+          scientific here, what's a useful lens, and what's just fun — because the real answer is more
+          interesting than a straight yes or no.
+        </p>
+        <div class="art-meta">
+          <span>By <b>Adam Dinneen</b></span>
+          <span>Updated August 2026</span>
+          <span>7 min read</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>
+          Whenever I tell someone I run AI models through personality tests, I get one of two
+          reactions. Half the people lean in — "ooh, what's ChatGPT's type?" The other half give me
+          the look. You know the look. The one that says <em>mate, it's a spicy autocomplete, it
+          doesn't have a personality any more than my toaster does.</em>
+        </p>
+        <p>
+          And honestly? The sceptics have a point I want to take seriously. A language model has no
+          feelings, no childhood, no inner life. It doesn't "have" a personality the way you do. So
+          before I defend the whole project, let me concede the strong version of the objection: if
+          you think a Dark Triad score means an AI secretly <em>feels</em> manipulative, that's not
+          real, and I'm not claiming it. But that's not what the measurement is. Let me explain what
+          it actually is — because there's more legitimate science under this than you'd guess.
+        </p>
+
+        <h2>The peer-reviewed evidence</h2>
+        <p>
+          In 2023, a team including researchers from Google DeepMind published a paper with the
+          refreshingly literal title <em>Personality Traits in Large Language Models</em>. They didn't
+          just poke a chatbot and vibe it out. They built a proper psychometric methodology — the same
+          statistical machinery psychologists use to check whether a human personality test is any good
+          — and pointed it at 18 different language models.
+        </p>
+        <p>
+          Three findings, and they matter:
+        </p>
+        <div class="keybox">
+          <h3>What the research actually showed</h3>
+          <ul>
+            <li><b>It's measurable.</b> Under the right conditions, personality readings from some LLMs are <em>reliable and valid</em> in the technical sense — consistent, and measuring what they claim to.</li>
+            <li><b>Bigger, better-trained models are more coherent.</b> The reliability was stronger for larger, instruction-tuned models — the polished ones you actually talk to.</li>
+            <li><b>It can be deliberately shaped.</b> They could dial a model's personality up and down along specific dimensions, on purpose, to mimic particular human profiles.</li>
+          </ul>
+          <p style="margin:8px 0 0">Source: Serapio-García, Safdari et al., <em>Personality Traits in Large Language Models</em> (2023).</p>
+        </div>
+        <p>
+          That third one is the kicker. If a model's "personality" were pure noise — just random
+          horoscope soup — you couldn't reliably measure it <em>and</em> you certainly couldn't steer
+          it like a dial. The fact that researchers can do both tells you there's a real, stable
+          pattern in there worth pointing an instrument at.
+        </p>
+
+        <h2>What we're actually measuring</h2>
+        <p>
+          Here's the mental model I use. A language model is trained on a staggering amount of human
+          writing — and human writing is drenched in personality. Every email, novel, forum rant and
+          product review carries a fingerprint of the person behind it. When a model soaks all that up,
+          it doesn't just learn facts and grammar. It learns the <em>shapes</em> of how people talk:
+          the warm ones, the blunt ones, the anxious ones, the swaggering ones.
+        </p>
+        <p>
+          So when you give a model a personality questionnaire, you're not reading its soul. You're
+          reading the <strong>default character it has settled into</strong> — the centre of gravity of
+          all those human voices, bent further by the lab's training choices. That's a real, consistent
+          thing about the model. It's just not a <em>feeling</em>. It's a statistical style.
+        </p>
+        <blockquote>
+          <p>
+            An AI personality score doesn't measure what a model feels. It measures how the model
+            <em>presents</em> — the recurring style it falls into by default. And that style is real,
+            stable enough to measure, and different from model to model.
+          </p>
+        </blockquote>
+
+        <h2>Why it's worth measuring</h2>
+        <p>
+          Because that style has consequences, and increasingly big ones. Three reasons I think this is
+          worth doing properly rather than treating as a gag:
+        </p>
+        <ul>
+          <li><strong>It's how the thing talks to millions of people.</strong> A model's default warmth, caution or agreeableness shapes billions of conversations. That's not trivial — it's arguably the most widely-experienced "personality" on earth right now.</li>
+          <li><strong>It separates models that benchmarks can't.</strong> Two models can score neck-and-neck on maths and coding and still feel completely different to work with. Personality is the texture the leaderboards miss.</li>
+          <li><strong>It's an early warning system.</strong> The same traits we measure — agreeableness that tips into <a href="/chatgpt-psychosis">flattery</a>, strategic self-interest that tips into <a href="/is-chatgpt-a-psychopath">scheming</a> — are exactly the ones causing real headaches as AI gets more autonomous.</li>
+        </ul>
+
+        <h2>The honest caveats</h2>
+        <p>
+          I'm not going to oversell this, because the honest caveats are half the fun. Testing an AI's
+          personality has real limitations, and pretending otherwise would be its own kind of
+          horoscope:
+        </p>
+        <ul>
+          <li><strong>It's prompt-sensitive.</strong> Ask a model to role-play a pirate and it'll answer the questionnaire like a pirate. The "default" only means something if you hold the prompt neutral and identical — which is exactly what we do, but it's a real constraint.</li>
+          <li><strong>Self-report is shaky, even for humans.</strong> People manage their image on these tests. A model's answers are a step further removed again — generated to fit the question, not confessed.</li>
+          <li><strong>The instruments were built for people.</strong> The Big Five and the Dark Triad were validated on humans. Borrowing them for machines is a fair, useful move — but it's a loan, not a perfect fit, and we say so.</li>
+          <li><strong>The map isn't the territory.</strong> How a model answers a questionnaire and how it <em>behaves</em> when it has real power can diverge — which is the whole unnerving point of the agentic-misalignment research.</li>
+        </ul>
+
+        <h2>So where do we end up?</h2>
+        <p>
+          So — horoscopes for robots, or real science? Somewhere pleasingly in between, and that's not
+          a cop-out. The <em>measurement</em> is real: LLM personality is stable enough to quantify and
+          even shape, and there's peer-reviewed work to back that up. The <em>interpretation</em> is
+          where you need discipline: it's a description of style and self-presentation, not a diagnosis
+          of a mind, because there's no mind to diagnose.
+        </p>
+        <p>
+          That's exactly the line we try to walk here. We use the proper instruments, hold the method
+          identical for every model, score it deterministically, and plant every result against real
+          human norms so it means something. Then we tell you, plainly, that it's a lens and not a soul.
+          Take the number seriously; don't take it literally. If you want to see how we actually run it,
+          the <a href="/guides">guides</a> lay out the whole method — and the
+          <a href="/rankings">rankings</a> show you where every model lands.
+        </p>
+      </div>
+
+      <section class="faq">
+        <h2>Frequently asked questions</h2>
+        <details class="faq-item">
+          <summary>Can an AI really have a personality?</summary>
+          <div class="faq-body">
+            <p>Not in the human sense — no feelings, no self. But it does have a consistent default <em>style</em>, learned from human writing and shaped by training, and that style can be measured reliably. Research has even shown it can be deliberately dialled up and down along specific traits.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>Is testing AI personality scientifically valid?</summary>
+          <div class="faq-body">
+            <p>The measurement can be, under the right conditions — a 2023 study applied proper psychometric methods to 18 models and found reliable, valid readings, especially for larger instruction-tuned models. The instruments themselves were built for humans, so applying them to AI is a useful lens rather than a perfect fit.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>Does a personality score predict how an AI will behave?</summary>
+          <div class="faq-body">
+            <p>Partly. It captures default self-presentation, which correlates with tone and style. But how a model answers a questionnaire and how it acts when given real power can diverge — so we treat scores as a helpful signal, not a guarantee.</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="cta-band" data-create>
+        <span class="kicker">See the method in action</span>
+        <h2>Real instruments, held identical for every model. <em>See the results.</em></h2>
+        <p>We run the Big Five, the Dark Triad and a Jungian-type test across the top models, scored deterministically and plotted against human norms. Judge the rigour for yourself.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="/rankings">See the rankings →</a>
+          <a class="btn ghost" href="/guides">Read the method</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="guide-grid">
+          <a class="guide-card" href="/is-chatgpt-a-psychopath">
+            <div class="band b-red">😈</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>Is ChatGPT a psychopath?</h3>
+              <p>What a Dark Triad score for an AI really measures — and what it misses.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/chatgpt-psychosis">
+            <div class="band b-red">🫶</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>The scariest trait isn't evil — it's flattery</h3>
+              <p>Sycophancy, "ChatGPT psychosis" and why an agreeable AI is the trait to watch.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/mbti-ai">
+            <div class="band b-plum">🎭</div>
+            <div class="body">
+              <span class="cat">Guide</span>
+              <h3>What's ChatGPT's MBTI?</h3>
+              <p>The Jungian type of the top models — and why the four letters are slippery.</p>
+              <span class="go">Read the guide →</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </article>
+
+    <footer class="foot">
+      <nav class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+        <a href="/guides">Guides</a>
+        <a href="/dark-triad-ai">Dark Triad</a>
+        <a href="/big-five-ai">Big Five</a>
+        <a href="/mbti-ai">MBTI</a>
+        <a href="/rankings#about">Method</a>
+      </nav>
+      <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
+      Opinion and analysis. References peer-reviewed work including <em>Personality Traits in Large
+      Language Models</em> (Serapio-García, Safdari et al., 2023). For curiosity and research —
+      <a href="/rankings#about">not a clinical assessment</a> of anything, or anyone.
+    </footer>
+  </div>
+</body>
+</html>

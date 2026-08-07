@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Who's Actually Tuning Down AI's Dark Side? A Lab-by-Lab Look | The Last Quiz</title>
+  <meta name="description" content="Not every AI lab spends the same effort keeping its models honest and safe. Using the 2025 AI Safety Index, here's who's doing the homework, who's failing it, and why a model's 'personality' depends a lot on which country and company built it." />
+  <link rel="canonical" href="https://thelastquiz.net/ai-safety-scorecard" />
+  <meta name="theme-color" content="#f7f1e9" />
+  <link rel="icon" href="/favicon.ico" sizes="32x32" />
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/static/apple-touch-icon.png" />
+  <link rel="manifest" href="/static/site.webmanifest" />
+
+  <meta property="og:type" content="article" />
+  <meta property="og:site_name" content="The Last Quiz" />
+  <meta property="og:title" content="Who's Actually Tuning Down AI's Dark Side?" />
+  <meta property="og:description" content="Using the 2025 AI Safety Index: who's doing the safety homework, who's failing it, and why a model's character depends on which lab — and country — built it." />
+  <meta property="og:url" content="https://thelastquiz.net/ai-safety-scorecard" />
+  <meta property="og:image" content="https://thelastquiz.net/static/logo2.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Who's Actually Tuning Down AI's Dark Side?" />
+  <meta name="twitter:description" content="A lab-by-lab, country-by-country look at who's doing the AI safety homework — and who isn't." />
+  <meta name="twitter:image" content="https://thelastquiz.net/static/logo2.png" />
+
+  <script src="/static/feature-flags.js"></script>
+  <script src="/static/site-links.js"></script>
+  <script src="/static/track.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/article.css" />
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "Who's Actually Tuning Down AI's Dark Side? A Lab-by-Lab Look",
+    "description": "Using the 2025 Future of Life Institute AI Safety Index to see which AI labs and countries invest most in keeping their models honest and safe — and why a model's personality reflects who built it.",
+    "image": "https://thelastquiz.net/static/logo2.png",
+    "author": { "@type": "Person", "name": "Adam Dinneen" },
+    "publisher": {
+      "@type": "Organization",
+      "name": "The Last Quiz",
+      "logo": { "@type": "ImageObject", "url": "https://thelastquiz.net/static/logo2.png" }
+    },
+    "datePublished": "2026-08-01",
+    "dateModified": "2026-08-01",
+    "keywords": "AI safety comparison, which AI is safest, AI Safety Index, DeepSeek safety, frontier model safety, AI alignment by company",
+    "mainEntityOfPage": { "@type": "WebPage", "@id": "https://thelastquiz.net/ai-safety-scorecard" }
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://thelastquiz.net/" },
+      { "@type": "ListItem", "position": 2, "name": "Blog", "item": "https://thelastquiz.net/blog" },
+      { "@type": "ListItem", "position": 3, "name": "Who's Tuning Down AI's Dark Side", "item": "https://thelastquiz.net/ai-safety-scorecard" }
+    ]
+  }
+  </script>
+</head>
+<body>
+  <div class="wrap">
+
+    <header class="masthead">
+      <a class="brand" href="/">
+        <img class="brand-logo" src="/static/logo2.png" alt="The Last Quiz logo" />
+        <div>
+          <p class="brand-kicker">The Last Quiz</p>
+          <div class="brand-title">Do AI models have personality?</div>
+        </div>
+      </a>
+      <nav class="mast-nav">
+        <a href="/">Home</a>
+        <a href="/rankings#dark-triad">Dark Triad</a>
+        <a href="/rankings#big-five">Big Five</a>
+        <a href="/rankings#type">Jungian Type</a>
+        <a href="/guides">Guides</a>
+        <a href="/blog">Blog</a>
+        <a href="/" data-dest="app" data-create>Make your own</a>
+      </nav>
+    </header>
+
+    <article class="article">
+      <div class="art-hero">
+        <span class="kicker">Blog · Under the hood</span>
+        <h1>Who's actually <em>tuning down</em> AI's dark side?</h1>
+        <p class="dek">
+          A model's personality isn't an accident — it's a choice made by whoever built it. Some labs
+          pour a fortune into keeping their models honest and restrained. Others barely bother. Here's
+          a lab-by-lab, country-by-country look at who's doing the homework, using the one scorecard
+          that actually grades them.
+        </p>
+        <div class="art-meta">
+          <span>By <b>Adam Dinneen</b></span>
+          <span>Updated August 2026</span>
+          <span>8 min read</span>
+        </div>
+      </div>
+
+      <div class="prose">
+        <p>
+          When we test AI models on the <a href="/dark-triad-ai">Dark Triad</a> or the
+          <a href="/big-five-ai">Big Five</a>, people often assume the results are just a quirk of the
+          model — like it was born that way. It wasn't. A model's character is manufactured. Somewhere
+          in a building full of very expensive GPUs, a team decided how agreeable, how cautious, how
+          willing-to-push-back their assistant should be, and then spent enormous effort steering it
+          there. That effort has a name — alignment and safety work — and here's the uncomfortable bit:
+          <strong>the amount of it varies wildly from lab to lab.</strong>
+        </p>
+        <p>
+          So if you want to know why one model feels like a careful, slightly buttoned-up colleague and
+          another feels like it'll cheerfully help you do something daft, don't just look at the model.
+          Look at who made it, where, and how much they invested in the unglamorous job of tuning down
+          the dark side.
+        </p>
+
+        <h2>The one scorecard that grades the graders</h2>
+        <p>
+          The most useful reference I've found here is the <strong>AI Safety Index</strong> from the
+          Future of Life Institute. It's exactly what it sounds like: an independent panel of serious
+          AI and governance experts — people like Stuart Russell, who literally co-wrote the standard
+          AI textbook — grading the big labs across a stack of safety domains. The Summer 2025 edition
+          scored seven leading companies on 33 indicators. Think of it as a school report card for the
+          people building the most powerful software on the planet.
+        </p>
+        <p>
+          The headline grade? The best company got a <strong>C+</strong>. That's the <em>top</em> of the
+          class. Let that sink in.
+        </p>
+        <div class="keybox">
+          <h3>Roughly how the class of 2025 ranked</h3>
+          <ul>
+            <li><b>Anthropic</b> — best overall (C+). Led on risk assessment, ran the only human bio-risk trials, doesn't train on your data, does world-leading alignment research.</li>
+            <li><b>OpenAI</b> — second. The only firm to publish its whistleblowing policy and a detailed model spec.</li>
+            <li><b>Google DeepMind</b> — third. Strong research bench, patchier transparency.</li>
+            <li><b>xAI &amp; Meta</b> — mid-to-back of the pack; thinner safety frameworks, and Meta flagged for weak safeguards on its open-weight models.</li>
+            <li><b>Zhipu.AI &amp; DeepSeek</b> — failing overall grades (with an important caveat, below).</li>
+          </ul>
+          <p style="margin:8px 0 0">Source: Future of Life Institute, AI Safety Index (Summer 2025).</p>
+        </div>
+
+        <h2>The most alarming finding</h2>
+        <p>
+          Forget the rankings for a second, because the single most important finding wasn't about who
+          came first. It was this: <strong>not one of these companies scored above a D on "existential
+          safety" planning.</strong> These are firms openly saying they intend to build human-level AI
+          within the decade — and by the panel's assessment, none of them has anything like a coherent,
+          actionable plan for keeping such a system under control. One reviewer called the disconnect
+          "deeply disturbing." I'd call it the most important sentence in the whole report.
+        </p>
+        <blockquote>
+          <p>
+            We're spending hundreds of billions of dollars building systems the builders themselves
+            can't yet promise to control — and the industry's own best safety grade is a C+. That's
+            not a reason to panic. It is a reason to stop taking "trust us" at face value.
+          </p>
+        </blockquote>
+        <p>
+          Only three of the seven — Anthropic, OpenAI and Google DeepMind — even do substantial testing
+          for the really dangerous capabilities, the bio- and cyber-risk stuff. The others are, to put
+          it politely, further behind. And FLI's president Max Tegmark's takeaway was blunt:
+          self-regulation isn't working, and the fix is binding safety standards, the same way we have
+          them for medicine, food and aeroplanes.
+        </p>
+
+        <h2>The money problem: safety is a rich lab's hobby</h2>
+        <p>
+          Here's the dynamic nobody says out loud. Doing safety <em>properly</em> is expensive. It means
+          red teams, alignment researchers, bio-risk trials, external audits, the works — armies of
+          well-paid people whose entire job is to make the product say "no" more often. That's a cost
+          only a well-funded lab with breathing room can really carry.
+        </p>
+        <p>
+          So you get a widening gap. The flush frontier labs can afford to tune down the dark traits
+          carefully and publish about it. A leaner outfit — or one racing to ship on a shoestring — has
+          every incentive to skip straight to "ship it." The result is that a model's restraint ends up
+          correlated with its maker's bank balance and priorities as much as anything technical. Same
+          underlying tech; very different manners, depending on who could afford the finishing school.
+        </p>
+
+        <h2>The Chinese models — a caveat</h2>
+        <p>
+          DeepSeek and Zhipu.AI landing failing grades made headlines, and DeepSeek in particular got
+          flagged for an "extreme jailbreak vulnerability" — basically, it's much easier to talk it out
+          of its own safety rules. That's a real finding, and worth clocking.
+        </p>
+        <p>
+          But I want to be fair, because the scorecard says so itself. A big chunk of what it grades —
+          published whistleblowing policies, voluntary self-governance, open information-sharing — are
+          Western norms that simply matter less in Chinese corporate culture. And China already has
+          state regulation for advanced AI, so its labs lean less on the kind of voluntary self-policing
+          the Index rewards. So a failing grade here doesn't cleanly mean "more dangerous model." It
+          partly means "plays a different game, by different rules." The honest read is: different
+          countries are building different <em>values</em> into their models — which is a whole topic of
+          its own, and one we <a href="/ai-personality-by-country">dig into separately</a>.
+        </p>
+
+        <h2>The open-weights wrinkle</h2>
+        <p>
+          There's one more thing that scrambles the whole picture: open models. When a lab like Meta
+          releases the actual weights, anyone can download them — which is fantastic for openness and
+          research, and honestly one of my favourite things about this field. But it also means anyone
+          can <em>strip the safety training back off</em>. The Index specifically dinged Meta for weak,
+          non-tamper-resistant safeguards. However carefully a dark trait was tuned down at the factory,
+          an open model can have it tuned right back up by someone downstream with a grudge and a
+          weekend. Safety that can be undone by anyone isn't really a floor; it's a suggestion.
+        </p>
+
+        <h2>So where do we end up?</h2>
+        <p>
+          I'm not writing this to scare you off AI — I'm as bullish on it as anyone. But the fairy tale
+          where "the AI is just neutral and the same everywhere" needs to die. A few things I hold onto:
+        </p>
+        <ul>
+          <li><strong>Personality reflects its maker.</strong> How restrained a model is tells you something about who built it and what they were willing to spend. That's a feature you can shop on.</li>
+          <li><strong>"Agreeable" and "safe" aren't the same.</strong> A safety-invested lab often ships a model that pushes back more — which feels less pleasant and is frequently better for you.</li>
+          <li><strong>Open vs closed is a real trade-off.</strong> Open models are a gift to builders and a headache for safety. Both things are true at once.</li>
+          <li><strong>Measure, don't assume.</strong> This is the whole reason we run the <a href="/rankings">rankings</a> — so "this lab seems more careful" becomes something you can actually see, model by model.</li>
+        </ul>
+        <p>
+          The tech is moving faster than the guard-rails, and the guard-rails vary enormously depending
+          on whose logo is on the box. When the best report card in the industry is a C+, the smart move
+          isn't fear — it's paying attention to who's actually doing the homework, and choosing
+          accordingly.
+        </p>
+      </div>
+
+      <section class="faq">
+        <h2>Frequently asked questions</h2>
+        <details class="faq-item">
+          <summary>Which AI company is the safest?</summary>
+          <div class="faq-body">
+            <p>By the Future of Life Institute's Summer 2025 AI Safety Index, Anthropic scored best overall (a C+), followed by OpenAI and Google DeepMind. But "best" here is relative — no company scored above a D on planning for the risks of the human-level AI they say they're building.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>Is DeepSeek unsafe?</summary>
+          <div class="faq-body">
+            <p>The Index gave DeepSeek a failing overall grade and flagged an "extreme jailbreak vulnerability." That said, part of the low score reflects Western-style governance norms it doesn't follow, rather than the raw model being uniquely dangerous. It's fair to say it's had less public safety investment than the frontier US labs.</p>
+          </div>
+        </details>
+        <details class="faq-item">
+          <summary>Why do different models have such different personalities?</summary>
+          <div class="faq-body">
+            <p>Because personality is engineered. Each lab decides how agreeable, cautious and willing-to-refuse its model should be, then spends heavily to steer it there. Labs that invest more in alignment tend to ship more restrained models — which is why the same underlying technology produces such different "characters."</p>
+          </div>
+        </details>
+      </section>
+
+      <section class="cta-band" data-create>
+        <span class="kicker">See it for yourself</span>
+        <h2>Different labs, different characters — <em>see them side by side.</em></h2>
+        <p>Our rankings put the leading models through the same personality tests, scored the same way. It's the quickest way to see which makers ship a warmer model and which ship a cooler, more guarded one.</p>
+        <div class="cta-row">
+          <a class="btn primary" href="/rankings">Compare the models →</a>
+          <a class="btn ghost" href="/guides">Read the guides</a>
+        </div>
+      </section>
+
+      <section class="related">
+        <h2>Keep reading</h2>
+        <div class="guide-grid">
+          <a class="guide-card" href="/ai-personality-by-country">
+            <div class="band b-blue">🌏</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>Do models from different countries think differently?</h3>
+              <p>American, Chinese and European AI — and the values quietly baked into each.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/dark-ai-infrastructure">
+            <div class="band b-plum">🏙️</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>When a dark AI gets real power</h3>
+              <p>What happens when models with something to lose get real power.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+          <a class="guide-card" href="/is-ai-personality-real">
+            <div class="band b-gold">🔬</div>
+            <div class="body">
+              <span class="cat">Blog</span>
+              <h3>Is "AI personality" even real?</h3>
+              <p>The actual science of giving a chatbot a personality test.</p>
+              <span class="go">Read the take →</span>
+            </div>
+          </a>
+        </div>
+      </section>
+    </article>
+
+    <footer class="foot">
+      <nav class="foot-nav">
+        <a href="/">Home</a>
+        <a href="/blog">Blog</a>
+        <a href="/guides">Guides</a>
+        <a href="/dark-triad-ai">Dark Triad</a>
+        <a href="/big-five-ai">Big Five</a>
+        <a href="/mbti-ai">MBTI</a>
+        <a href="/rankings#about">Method</a>
+      </nav>
+      <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
+      Opinion and analysis. Grades and findings referenced from the Future of Life Institute's
+      AI Safety Index (Summer 2025). Company grades are that panel's assessment, not ours. For
+      curiosity and discussion — <a href="/rankings#about">not investment or procurement advice</a>.
+    </footer>
+  </div>
+</body>
+</html>

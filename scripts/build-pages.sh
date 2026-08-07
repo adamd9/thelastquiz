@@ -49,11 +49,22 @@ cp "$web/favicon.ico" "$dist/app/favicon.ico"
 cp "$web/home.html" "$dist/rankings/index.html"
 cp "$web/rankings.html" "$dist/rankings/rankings.html"
 
-# SEO content pages: the guides hub + long-form articles, served at clean URLs
-# (e.g. /dark-triad-ai) exactly like rankings.html at /rankings.
-for f in guides dark-triad-ai big-five-ai mbti-ai; do
+# SEO content pages: the guides hub, the blog hub + posts, and long-form articles,
+# served at clean URLs (e.g. /dark-triad-ai) exactly like rankings.html at /rankings.
+for f in guides blog dark-triad-ai big-five-ai mbti-ai \
+         chatgpt-psychosis is-chatgpt-a-psychopath is-ai-personality-real; do
   cp "$web/$f.html" "$dist/rankings/$f.html"
 done
+# DRIP QUEUE — these articles are written & committed but held back (not built, not linked,
+# not in the sitemap). On each publish date: add the slug to the loop above, un-comment its
+# <url> in web/sitemap.xml and its card in web/blog.html, wire a cross-link or two from the
+# live articles, and repoint any links in the new article that still target a not-yet-live slug.
+#   2026-08-15  uncensored-ai-models
+#   2026-08-22  ai-safety-scorecard
+#   2026-08-29  why-ai-sounds-the-same
+#   2026-09-05  dark-ai-infrastructure
+#   2026-09-12  home-robots-personality
+#   2026-09-19  ai-personality-by-country
 
 # Crawl files for the public site (robots + sitemap point at the apex).
 cp "$web/robots.txt" "$dist/rankings/robots.txt"

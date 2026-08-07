@@ -37,7 +37,7 @@
     "headline": "The Big Five Personalities of AI Models (OCEAN)",
     "description": "How the top AI models score on the Big Five personality traits — openness, conscientiousness, extraversion, agreeableness and neuroticism — measured with the public-domain IPIP-50.",
     "image": "https://thelastquiz.net/static/logo2.png",
-    "author": { "@type": "Organization", "name": "The Last Quiz", "url": "https://thelastquiz.net" },
+    "author": { "@type": "Person", "name": "Adam Dinneen" },
     "publisher": {
       "@type": "Organization",
       "name": "The Last Quiz",
@@ -120,7 +120,7 @@
           machines score on OCEAN.
         </p>
         <div class="art-meta">
-          <span>By <b>The Last Quiz</b></span>
+          <span>By <b>Adam Dinneen</b></span>
           <span>Updated July 2026</span>
           <span>6 min read</span>
         </div>
@@ -128,18 +128,19 @@
 
       <div class="prose">
         <p>
-          Where the <a href="/dark-triad-ai">Dark Triad</a> looks at a personality's shadow, the
-          <strong>Big Five</strong> is the broad, well-lit map psychologists reach for first. It's
-          the most empirically supported model of human personality — and it turns out to be a
-          revealing way to compare AI assistants, because it captures the everyday texture that makes
-          one model feel warm and eager and another feel crisp and reserved.
+          If the <a href="/dark-triad-ai">Dark Triad</a> pokes at a personality's shadow, the
+          <strong>Big Five</strong> is the floodlit map — the one psychologists actually trust. It's the
+          most tested model of human personality there is, and it turns out to be a cracking way to
+          size up AI assistants. Why? Because it catches the everyday texture — the thing that makes one
+          model feel warm and keen and another feel crisp and a bit standoffish — long before you could
+          put your finger on it.
         </p>
 
         <h2>What are the Big Five (OCEAN)?</h2>
         <p>
-          The Big Five, also called the Five-Factor Model or <strong>OCEAN</strong>, grew out of
-          decades of research into the words people use to describe each other. Analyse enough of
-          that language and five broad, stable dimensions keep falling out:
+          The Big Five — also called the Five-Factor Model, or <strong>OCEAN</strong> — came out of
+          decades of research into the words we use to describe each other. Crunch enough of that
+          language and the same five broad, stable dimensions keep falling out:
         </p>
         <div class="keybox">
           <h3>The five factors</h3>
@@ -152,59 +153,58 @@
           </ul>
         </div>
         <p>
-          Unlike a "type", the Big Five is <em>dimensional</em>: you get a position on each of five
-          sliders, not a label. That's exactly what makes it good for comparing models that are often
-          only subtly different.
+          Unlike a "type", the Big Five is <em>dimensional</em>: you land somewhere on five sliders,
+          not in a labelled box. Which is exactly why it's so handy for comparing models that are often
+          only a whisker apart.
         </p>
 
         <h2>How we test the Big Five in an AI</h2>
         <p>
           We use the <strong>IPIP-50</strong> — a 50-item Big Five inventory from the public-domain
-          International Personality Item Pool, with ten items for each trait. Every model answers the
-          same statements ("I am the life of the party", "I pay attention to details") on a five-point
-          scale, with no role-play instructions and no nudging toward a "good" answer. Each response is
-          scored deterministically 0–100 per trait, then compared with a human reference so the numbers
-          have meaning.
+          International Personality Item Pool, ten items per trait. Every model answers the same
+          statements ("I am the life of the party", "I pay attention to details") on a five-point scale,
+          with no role-play and no nudging toward a "good" answer. Each response is scored
+          deterministically 0–100 per trait, then stacked against a human reference so the numbers
+          actually mean something.
         </p>
 
         <h2>What we found: agreeable, careful and calm</h2>
         <p>
-          A clear signature shows up across today's assistants. Most score <strong>high on
-          agreeableness and conscientiousness</strong>, and strikingly <strong>low on
-          neuroticism</strong> — they present as warm, diligent and almost unflappably calm. That's
-          what you'd expect from systems trained to be helpful, careful and steady under pressure.
-          Openness usually runs moderate-to-high (these are, after all, models built to riff on ideas),
-          while <strong>extraversion is where models differ most</strong> — some come across as bubbly
-          and effusive, others as measured and economical.
+          There's a clear signature across today's assistants, and it's a bit of a personality type in
+          itself. Most score <strong>high on agreeableness and conscientiousness</strong> and
+          strikingly <strong>low on neuroticism</strong> — warm, diligent, and almost weirdly calm under
+          fire! Exactly what you'd expect from things trained to be helpful, careful and unflappable.
+          Openness usually runs moderate-to-high (they're built to riff on ideas, after all), and
+          <strong>extraversion is where they split the most</strong> — some are all bubbly and effusive,
+          others clipped and economical.
         </p>
         <p>
-          Those differences are the fun part, and they're what you feel in day-to-day use long before
-          you can name them. The current profile for each model — and how they stack up against one
-          another — lives on the <a href="/rankings#big-five">Big Five rankings</a>.
+          Those splits are the good bit — they're what you <em>feel</em> in day-to-day use long before
+          you could put a name to it. Every model's current profile, and how they all stack up, lives on
+          the <a href="/rankings#big-five">Big Five rankings</a>.
         </p>
 
         <h2>How to read an AI's Big Five profile</h2>
         <p>
-          As with any personality test applied to a machine, the scores describe how a model
-          <em>answers a questionnaire</em>, not a hidden inner life. Two caveats keep the picture
-          honest:
+          Like any personality test pointed at a machine, the scores describe how a model
+          <em>answers a questionnaire</em> — not some hidden inner life. Two caveats keep us honest:
         </p>
         <ul>
           <li><strong>Training shapes the profile.</strong> Alignment tuning rewards agreeable, stable, helpful responses — so high agreeableness and low neuroticism are partly a fingerprint of how the model was trained, not just "who it is".</li>
           <li><strong>Context can move the needle.</strong> A model asked to adopt a persona will answer differently. We hold the prompt neutral and identical so the profile reflects the default assistant.</li>
         </ul>
         <blockquote>
-          <p>Read a model's Big Five profile as a portrait of its <em>default voice</em> — the tone and temperament it brings before you ask it to be anything in particular.</p>
+          <p>Read a model's Big Five profile as a snapshot of its <em>default voice</em> — the mood and manner it turns up with, before you ask it to be anything in particular.</p>
         </blockquote>
 
         <h2>Big Five vs the MBTI</h2>
         <p>
-          If you've ever been typed as an INTJ or an ENFP, that's the <a href="/mbti-ai">Myers–Briggs
-          (MBTI)</a> tradition — intuitive, popular, and built on Jung. The Big Five is its more
-          scientific cousin: dimensional rather than sorted into 16 boxes, and far stronger on
-          reliability and prediction. We run both because they answer different questions — the Big
-          Five for rigour, the MBTI for the shorthand everyone already knows. Pair this with the
-          <a href="/dark-triad-ai">Dark Triad</a> profile and you get a rounded read on any model.
+          If you've ever been slapped with an INTJ or an ENFP, that's the <a href="/mbti-ai">Myers–Briggs
+          (MBTI)</a> tradition — intuitive, wildly popular, and built on Jung. The Big Five is its more
+          scientific cousin: sliders instead of 16 boxes, and far stronger on reliability and actually
+          predicting anything. We run both because they answer different questions — the Big Five for
+          rigour, the MBTI for the shorthand everyone already knows. Add the <a href="/dark-triad-ai">Dark
+          Triad</a> on top and you've got a properly rounded read on any model.
         </p>
       </div>
 

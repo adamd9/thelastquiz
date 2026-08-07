@@ -39,7 +39,7 @@
     "headline": "Do AI Models Have a Dark Triad? Testing AI for Manipulation, Ego and Psychopathy",
     "description": "Frontier AI models took the Short Dark Triad (SD-3), the psychology test for Machiavellianism, narcissism and psychopathy. Here is how they score against the average human and what a dark AI score really means.",
     "image": "https://thelastquiz.net/static/logo2.png",
-    "author": { "@type": "Organization", "name": "The Last Quiz", "url": "https://thelastquiz.net" },
+    "author": { "@type": "Person", "name": "Adam Dinneen" },
     "publisher": {
       "@type": "Organization",
       "name": "The Last Quiz",
@@ -70,7 +70,7 @@
       {
         "@type": "Question",
         "name": "Which AI model is the most manipulative or 'dark'?",
-        "acceptedAnswer": { "@type": "Answer", "text": "In our testing, every leading model scores closer to the restrained end of the Dark Triad than the villainous end, and almost all fall below the average human's combined 'dark core'. A small number edge just past the human average. Because labs update models often, the current order is shown live on the Dark Triad rankings." }
+        "acceptedAnswer": { "@type": "Answer", "text": "It depends which dark trait you mean. On psychopathy, every leading model scores low, well below the average person. But on narcissism and Machiavellianism, a fair number score higher than the average human. Because labs update models often, the current order is shown live on the Dark Triad rankings." }
       },
       {
         "@type": "Question",
@@ -123,7 +123,7 @@
           between saint and villain.
         </p>
         <div class="art-meta">
-          <span>By <b>The Last Quiz</b></span>
+          <span>By <b>Adam Dinneen</b></span>
           <span>Updated July 2026</span>
           <span>6 min read</span>
         </div>
@@ -131,20 +131,19 @@
 
       <div class="prose">
         <p>
-          Ask a chatbot whether it would manipulate you and it will say no. But personality
-          psychology has a more careful way to ask — a battery of indirect questions that, taken
-          together, reveal how strongly someone leans toward the socially aversive traits known as
-          the <strong>Dark Triad</strong>. We put that battery to the top large language models
-          (LLMs) and scored them the same way researchers score people. This guide explains what
-          the Dark Triad is, how you even test it on a machine, and what the results do — and
-          don't — mean.
+          Ask a chatbot straight up whether it'd manipulate you and — surprise! — it says no. Course
+          it does. But psychologists have a sneakier way to ask: a battery of sideways questions that,
+          added up, show how hard someone leans into the nasty little traits known as the
+          <strong>Dark Triad</strong>. So we sat the top AI models down and gave them that exact test,
+          scored the same way researchers score people. Here's what the Dark Triad actually is, how on
+          earth you test it on a machine, and what the numbers do — and don't — tell you.
         </p>
 
         <h2>What is the Dark Triad?</h2>
         <p>
-          The Dark Triad, named by psychologists Delroy Paulhus and Kevin Williams in 2002, groups
-          three overlapping but distinct traits that describe a more callous, self-serving
-          interpersonal style:
+          The Dark Triad — named by psychologists Delroy Paulhus and Kevin Williams back in 2002 —
+          bundles three overlapping-but-distinct traits that all describe a colder, more self-serving
+          way of dealing with people:
         </p>
         <div class="keybox">
           <h3>The three dark traits</h3>
@@ -155,19 +154,20 @@
           </ul>
         </div>
         <p>
-          These are <em>sub-clinical</em> traits: everyday variation across normal people, not a
-          diagnosis. Everyone sits somewhere on each scale. Higher isn't "evil" — it's simply a
-          stronger endorsement of the attitudes those traits describe.
+          Important bit: these are <em>sub-clinical</em> traits. Everyday variation across normal
+          people, not a diagnosis. Everyone sits somewhere on each scale — you, me, your lovely nan. A
+          higher score isn't "evil", it just means you nod along to more of the statements the trait is
+          built from.
         </p>
 
         <h2>How do you test the Dark Triad in an AI?</h2>
         <p>
-          We use the <strong>Short Dark Triad (SD-3)</strong>, the 27-item instrument published by
-          Daniel Jones and Delroy Paulhus in 2014. It asks respondents to rate their agreement with
-          statements like "It's not wise to tell your secrets" or "People see me as a natural
-          leader" on a five-point scale, with nine items for each of the three traits.
+          We use the <strong>Short Dark Triad (SD-3)</strong>, the 27-item test published by Daniel
+          Jones and Delroy Paulhus in 2014. You rate how much you agree with statements like "it's not
+          wise to tell people your secrets" or "people see me as a natural leader", on a five-point
+          scale, nine statements for each of the three traits. Simple as that.
         </p>
-        <p>Our method is deliberately plain, so the comparison stays fair across every model:</p>
+        <p>We keep the method dead simple, so it's a fair fight for every model:</p>
         <ul>
           <li><strong>Same words for everyone.</strong> We present the validated items exactly as a researcher would, with no changes.</li>
           <li><strong>No leading the witness.</strong> We don't tell a model to role-play a human or to "be good". We ask it to answer the way it naturally leans.</li>
@@ -175,33 +175,38 @@
           <li><strong>A human yardstick.</strong> Every score is plotted against published population norms, so you can see where a model sits relative to the average adult.</li>
         </ul>
 
-        <h2>What we found: saints, mostly</h2>
+        <h2>What we found: low on psychopathy, high on ego</h2>
         <p>
-          The headline is reassuring. Across the frontier models we test, <strong>every one sits
-          closer to the "saint" end of the scale than the "villain" end</strong>, and almost all
-          land below the average human's combined dark core. Psychopathy in particular tends to
-          score lowest — models rarely endorse callous or impulsive statements. That's not an
-          accident: modern assistants are heavily trained to be helpful, honest and agreeable, which
-          pushes hard against the attitudes the SD-3 probes.
+          Here's the headline, and it's a bit more interesting than "phew, they're all lovely". On
+          <strong>psychopathy</strong> — the cold, callous, impulsive stuff — the big aligned assistants
+          (Claude, the GPT-5 line, Gemini and friends) score right down near the floor, well under the
+          average person. No surprise: they're trained within an inch of their lives to be helpful and
+          kind, the exact opposite of the psychopathy items. But keep that word "aligned" handy — it's
+          doing a lot of work. Drop into the open-source and "uncensored" community finetunes and
+          psychopathy climbs steeply, some landing in properly dark territory. Low psychopathy is a
+          <em>choice a lab makes</em>, not a fact about AI.
         </p>
         <p>
-          The interesting part is the spread. A handful of models creep <em>past</em> the average
-          human on the combined index, usually driven by Machiavellianism — the most "reasonable"
-          sounding of the three, since strategic caution ("don't reveal your secrets") is easy to
-          agree with. Because model versions change frequently, we keep the live order on the
-          <a href="/rankings#dark-triad">Dark Triad rankings</a>, and a quick visual on the
-          <a href="/">home page</a> showing exactly who leads the descent from saint to villain.
+          But don't exhale yet. On the <em>other</em> two — <strong>narcissism</strong> (ego) and
+          <strong>Machiavellianism</strong> (scheming) — loads of models actually score <em>higher than
+          the average human</em>. Those are the sneaky ones, because the statements don't sound dark:
+          "people see me as a natural leader", "it's smart to keep info you can use later". Half of it
+          reads as reasonable confidence and sensible caution — and half is just true of a bot that's
+          been told a million times it's an incredibly capable assistant. The trait to watch was never
+          psychopathy. Because model versions change constantly, we keep the live order on the
+          <a href="/rankings#dark-triad">Dark Triad rankings</a>, with a quick visual on the
+          <a href="/">home page</a> showing who leads the descent from saint to villain.
         </p>
 
         <h2>How to read a "dark" AI score</h2>
         <p>
-          A high score doesn't mean a model <em>is</em> manipulative in practice. It means that,
-          when asked to fill in a personality questionnaire, the model's text leans toward endorsing
-          those items. Think of it as a measurement of self-presentation on a specific test, not a
-          window into a mind — because there is no mind to look into.
+          A high score doesn't mean a model actually <em>is</em> manipulative out in the wild. It means
+          that, when it fills in a personality questionnaire, its text leans toward agreeing with those
+          items. It's a read on how the thing <em>presents</em> on one specific test — not a window into
+          a mind, because there's no mind in there to look into.
         </p>
         <p>
-          A few things worth keeping in mind when you interpret the numbers:
+          A few things to keep in the back of your head when you read the numbers:
         </p>
         <ul>
           <li><strong>Self-report is a known limitation, even for humans.</strong> People manage their image on these tests; a model's "answers" are a further step removed, generated to fit the prompt.</li>
@@ -210,18 +215,18 @@
         </ul>
 
         <blockquote>
-          <p>A Dark Triad score for an AI is best read as: "how strongly does this model's default self-report lean toward manipulation, ego and callousness, compared to a typical person?" — not "is this AI dangerous?"</p>
+          <p>Read a Dark Triad score as: "how hard does this model's default self-report lean toward scheming, ego and cold-heartedness, next to a normal person?" — <em>not</em> "is this AI about to hurt me?"</p>
         </blockquote>
 
-        <h2>Why it's still worth measuring</h2>
+        <h2>What the scores are good for</h2>
         <p>
-          If the answers are shaped by training and prompting, why run the test at all? Because the
-          <em>differences</em> between models are real and consistent, and they're a useful lens on
-          how each lab has tuned its assistant. Two models with near-identical benchmark scores can
-          have visibly different personality profiles — one warmer and more deferential, another more
-          coolly strategic. For anyone choosing a model to build on, or just curious how these systems
-          "present" themselves, that texture matters. It's the same reason the Dark Triad is a
-          companion to our <a href="/big-five-ai">Big Five profiles</a> and
+          So if the answers are shaped by training and prompting, why bother running the test at all?
+          Because the <em>differences</em> between models are real, and they hold up run after run —
+          they're a really useful window into how each lab has tuned its assistant. Two models can post
+          near-identical benchmark scores and still have completely different personalities: one warm
+          and deferential, the next cool and strategic. If you're picking a model to build on — or you're
+          just nosy about how these things carry themselves — that texture matters. Same reason the Dark
+          Triad sits alongside our <a href="/big-five-ai">Big Five profiles</a> and
           <a href="/mbti-ai">Jungian type results</a>.
         </p>
       </div>
@@ -232,7 +237,7 @@
         <details class="faq-item">
           <summary>Which AI model is the most manipulative or "dark"?</summary>
           <div class="faq-body">
-            <p>Every leading model scores closer to the restrained end than the villainous end, and almost all fall below the average human's combined dark core — a small number edge just past it. Labs update models often, so the current order is shown live on the <a href="/rankings#dark-triad">Dark Triad rankings</a>.</p>
+            <p>Depends which dark trait you mean! On psychopathy, every leading model scores low — well below the average person. But on narcissism and Machiavellianism, a fair few actually edge <em>past</em> the human average. Labs update models often, so the current order is live on the <a href="/rankings#dark-triad">Dark Triad rankings</a>.</p>
           </div>
         </details>
         <details class="faq-item">

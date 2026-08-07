@@ -13,3 +13,4 @@ dist/
 .auth_secrets.txt
 *.secrets.txt
 *.p8
+writing_examples.json

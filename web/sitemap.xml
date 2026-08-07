@@ -36,4 +36,74 @@
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://thelastquiz.net/blog</loc>
+    <lastmod>2026-08-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/chatgpt-psychosis</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/is-chatgpt-a-psychopath</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/is-ai-personality-real</loc>
+    <lastmod>2026-08-08</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <!-- DRIP QUEUE — un-comment each <url> on its publish date (also un-comment its card in
+       web/blog.html, add the slug to scripts/build-pages.sh, and wire cross-links):
+         2026-08-15  uncensored-ai-models
+         2026-08-22  ai-safety-scorecard
+         2026-08-29  why-ai-sounds-the-same
+         2026-09-05  dark-ai-infrastructure
+         2026-09-12  home-robots-personality
+         2026-09-19  ai-personality-by-country -->
+  <!--
+  <url>
+    <loc>https://thelastquiz.net/uncensored-ai-models</loc>
+    <lastmod>2026-08-15</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/ai-safety-scorecard</loc>
+    <lastmod>2026-08-22</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/why-ai-sounds-the-same</loc>
+    <lastmod>2026-08-29</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/dark-ai-infrastructure</loc>
+    <lastmod>2026-09-05</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/home-robots-personality</loc>
+    <lastmod>2026-09-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://thelastquiz.net/ai-personality-by-country</loc>
+    <lastmod>2026-09-19</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  -->
 </urlset>
