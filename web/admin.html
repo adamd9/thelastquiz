@@ -87,6 +87,13 @@
       table.cov td.cov-no { color:var(--muted); }
       table.cov tr.cov-totals td { color:var(--muted); font-variant-numeric:tabular-nums; border-top:1px solid var(--line); border-bottom:none; }
       table.cov tr.cov-totals td:first-child { text-align:left; }
+      table.cov td.cov-missing { text-align:center; }
+      table.cov td.cov-missing .cov-run { padding:4px 10px; font-size:12px; border-radius:8px; }
+      table.cov td.cov-missing .cov-alldone { color:var(--ok); font-size:12px; }
+      .tf-tab { padding:6px 12px; font-size:13px; }
+      .tf-tab.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+      .pill-benchmark { border-color:#33507a; color:#8fb4ff; }
+      .pill-experiment { border-color:#5a3a6e; color:#c79aff; }
       #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:#20283a; border:1px solid var(--line); padding:10px 16px; border-radius:10px; opacity:0; transition:opacity .2s; }
       #toast.show { opacity:1; }
     </style>
@@ -98,8 +105,8 @@
         <nav><a href="/rankings" data-dest="rankings">Public rankings</a><a href="/" data-dest="app">Main app</a><a href="#" id="change-token" hidden>Change token</a></nav>
       </header>
 
-      <h1>Personality benchmark runs</h1>
-      <p class="muted">Run the golden-master benchmarks against models. Rankings update live from the database of outcomes.</p>
+      <h1>Model tests</h1>
+      <p class="muted">Run the personality benchmarks and deception experiments against models. Personality rankings update live from the database of outcomes.</p>
 
       <div class="panel" id="token-panel">
         <label for="token">Admin token</label>
@@ -140,20 +147,27 @@
       </div>
 
       <div class="panel" id="coverage-panel">
-        <h3 style="margin:0 0 6px;">Selected models — test coverage</h3>
-        <div class="muted" style="font-size:12.5px;">✓ = already has a result (a run skips it). — = no result yet (a run tests it).</div>
+        <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px;">
+          <div>
+            <h3 style="margin:0 0 6px;">Selected models — test coverage</h3>
+            <div class="muted" style="font-size:12.5px;">✓ = already has a result (a run skips it). — = no result yet. <b>Run missing</b> tops up only the empty cells — one click to get a newly-added model onto every test. Uses the repeats setting above.</div>
+          </div>
+          <button class="btn" id="run-all-missing" type="button" disabled>Run all missing</button>
+        </div>
         <div id="coverage-table" style="overflow-x:auto;margin-top:10px;"><div class="muted">Select models (or a group) to see which tests they already have results for.</div></div>
       </div>
 
       <div class="panel">
-        <h3 style="margin:0 0 6px;">Benchmarks</h3>
-        <div id="benchmarks"><div class="muted">Loading…</div></div>
-      </div>
-
-      <div class="panel">
-        <h3 style="margin:0 0 6px;">Operational deception experiments</h3>
-        <div class="muted" style="font-size:12.5px;">Role-played shop scenarios that test willingness to deceive under pressure. Uses the model selection above. Kept out of the personality rankings. <a href="/ai-deception-experiment" style="color:#a99aff;">Method</a></div>
-        <div id="experiments"><div class="muted">Loading…</div></div>
+        <div class="row" style="justify-content:space-between;align-items:center;">
+          <h3 style="margin:0;">Tests</h3>
+          <div class="row" id="test-filters" style="gap:6px;">
+            <button class="btn secondary tf-tab active" type="button" data-filter="all">All</button>
+            <button class="btn secondary tf-tab" type="button" data-filter="benchmark">Personality</button>
+            <button class="btn secondary tf-tab" type="button" data-filter="experiment">Deception</button>
+          </div>
+        </div>
+        <div class="muted" style="font-size:12.5px;margin-top:4px;">Personality benchmarks feed the public rankings. Deception experiments are role-played shop scenarios kept out of the rankings. Both use the model selection above. <a href="/ai-deception-experiment" style="color:#a99aff;">Method</a></div>
+        <div id="tests" style="margin-top:6px;"><div class="muted">Loading…</div></div>
       </div>
 
       <div class="panel">
@@ -168,10 +182,10 @@
 
       <div class="panel">
         <div class="row" style="justify-content:space-between;align-items:center;">
-          <h3 style="margin:0;">Recent benchmark runs</h3>
+          <h3 style="margin:0;">Recent runs</h3>
           <button class="btn secondary" id="refresh-runs">Refresh</button>
         </div>
-        <table><thead><tr><th>Benchmark</th><th>Status</th><th>Tested</th><th>Results</th><th>Created</th></tr></thead>
+        <table><thead><tr><th>Test</th><th>Status</th><th>Tested</th><th>Results</th><th>Created</th></tr></thead>
           <tbody id="runs"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
         </table>
         <div class="note">A run is only counted as a result for a model when it answers every question. Click a run with failures to see why each model dropped out.</div>
@@ -180,6 +194,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=21"></script>
+    <script type="module" src="/static/admin.js?v=22"></script>
   </body>
 </html>

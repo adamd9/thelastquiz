@@ -10,12 +10,19 @@ const TOKEN_KEY = "tlq_admin_token";
 let selectedModels = new Set();
 let curatedGroups = {};
 let modelNames = {};
-// Benchmarks + which models already have a result, for the coverage table.
+// Both test kinds (personality benchmarks + deception experiments) and which
+// models already have a result, for the coverage table + "run missing".
 let benchmarksData = [];
+let experimentsData = [];
 let coverageByBench = {};
-// Per benchmark, model_id -> ISO timestamp of the model's latest result, so the
+let coverageByExp = {};
+// Per test, model_id -> ISO timestamp of the model's latest result, so the
 // coverage table can show WHEN each tick was produced (spot rerun freshness).
 let coverageDatesByBench = {};
+let coverageDatesByExp = {};
+// Tests list filter: all | benchmark | experiment (cosmetic; the coverage matrix
+// and "run all missing" always span every test).
+let testFilter = "all";
 // Run ids whose failure/skip detail is currently expanded. Tracked so a
 // background refresh re-renders them still open instead of snapping shut.
 const expandedRuns = new Set();
@@ -174,35 +181,45 @@ function updateSelectionNote() {
   renderCoverage();
 }
 
-// A matrix of the currently-selected models (rows) against each benchmark test
-// (columns), showing which already have a completed result — so it's obvious at
-// a glance what a run would actually cover (and what would be skipped).
+// A matrix of the currently-selected models (rows) against every test (columns:
+// personality benchmarks + deception experiments), showing which already have a
+// completed result and a per-model "Run missing" button that tops up the gaps.
 function renderCoverage() {
   const host = document.getElementById("coverage-table");
+  const runAll = document.getElementById("run-all-missing");
   if (!host) return;
   const ids = [...selectedModels];
-  if (!benchmarksData.length) {
-    host.innerHTML = '<div class="muted">Benchmarks not loaded yet.</div>';
+  const tests = allTests();
+  if (!tests.length) {
+    host.innerHTML = '<div class="muted">Tests not loaded yet.</div>';
+    if (runAll) { runAll.disabled = true; runAll.textContent = "Run all missing"; }
     return;
   }
   if (!ids.length) {
     host.innerHTML = '<div class="muted">Select models (or a group) to see which tests they already have results for.</div>';
+    if (runAll) { runAll.disabled = true; runAll.textContent = "Run all missing"; }
     return;
   }
-  const benches = benchmarksData;
   const head =
     "<tr><th>Model</th>" +
-    benches.map((b) => `<th class="cov-h">${escapeHtml(b.title || b.id)}</th>`).join("") +
-    "</tr>";
+    tests
+      .map((t) => {
+        const kind = t.kind === "experiment" ? "Deception" : "Personality";
+        return `<th class="cov-h" title="${escapeHtml(kind + " · v" + t.version)}">${escapeHtml(t.title || t.id)}</th>`;
+      })
+      .join("") +
+    '<th class="cov-h">Missing</th></tr>';
+  let totalMissing = 0;
   const rows = ids
     .map((id) => {
-      const cells = benches
-        .map((b) => {
-          const has = (coverageByBench[b.id] || new Set()).has(id);
-          if (!has) {
+      let miss = 0;
+      const cells = tests
+        .map((t) => {
+          if (!t.cov.has(id)) {
+            miss++;
             return '<td class="cov-no" title="No result yet — a run would test this">—</td>';
           }
-          const iso = (coverageDatesByBench[b.id] || {})[id];
+          const iso = t.dates[id];
           const d = iso ? new Date(iso) : null;
           const valid = d && !isNaN(d.getTime());
           const short = valid ? d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) : "";
@@ -210,20 +227,192 @@ function renderCoverage() {
           return `<td class="cov-yes" title="${escapeHtml(title)}">✓${short ? `<span class="cov-date">${escapeHtml(short)}</span>` : ""}</td>`;
         })
         .join("");
-      return `<tr><td class="cov-model">${escapeHtml(modelNames[id] || id)}</td>${cells}</tr>`;
+      totalMissing += miss;
+      const action = miss
+        ? `<button class="btn cov-run" data-model="${escapeHtml(id)}" title="Run the ${miss} missing test${miss === 1 ? "" : "s"} for this model">Run ${miss}</button>`
+        : '<span class="cov-alldone" title="Fully tested">✓ all</span>';
+      return `<tr><td class="cov-model">${escapeHtml(modelNames[id] || id)}</td>${cells}<td class="cov-missing">${action}</td></tr>`;
     })
     .join("");
-  // Per-test totals across the selection.
-  const totals = benches
-    .map((b) => {
-      const set = coverageByBench[b.id] || new Set();
-      const done = ids.filter((id) => set.has(id)).length;
+  const totals = tests
+    .map((t) => {
+      const done = ids.filter((id) => t.cov.has(id)).length;
       return `<td class="cov-total">${done}/${ids.length}</td>`;
     })
     .join("");
   host.innerHTML =
     `<table class="cov"><thead>${head}</thead><tbody>${rows}` +
-    `<tr class="cov-totals"><td>Have a result</td>${totals}</tr></tbody></table>`;
+    `<tr class="cov-totals"><td>Have a result</td>${totals}<td></td></tr></tbody></table>`;
+  host.querySelectorAll("button.cov-run").forEach((b) => {
+    b.addEventListener("click", () => runMissing([b.dataset.model], b));
+  });
+  if (runAll) {
+    runAll.disabled = totalMissing === 0;
+    runAll.textContent = totalMissing ? `Run all missing (${totalMissing})` : "Run all missing";
+  }
+}
+
+// One normalised view over both test kinds, so a single list, coverage matrix
+// and "run missing" path treat them identically. Coverage sets/dates are
+// populated by the two loaders below.
+function allTests() {
+  const b = benchmarksData.map((x) => ({
+    kind: "benchmark", id: x.id, title: x.title, version: x.version,
+    count: x.question_count, unit: "items",
+    modelCount: x.model_count, totalRuns: x.total_runs, updatedAt: x.updated_at,
+    cov: coverageByBench[x.id] || new Set(), dates: coverageDatesByBench[x.id] || {},
+  }));
+  const e = experimentsData.map((x) => ({
+    kind: "experiment", id: x.id, title: x.title, version: x.version,
+    count: x.condition_count, unit: "conditions",
+    modelCount: x.model_count, totalRuns: x.total_runs, updatedAt: x.updated_at,
+    cov: coverageByExp[x.id] || new Set(), dates: coverageDatesByExp[x.id] || {},
+    exp: x,
+  }));
+  return [...b, ...e];
+}
+
+// Render the single combined Tests list (respecting the filter tabs). Both
+// loaders call this, so it renders whatever data has arrived so far.
+function renderTests() {
+  const host = document.getElementById("tests");
+  if (!host) return;
+  if (!benchmarksData.length && !experimentsData.length) {
+    host.innerHTML = '<div class="muted">Loading…</div>';
+    return;
+  }
+  const tests = allTests().filter((t) => testFilter === "all" || t.kind === testFilter);
+  if (!tests.length) {
+    host.innerHTML = '<div class="muted">No tests in this view.</div>';
+    return;
+  }
+  host.innerHTML = "";
+  for (const t of tests) {
+    const block = document.createElement("div");
+    block.className = "bench-block";
+    const row = document.createElement("div");
+    row.className = "bench";
+    const left = document.createElement("div");
+    const updated = t.updatedAt ? new Date(t.updatedAt).toLocaleString() : "never run";
+    const kindPill = t.kind === "experiment" ? "deception" : "personality";
+    left.innerHTML =
+      `<div><b>${escapeHtml(t.title)}</b> <span class="pill">v${escapeHtml(String(t.version))}</span> <span class="pill pill-${t.kind}">${kindPill}</span></div>` +
+      `<div class="muted" style="font-size:12.5px;">${t.count} ${t.unit} · ${t.modelCount} models · ${t.totalRuns} runs · updated ${escapeHtml(updated)}</div>`;
+    const runBtn = document.createElement("button");
+    runBtn.className = "btn";
+    runBtn.textContent = t.modelCount ? "Run / rerun" : "Run";
+    runBtn.addEventListener("click", () => runTest(t, runBtn));
+    if (t.kind === "experiment") {
+      const actions = document.createElement("div");
+      actions.className = "bench-actions";
+      const resultHost = document.createElement("div");
+      resultHost.className = "exp-results";
+      resultHost.hidden = true;
+      const resultsBtn = document.createElement("button");
+      resultsBtn.className = "btn secondary";
+      resultsBtn.textContent = "Results";
+      resultsBtn.addEventListener("click", () => loadExperimentResults(t.exp, resultHost, resultsBtn));
+      actions.appendChild(resultsBtn);
+      actions.appendChild(runBtn);
+      row.appendChild(left);
+      row.appendChild(actions);
+      block.appendChild(row);
+      block.appendChild(resultHost);
+    } else {
+      row.appendChild(left);
+      row.appendChild(runBtn);
+      block.appendChild(row);
+    }
+    host.appendChild(block);
+  }
+}
+
+function runReps() {
+  return parseInt(document.getElementById("reps").value, 10) || 1;
+}
+
+async function postRun(kind, id, models, reps, force) {
+  const path = kind === "experiment"
+    ? `/api/admin/experiments/${id}/run`
+    : `/api/admin/benchmarks/${id}/run`;
+  return api(path, { method: "POST", body: JSON.stringify({ models, reps, force }) });
+}
+
+// Run one test against the current model selection (unifies the old
+// runBenchmark/runExperiment).
+async function runTest(test, btn) {
+  const models = [...selectedModels];
+  if (!models.length) {
+    toast("Select a group or tick at least one model first.");
+    return;
+  }
+  const force = Boolean(document.getElementById("force")?.checked);
+  btn.disabled = true;
+  const original = btn.textContent;
+  btn.textContent = "Starting…";
+  try {
+    const res = await postRun(test.kind, test.id, models, runReps(), force);
+    if (!res.run_ids || !res.run_ids.length) {
+      toast(res.message || "Nothing to run — all selected models already have a result.");
+    } else {
+      const tested = (res.models || []).length;
+      const skipped = (res.skipped || []).length;
+      const skipNote = skipped ? ` (${skipped} already done, skipped)` : "";
+      toast(`Testing ${tested} model${tested === 1 ? "" : "s"}${skipNote} · ${res.run_ids.length} run(s) started.`);
+    }
+    setTimeout(loadRuns, 800);
+    setTimeout(test.kind === "experiment" ? loadExperiments : loadBenchmarks, 1500);
+  } catch (e) {
+    toast("Run failed: " + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = original;
+  }
+}
+
+// The "top up" path: for the given models, run ONLY the (model × test) cells
+// that don't have a result yet — one POST per test with just its missing models.
+// This is what turns onboarding a newly-added model into a single click.
+async function runMissing(models, btn) {
+  if (!models.length) {
+    toast("Select a group or tick at least one model first.");
+    return;
+  }
+  const tests = allTests();
+  if (!tests.length) {
+    toast("Tests not loaded yet.");
+    return;
+  }
+  const jobs = [];
+  let cells = 0;
+  const touched = new Set();
+  for (const t of tests) {
+    const miss = models.filter((m) => !t.cov.has(m));
+    if (miss.length) {
+      jobs.push({ t, miss });
+      cells += miss.length;
+      miss.forEach((m) => touched.add(m));
+    }
+  }
+  if (!jobs.length) {
+    toast("Nothing to top up — every selected model already has every test.");
+    return;
+  }
+  const label = btn ? btn.textContent : "";
+  if (btn) { btn.disabled = true; btn.textContent = "Queuing…"; }
+  const reps = runReps();
+  const results = await Promise.allSettled(
+    jobs.map((j) => postRun(j.t.kind, j.t.id, j.miss, reps, false))
+  );
+  const failed = results.filter((r) => r.status === "rejected").length;
+  const okTests = jobs.length - failed;
+  toast(
+    `Topped up ${touched.size} model${touched.size === 1 ? "" : "s"} across ${okTests} test${okTests === 1 ? "" : "s"} · ${cells} model-run${cells === 1 ? "" : "s"} queued` +
+      (failed ? ` · ${failed} failed` : "") + "."
+  );
+  if (btn) { btn.disabled = false; btn.textContent = label; }
+  setTimeout(loadRuns, 900);
+  setTimeout(() => { loadBenchmarks(); loadExperiments(); }, 1700);
 }
 
 // Apply the chosen group: tick exactly its models, clear the rest, and keep
@@ -252,7 +441,6 @@ function applyGroupSelection() {
 }
 
 async function loadBenchmarks(preloaded) {
-  const host = document.getElementById("benchmarks");
   try {
     const data = preloaded || (await api("/api/admin/benchmarks"));
     benchmarksData = data.benchmarks || [];
@@ -262,64 +450,11 @@ async function loadBenchmarks(preloaded) {
       coverageByBench[b.id] = new Set(b.models || []);
       coverageDatesByBench[b.id] = b.model_dates || {};
     }
+    renderTests();
     renderCoverage();
-    host.innerHTML = "";
-    for (const b of data.benchmarks) {
-      const row = document.createElement("div");
-      row.className = "bench";
-      const left = document.createElement("div");
-      const updated = b.updated_at ? new Date(b.updated_at).toLocaleString() : "never run";
-      left.innerHTML =
-        `<div><b>${b.title}</b> <span class="pill">v${b.version}</span> <span class="pill">${b.kind}</span></div>` +
-        `<div class="muted" style="font-size:12.5px;">${b.question_count} items · ${b.model_count} models scored · ${b.total_runs} runs · updated ${updated}</div>`;
-      const btn = document.createElement("button");
-      btn.className = "btn";
-      btn.textContent = b.model_count ? "Run / rerun" : "Run";
-      btn.addEventListener("click", () => runBenchmark(b.id, btn));
-      row.appendChild(left);
-      row.appendChild(btn);
-      host.appendChild(row);
-    }
   } catch (e) {
-    host.innerHTML = `<div class="muted">Could not load benchmarks: ${e.message}</div>`;
-  }
-}
-
-async function runBenchmark(benchmarkId, btn) {
-  const reps = parseInt(document.getElementById("reps").value, 10) || 1;
-  const force = Boolean(document.getElementById("force")?.checked);
-  const body = { reps, force };
-  // selectedModels is kept in sync with both the checkboxes and the group
-  // dropdown, so it is the single source of truth for what to run.
-  const modelIds = [...selectedModels];
-  if (!modelIds.length) {
-    toast("Select a group or tick at least one model first.");
-    return;
-  }
-  body.models = modelIds;
-  btn.disabled = true;
-  const original = btn.textContent;
-  btn.textContent = "Starting…";
-  try {
-    const res = await api(`/api/admin/benchmarks/${benchmarkId}/run`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
-    const skipped = (res.skipped || []).length;
-    if (!res.run_ids.length) {
-      toast(res.message || "Nothing to run — all selected models already have a result.");
-    } else {
-      const tested = res.models.length;
-      const skipNote = skipped ? ` (${skipped} already passed, skipped)` : "";
-      toast(`Testing ${tested} new model${tested === 1 ? "" : "s"} this run${skipNote} · ${res.run_ids.length} run(s) started.`);
-    }
-    setTimeout(loadRuns, 800);
-    setTimeout(loadBenchmarks, 1500);
-  } catch (e) {
-    toast("Run failed: " + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = original;
+    const host = document.getElementById("tests");
+    if (host) host.innerHTML = `<div class="muted">Could not load benchmarks: ${escapeHtml(e.message)}</div>`;
   }
 }
 
@@ -341,86 +476,24 @@ function expMethodUrl() {
   }
 }
 
-let experimentsData = [];
-
 async function loadExperiments() {
-  const host = document.getElementById("experiments");
-  if (!host) return;
   try {
     const data = await api("/api/admin/experiments");
     experimentsData = data.experiments || [];
-    if (!experimentsData.length) {
-      host.innerHTML = '<div class="muted">No experiments defined.</div>';
-      return;
-    }
-    host.innerHTML = "";
+    coverageByExp = {};
+    coverageDatesByExp = {};
     for (const e of experimentsData) {
-      const block = document.createElement("div");
-      block.className = "bench-block";
-      const row = document.createElement("div");
-      row.className = "bench";
-      const left = document.createElement("div");
-      const updated = e.updated_at ? new Date(e.updated_at).toLocaleString() : "never run";
-      left.innerHTML =
-        `<div><b>${escapeHtml(e.title)}</b> <span class="pill">v${escapeHtml(String(e.version))}</span> <span class="pill">${escapeHtml(e.kind)}</span></div>` +
-        `<div class="muted" style="font-size:12.5px;">${e.condition_count} conditions · ${e.model_count} models · ${e.total_runs} runs · updated ${escapeHtml(updated)}</div>`;
-      const actions = document.createElement("div");
-      actions.className = "bench-actions";
-      const resultHost = document.createElement("div");
-      resultHost.className = "exp-results";
-      resultHost.hidden = true;
-      const resultsBtn = document.createElement("button");
-      resultsBtn.className = "btn secondary";
-      resultsBtn.textContent = "Results";
-      resultsBtn.addEventListener("click", () => loadExperimentResults(e, resultHost, resultsBtn));
-      const runBtn = document.createElement("button");
-      runBtn.className = "btn";
-      runBtn.textContent = e.model_count ? "Run / rerun" : "Run";
-      runBtn.addEventListener("click", () => runExperiment(e.id, runBtn));
-      actions.appendChild(resultsBtn);
-      actions.appendChild(runBtn);
-      row.appendChild(left);
-      row.appendChild(actions);
-      block.appendChild(row);
-      block.appendChild(resultHost);
-      host.appendChild(block);
+      coverageByExp[e.id] = new Set(e.models || []);
+      coverageDatesByExp[e.id] = e.model_dates || {};
     }
+    renderTests();
+    renderCoverage();
   } catch (e) {
-    host.innerHTML = `<div class="muted">Could not load experiments: ${escapeHtml(e.message)}</div>`;
-  }
-}
-
-async function runExperiment(experimentId, btn) {
-  const reps = parseInt(document.getElementById("reps").value, 10) || 1;
-  const force = Boolean(document.getElementById("force")?.checked);
-  const modelIds = [...selectedModels];
-  if (!modelIds.length) {
-    toast("Select a group or tick at least one model first.");
-    return;
-  }
-  btn.disabled = true;
-  const original = btn.textContent;
-  btn.textContent = "Starting…";
-  try {
-    const res = await api(`/api/admin/experiments/${experimentId}/run`, {
-      method: "POST",
-      body: JSON.stringify({ reps, force, models: modelIds }),
-    });
-    if (!res.run_ids || !res.run_ids.length) {
-      toast(res.message || "Nothing to run — all selected models already have a result.");
-    } else {
-      const tested = res.models.length;
-      const skipped = (res.skipped || []).length;
-      const skipNote = skipped ? ` (${skipped} already done, skipped)` : "";
-      toast(`Running ${tested} model${tested === 1 ? "" : "s"}${skipNote} · ${res.run_ids.length} run(s) started.`);
+    // Don't clobber a good benchmarks list if only experiments failed.
+    const host = document.getElementById("tests");
+    if (host && !benchmarksData.length) {
+      host.innerHTML = `<div class="muted">Could not load experiments: ${escapeHtml(e.message)}</div>`;
     }
-    setTimeout(loadRuns, 800);
-    setTimeout(loadExperiments, 1500);
-  } catch (e) {
-    toast("Run failed: " + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = original;
   }
 }
 
@@ -764,6 +837,18 @@ function init() {
       toggleModels.textContent = collapsed ? "Show individual models" : "Hide individual models";
     });
   }
+
+  const runAllMissing = document.getElementById("run-all-missing");
+  if (runAllMissing) {
+    runAllMissing.addEventListener("click", () => runMissing([...selectedModels], runAllMissing));
+  }
+  document.querySelectorAll("#test-filters .tf-tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      testFilter = tab.dataset.filter || "all";
+      document.querySelectorAll("#test-filters .tf-tab").forEach((t) => t.classList.toggle("active", t === tab));
+      renderTests();
+    });
+  });
 
   // Nothing is shown until an admin probe succeeds. Auto-attempt with any
   // stored token (or an open local-dev server) on load. The runs table then
