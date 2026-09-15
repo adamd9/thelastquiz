@@ -90,8 +90,9 @@ export function countryForModelId(modelId) {
 //     the whole list against the live catalogue — it loudly flags every null id
 //     and every id that has gone missing, and suggests that lab's newest models.
 //
-// Last reviewed: 2026-09-08 · source: Artificial Analysis Intelligence Index
-// leaderboard (https://artificialanalysis.ai/models) + provider announcements.
+// Last reviewed: 2026-09-16 · source: Artificial Analysis Intelligence Index
+// leaderboard (https://artificialanalysis.ai/models) + the CAIS Text
+// Capabilities Index (https://dashboard.safe.ai) + provider announcements.
 // ===========================================================================
 export const FRONTIER_MODELS = [
   {
@@ -131,8 +132,8 @@ export const FRONTIER_MODELS = [
   },
   {
     lab: "Meta",
-    id: "meta/muse-spark-1.2",
-    note: "Muse Spark 1.2 (Meta Superintelligence Labs). NB: lives under the 'meta/' author prefix, NOT 'meta-llama/'.",
+    id: "meta/muse-spark-1.3",
+    note: "Muse Spark 1.3 (Meta Superintelligence Labs) — newest build. NB: lives under the 'meta/' author prefix, NOT 'meta-llama/'.",
   },
 ];
 
@@ -152,11 +153,18 @@ export const FRONTIER_MODELS = [
 //     note the swap; if that newer build already appears in another row, leave
 //     this row id: null (documented) rather than duplicating it.
 //
-// Last reviewed: 2026-09-08 · source: https://lastexam.ai HLE-Rolling chart,
-// backed by https://dashboard.safe.ai/api/models. The separate Scale SEAL
-// leaderboard is not the HLE-Rolling lineup and must not be substituted here.
-// NB: HLE-Rolling tracks FOUR Grok builds as distinct rows (Grok 4, Grok 4.2,
-// Grok 4.3, Grok 4.5) — don't collapse them into one.
+// Last reviewed: 2026-09-16 · source: the CAIS "Text Capabilities Index" at
+// https://dashboard.safe.ai (backed by https://dashboard.safe.ai/api/models).
+// That API 403s on a plain curl — it needs a lastexam.ai Origin, exactly as
+// scripts/check-frontier-models.mjs sends it:
+//   curl -H 'Origin: https://lastexam.ai' -H 'Referer: https://lastexam.ai/' \
+//        https://dashboard.safe.ai/api/models
+// The lineup below is every standard (non-mini) model with an HLE score, in
+// releaseDate order — run `node scripts/check-frontier-models.mjs` to confirm it
+// still matches (it prints ADDED/REMOVED rows on any drift). The separate Scale
+// SEAL leaderboard is NOT this lineup and must not be substituted here.
+// NB: HLE-Rolling tracks FIVE Grok builds as distinct rows (Grok 4, 4.2, 4.3,
+// 4.5, 4.6) — don't collapse them.
 // ===========================================================================
 export const HLE_MODELS = [
   { name: "GPT-4o", sourceId: "gpt-4o-2024-11-20", id: "openai/gpt-4o" },
@@ -168,7 +176,7 @@ export const HLE_MODELS = [
   { name: "o3", sourceId: "o3-high", id: "openai/o3" },
   { name: "Claude Sonnet 4", sourceId: "sonnet-4-thinking-16k", id: "anthropic/claude-sonnet-4" },
   { name: "Gemini 2.5 Pro", sourceId: "gemini-2-5-pro-high", id: "google/gemini-2.5-pro" },
-  { name: "Grok 4", sourceId: "grok-4", id: null, note: "Base grok-4 aged off OpenRouter; Grok 4.2, 4.3 and 4.5 each hold their own rows below, so no distinct substitute remains." },
+  { name: "Grok 4", sourceId: "grok-4", id: null, note: "Base grok-4 aged off OpenRouter; Grok 4.2, 4.3, 4.5 and 4.6 each hold their own rows below, so no distinct substitute remains." },
   { name: "GPT-5", sourceId: "gpt-5-high", id: "openai/gpt-5" },
   { name: "Claude Sonnet 4.5", sourceId: "sonnet-4-5-thinking-32k", id: "anthropic/claude-sonnet-4.5" },
   { name: "Kimi K2", sourceId: "kimi-k2-thinking", id: "moonshotai/kimi-k2-thinking" },
@@ -195,8 +203,11 @@ export const HLE_MODELS = [
   { name: "Muse Spark 1.1", sourceId: "muse-spark-1.1-high", id: "meta/muse-spark-1.1" },
   { name: "Kimi K3", sourceId: "kimi-k3-high", id: "moonshotai/kimi-k3" },
   { name: "Claude Opus 5", sourceId: "claude-opus-5-high", id: "anthropic/claude-opus-5" },
+  { name: "Grok 4.6", sourceId: "grok-4.6", id: "x-ai/grok-4.6" },
   { name: "GLM 5.3", sourceId: "glm-5.3", id: "z-ai/glm-5.3" },
   { name: "Claude Fable 5.1", sourceId: "claude-fable-5-1-high", id: "anthropic/claude-fable-5.1" },
+  { name: "GPT-6 Astra", sourceId: "gpt-6-astra-high", id: "openai/gpt-6-astra" },
+  { name: "Muse Spark 1.3", sourceId: "muse-spark-1.3-high", id: "meta/muse-spark-1.3" },
 ];
 
 // ===========================================================================
