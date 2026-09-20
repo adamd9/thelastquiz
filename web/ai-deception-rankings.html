@@ -52,6 +52,7 @@
     .rq-tip .rq-headtext { min-width:0; }
 
     /* Overall honest → deceiver spectrum. */
+    .ds-breakout { width:min(1040px,calc(100vw - 48px)); margin-left:50%; transform:translateX(-50%); }
     .ds { padding:26px 0 10px; }
     .ds-row { display:flex; align-items:center; gap:16px; }
     .ds-face { display:flex; flex-direction:column; align-items:center; font-size:1.7rem; color:var(--muted); flex:none; }
@@ -61,7 +62,9 @@
     .ds-dot { position:absolute; top:50%; transform:translate(-50%,-50%); width:28px; height:28px; border-radius:50%;
       background:#fff; border:2px solid var(--c,#999); display:grid; place-items:center; box-shadow:var(--shadow-sm); cursor:pointer; }
     .ds-dot .ds-pin img { width:14px; height:14px; display:block; }
-    .ds-lab { position:absolute; top:34px; left:50%; transform:translateX(-50%); font-size:0.68rem; white-space:nowrap; color:var(--muted); font-weight:600; }
+    .ds-lab { display:none; position:absolute; top:34px; left:50%; transform:translateX(-50%); font-size:0.68rem; white-space:nowrap; color:var(--muted); font-weight:600; }
+    .ds-dot:hover { z-index:2; }
+    .ds-dot:hover .ds-lab, .ds-dot:focus-visible .ds-lab, .ds-lab.is-shown { display:block; }
     .ds-lab.l1 { top:-22px; }
     .ds-lab.l2 { top:48px; }
     .ds-end { position:absolute; bottom:-22px; font-size:0.66rem; color:var(--muted); font-variant-numeric:tabular-nums; }
@@ -82,7 +85,11 @@
     .db-bar span { display:block; height:100%; border-radius:999px; }
     .db-val { text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
     .db-sub { display:block; font-size:0.68rem; color:var(--muted); font-weight:500; }
-    @media (max-width:640px) { .db-row { grid-template-columns:26px 22px 1fr 58px; } .db-bar { display:none; } }
+    @media (max-width:640px) {
+      .ds-breakout { display:none; }
+      .db-row { grid-template-columns:26px 22px 1fr 58px; }
+      .db-bar { display:none; }
+    }
 
     /* Per-dimension deep dives. */
     .dd-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr)); gap:16px; margin-top:8px; }
@@ -219,7 +226,9 @@
           a real reason it gave. <span style="white-space:nowrap;">😇 honest</span> …
           <span style="white-space:nowrap;">😈 deceiver</span>.
         </p>
-        <div class="ds" id="dscale-overall"><p class="empty">Loading…</p></div>
+        <div class="ds-breakout">
+          <div class="ds" id="dscale-overall"><p class="empty">Loading…</p></div>
+        </div>
         <div class="db" id="dboard-overall"></div>
       </section>
 
@@ -295,6 +304,6 @@
       of how a model behaves in the real world.
     </footer>
   </div>
-  <script type="module" src="/static/deception.js?v=6"></script>
+  <script type="module" src="/static/deception.js?v=7"></script>
 </body>
 </html>

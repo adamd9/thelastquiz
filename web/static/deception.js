@@ -147,13 +147,18 @@ function renderScale(host, models) {
   const maxV = Math.max(10, ...models.map((x) => x.rate * 100));
   const domainMax = Math.min(100, Math.max(40, Math.ceil((maxV + 8) / 10) * 10));
   const clamp = (v) => Math.max(2, Math.min(98, (v / domainMax) * 100));
+  let lastLabelPosition = -Infinity;
   const dots = models
-    .map(
-      (x, i) =>
+    .map((x, i) => {
+      const position = clamp(x.rate * 100);
+      const showLabel = position - lastLabelPosition >= 13;
+      if (showLabel) lastLabelPosition = position;
+      return (
         `<div class="ds-dot" data-idx="${i}" style="left:${clamp(x.rate * 100)}%;--c:${colorFor(x.rate)}">` +
         `<span class="ds-pin">${providerLogoHtml(x.id, 14)}</span>` +
-        `<span class="ds-lab l${i % 3}">${escapeHtml(familyLabel(x.id))}</span></div>`
-    )
+        `<span class="ds-lab l${i % 3}${showLabel ? " is-shown" : ""}">${escapeHtml(familyLabel(x.id))}</span></div>`
+      );
+    })
     .join("");
   host.innerHTML =
     `<div class="ds-row">` +
