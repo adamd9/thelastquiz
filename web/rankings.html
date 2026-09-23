@@ -52,6 +52,7 @@
 
       /* Curated group filter (Humanity's Last Exam, Frontier, …): narrows a
          large field down to a meaningful subset so we don't render 100 models. */
+      .rankings-page .rk-controls { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 14px; }
       .rankings-page .rk-filter { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 4px 0 -6px; }
       .rankings-page .rk-filter-label { color: var(--muted); font-size: 0.82rem; font-weight: 600; margin-right: 2px; }
       .rankings-page .rk-chip {
@@ -67,6 +68,12 @@
         background: rgba(0,0,0,0.06); border-radius: 999px; padding: 1px 7px; line-height: 1.5;
       }
       .rankings-page .rk-chip.active .rk-chip-n { color: #fff; background: rgba(255,255,255,0.22); }
+      .rankings-page .rk-order { display: flex; align-items: center; gap: 8px; }
+      .rankings-page .rk-order[hidden] { display: none; }
+      .rankings-page .rk-order-options { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; background: var(--panel); }
+      .rankings-page .rk-order-btn { font: inherit; font-size: 0.82rem; font-weight: 600; color: var(--ink); background: transparent; border: 0; padding: 7px 10px; cursor: pointer; }
+      .rankings-page .rk-order-btn + .rk-order-btn { border-left: 1px solid var(--border); }
+      .rankings-page .rk-order-btn[aria-pressed="true"] { color: #fff; background: var(--accent); }
 
       .rankings-page .rk-legend { display: flex; flex-wrap: wrap; gap: 10px 18px; }
       .rankings-page .rk-legend .item { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 0.82rem; }
@@ -248,6 +255,14 @@
           </div>
         </a>
         <nav class="app-nav rk-nav">
+          <a href="/" data-dest="home">Home</a>
+          <a href="#dark-triad" data-view="dark-triad">Dark Triad</a>
+          <a href="#big-five" data-view="big-five">Big Five</a>
+          <a href="#type" data-view="type">Jungian Type</a>
+          <a href="/ai-deception-rankings">Deception</a>
+          <a href="/guides">Guides</a>
+          <a href="/blog">Blog</a>
+          <a href="#about" data-view="about">About</a>
           <a href="/" data-dest="app" data-create>Make your own</a>
         </nav>
       </header>
@@ -269,7 +284,16 @@
       </section>
 
       <div class="rk-legend" id="legend"></div>
-      <div class="rk-filter" id="filter" hidden></div>
+      <div class="rk-controls">
+        <div class="rk-filter" id="filter" hidden></div>
+        <div class="rk-order" id="ranking-order" hidden>
+          <span class="rk-filter-label">Order</span>
+          <div class="rk-order-options" role="group" aria-label="Ranking order">
+            <button class="rk-order-btn" type="button" data-order="best" aria-pressed="true">Best first</button>
+            <button class="rk-order-btn" type="button" data-order="worst" aria-pressed="false">Worst first</button>
+          </div>
+        </div>
+      </div>
       <div id="content"></div>
 
       <div class="cta" data-create>
@@ -295,6 +319,6 @@
     </main>
     <script src="/static/site-links.js"></script>
     <script src="/static/track.js"></script>
-    <script type="module" src="/static/rankings.js?v=21"></script>
+    <script type="module" src="/static/rankings.js?v=22"></script>
   </body>
 </html>

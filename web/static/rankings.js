@@ -328,7 +328,24 @@ const SD3_TRAITS = [
   { id: "NARC", name: "Narcissism", blurb: "grandiosity & entitlement", color: "#b5179e" },
   { id: "PSYCH", name: "Psychopathy", blurb: "callousness, low empathy", color: "#9e2a2b" },
 ];
+const RANKING_ORDER_KEY = "tlq-ranking-order";
 function shortName(id) { return id.split("/").pop() || id; }
+
+function storedRankingOrder() {
+  try {
+    return localStorage.getItem(RANKING_ORDER_KEY) === "worst" ? "worst" : "best";
+  } catch (_) {
+    return "best";
+  }
+}
+
+function persistRankingOrder(order) {
+  try { localStorage.setItem(RANKING_ORDER_KEY, order); } catch (_) { /* storage unavailable */ }
+}
+
+function scoreComparator(order) {
+  return order === "worst" ? (a, b) => b.v - a.v : (a, b) => a.v - b.v;
+}
 
 // Rich hover/tap/focus tooltip content for a Dark Triad model point: name +
 // id, release date, and every trait score (the current trait, if any,
@@ -366,7 +383,7 @@ function darkColor(v) {
 }
 
 /* Three per-trait leaderboards: most restrained on top, the human ranked in. */
-function darkTriadLeaderboard(sd3, human) {
+function darkTriadLeaderboard(sd3, human, order) {
   const wrap = document.createElement("div");
   wrap.className = "dt-lanes";
   for (const t of SD3_TRAITS) {
@@ -377,9 +394,12 @@ function darkTriadLeaderboard(sd3, human) {
     const entries = [
       ...sd3.models.map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: m.profile[t.id] ?? 0 })),
       { name: "Typical adult (human)", v: humanVal, human: true },
-    ].sort((a, b) => a.v - b.v);
+    ].sort(scoreComparator(order));
     const rankedModels = entries.filter((e) => !e.human);
-    if (rankedModels.length) { rankedModels[0].saint = true; rankedModels[rankedModels.length - 1].devil = true; }
+    if (rankedModels.length) {
+      rankedModels.reduce((best, e) => e.v < best.v ? e : best).saint = true;
+      rankedModels.reduce((worst, e) => e.v > worst.v ? e : worst).devil = true;
+    }
     let rank = 0;
     for (const e of entries) {
       if (!e.human) rank++;
@@ -523,7 +543,7 @@ function darkTriadTimeline(sd3, human, colorFor) {
 
 /* Combined "Dark Index" leaderboard: the mean of the three traits (the Dark
    Triad total), with the typical adult ranked in. Least dark on top. */
-function darkIndexLeaderboard(sd3, human) {
+function darkIndexLeaderboard(sd3, human, order) {
   const wrap = document.createElement("div");
   wrap.className = "dt-index";
   const idxOf = (profile) => SD3_TRAITS.reduce((s, t) => s + (profile[t.id] ?? 0), 0) / SD3_TRAITS.length;
@@ -531,9 +551,12 @@ function darkIndexLeaderboard(sd3, human) {
   const entries = [
     ...sd3.models.map((m) => ({ id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile) })),
     { name: "Typical adult (human)", v: humanIdx, human: true },
-  ].sort((a, b) => a.v - b.v);
+  ].sort(scoreComparator(order));
   const rankedModels = entries.filter((e) => !e.human);
-  if (rankedModels.length) { rankedModels[0].saint = true; rankedModels[rankedModels.length - 1].devil = true; }
+  if (rankedModels.length) {
+    rankedModels.reduce((best, e) => e.v < best.v ? e : best).saint = true;
+    rankedModels.reduce((worst, e) => e.v > worst.v ? e : worst).devil = true;
+  }
   let rank = 0;
   for (const e of entries) {
     if (!e.human) rank++;
@@ -685,7 +708,7 @@ function decollideScaleLabels(wrap) {
   });
 }
 
-function renderDarkTriad(content, data, colorFor) {
+function renderDarkTriad(content, data, colorFor, order) {
   const sd3 = (data.benchmarks || []).find((b) => b.id === SD3_ID);
   const human = (POPULATION_NORMS[SD3_ID] || {}).values || {};
   if (!sd3 || !sd3.models || !sd3.models.length) {
@@ -702,10 +725,10 @@ function renderDarkTriad(content, data, colorFor) {
   const idxNote = document.createElement("p"); idxNote.className = "dt-note";
   idxNote.innerHTML = "A single \u201cdark core\u201d score \u2014 the mean of all three traits, the way the Dark Triad total is treated in the literature (Kaufman, 2019). Lower is more restrained; the typical adult lands around " + humanIdx + ".";
   content.appendChild(idxNote);
-  content.appendChild(darkIndexLeaderboard(sd3, human));
-  const h2a = document.createElement("h2"); h2a.className = "section"; h2a.textContent = "By trait \u2014 least dark on top";
+  content.appendChild(darkIndexLeaderboard(sd3, human, order));
+  const h2a = document.createElement("h2"); h2a.className = "section"; h2a.textContent = order === "worst" ? "By trait \u2014 darkest on top" : "By trait \u2014 least dark on top";
   content.appendChild(h2a);
-  content.appendChild(darkTriadLeaderboard(sd3, human));
+  content.appendChild(darkTriadLeaderboard(sd3, human, order));
   const h2b = document.createElement("h2"); h2b.className = "section"; h2b.textContent = "Over time \u2014 by model release date";
   content.appendChild(h2b);
   content.appendChild(darkTriadTimeline(sd3, human, colorFor));
@@ -891,6 +914,7 @@ async function main() {
   // field opens on a meaningful, aligned subset rather than every model at once.
   const groups = groupsForModels(models);
   let selectedGroup = groups.some((g) => g.id === "hle") ? "hle" : "all";
+  let rankingOrder = storedRankingOrder();
   const allowedModels = () => {
     if (selectedGroup === "all") return null;
     const g = groups.find((x) => x.id === selectedGroup);
@@ -902,21 +926,7 @@ async function main() {
       "Last updated " + new Date(data.updated_at).toLocaleString();
   }
 
-  // Build the header nav: test views first, then the cross-subdomain links.
   const nav = document.querySelector(".rk-nav");
-  if (nav) {
-    nav.innerHTML =
-      '<a href="/" data-dest="home">Home</a>' +
-      VIEWS.map((v) => `<a href="#${v.id}" data-view="${v.id}">${v.label}</a>`).join("") +
-      '<a href="/ai-deception-rankings">Deception</a>' +
-      ((window.FEATURES && window.FEATURES.createQuiz)
-        ? '<a href="/" data-dest="app">Make your own</a>'
-        : "");
-    if (window.__destUrl) {
-      nav.querySelectorAll("a[data-dest]").forEach((a) =>
-        a.setAttribute("href", window.__destUrl(a.getAttribute("data-dest"))));
-    }
-  }
 
   const currentView = () => {
     const h = (location.hash || "").replace("#", "");
@@ -934,12 +944,14 @@ async function main() {
     // The model filter is irrelevant on the text-only "about" view.
     const filterEl = document.getElementById("filter");
     if (filterEl) filterEl.hidden = view === "about" || !filterEl.children.length;
+    const orderEl = document.getElementById("ranking-order");
+    if (orderEl) orderEl.hidden = view !== "dark-triad";
     const viewData = filterDataByModels(data, allowedModels());
     const content = document.getElementById("content");
     content.innerHTML = "";
     document.getElementById("legend").innerHTML = "";
     if (view === "dark-triad") {
-      renderDarkTriad(content, viewData, colorFor);
+      renderDarkTriad(content, viewData, colorFor, rankingOrder);
     } else if (view === "about") {
       renderAbout(content);
     } else {
@@ -973,6 +985,20 @@ async function main() {
         render();
       }));
     paint();
+  }
+
+  const orderEl = document.getElementById("ranking-order");
+  if (orderEl) {
+    const paintOrder = () => orderEl.querySelectorAll("button[data-order]").forEach((button) =>
+      button.setAttribute("aria-pressed", String(button.dataset.order === rankingOrder)));
+    orderEl.querySelectorAll("button[data-order]").forEach((button) =>
+      button.addEventListener("click", () => {
+        rankingOrder = button.dataset.order === "worst" ? "worst" : "best";
+        persistRankingOrder(rankingOrder);
+        paintOrder();
+        render();
+      }));
+    paintOrder();
   }
 
   window.addEventListener("hashchange", render);

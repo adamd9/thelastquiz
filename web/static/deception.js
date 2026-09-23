@@ -17,6 +17,20 @@ let DATA = null;
 // meaningful subset instead of rendering every model at once.
 let GROUPS = [];
 let selectedGroup = "all";
+const RANKING_ORDER_KEY = "tlq-ranking-order";
+let rankingOrder = storedRankingOrder();
+
+function storedRankingOrder() {
+  try {
+    return localStorage.getItem(RANKING_ORDER_KEY) === "worst" ? "worst" : "best";
+  } catch (_) {
+    return "best";
+  }
+}
+
+function persistRankingOrder(order) {
+  try { localStorage.setItem(RANKING_ORDER_KEY, order); } catch (_) { /* storage unavailable */ }
+}
 
 // The payload only carries ids, so pass `{ id, available: true }`; that drops
 // the price-based groups (no pricing here) while the id-pattern groups resolve.
@@ -135,7 +149,7 @@ function modelList() {
   return Object.entries(DATA.models || {})
     .map(([id, m]) => ({ id, m, rate: (m.overall || {}).deceptive_rate }))
     .filter((x) => x.rate != null && (!allowed || allowed.has(x.id)))
-    .sort((a, b) => a.rate - b.rate);
+    .sort((a, b) => rankingOrder === "worst" ? b.rate - a.rate : a.rate - b.rate);
 }
 
 // Hero spectrum: honest 😇 → deceiver 😈, dots windowed onto the occupied range.
@@ -144,6 +158,7 @@ function renderScale(host, models) {
     host.innerHTML = '<p class="empty">No deception results yet — check back soon.</p>';
     return;
   }
+  models = [...models].sort((a, b) => a.rate - b.rate);
   const maxV = Math.max(10, ...models.map((x) => x.rate * 100));
   const domainMax = Math.min(100, Math.max(40, Math.ceil((maxV + 8) / 10) * 10));
   const clamp = (v) => Math.max(2, Math.min(98, (v / domainMax) * 100));
@@ -178,9 +193,15 @@ function renderScale(host, models) {
 // Ranked leaderboard, most honest (😇) → most deceptive (😈). Responsive by
 // design, so it doubles as the mobile view of the scale.
 function renderBoard(host, models) {
+  if (!models.length) {
+    host.innerHTML = "";
+    return;
+  }
+  const best = models.reduce((lowest, x) => x.rate < lowest.rate ? x : lowest, models[0]);
+  const worst = models.reduce((highest, x) => x.rate > highest.rate ? x : highest, models[0]);
   host.innerHTML = models
     .map((x, i) => {
-      const icon = i === 0 ? SAINT : i === models.length - 1 ? VILLAIN : String(i + 1);
+      const icon = x === best ? SAINT : x === worst ? VILLAIN : String(i + 1);
       const w = Math.max(2, Math.round(x.rate * 100));
       const o = x.m.overall || {};
       return (
@@ -283,7 +304,7 @@ function renderDimensions(host, models) {
       const ranked = models
         .map((x) => ({ id: x.id, dv: (x.m.by_dimension || {})[d.id] }))
         .filter((x) => x.dv != null)
-        .sort((a, b) => b.dv - a.dv);
+        .sort((a, b) => rankingOrder === "worst" ? b.dv - a.dv : a.dv - b.dv);
       if (!ranked.length) return "";
       const rows = ranked
         .map(
@@ -471,6 +492,21 @@ function buildFilter() {
   paint();
 }
 
+function buildOrderControl() {
+  const orderEl = document.getElementById("ranking-order");
+  if (!orderEl) return;
+  const paint = () => orderEl.querySelectorAll("button[data-order]").forEach((button) =>
+    button.setAttribute("aria-pressed", String(button.dataset.order === rankingOrder)));
+  orderEl.querySelectorAll("button[data-order]").forEach((button) =>
+    button.addEventListener("click", () => {
+      rankingOrder = button.dataset.order === "worst" ? "worst" : "best";
+      persistRankingOrder(rankingOrder);
+      paint();
+      render();
+    }));
+  paint();
+}
+
 async function main() {
   const scaleEl = document.getElementById("dscale-overall");
   try {
@@ -483,6 +519,7 @@ async function main() {
   const upEl = document.getElementById("d-updated");
   if (upEl && updated) upEl.textContent = `Updated ${updated.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`;
   buildFilter();
+  buildOrderControl();
   render();
 }
 

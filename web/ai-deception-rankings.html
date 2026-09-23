@@ -135,7 +135,9 @@
 
     /* Curated group filter (Humanity's Last Exam, Frontier, …), matching the
        personality rankings page — narrows a large field to a meaningful subset. */
+     .rk-controls { display:flex; flex-wrap:wrap; align-items:flex-end; justify-content:space-between; gap:14px; margin:0 0 16px; }
     .rk-filter { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0 0 16px; }
+     .rk-controls .rk-filter { margin:0; }
     .rk-filter[hidden] { display:none; }
     .rk-filter-label { color:var(--muted); font-size:0.82rem; font-weight:600; margin-right:2px; }
     .rk-chip {
@@ -151,6 +153,11 @@
       background:rgba(0,0,0,0.06); border-radius:999px; padding:1px 7px; line-height:1.5;
     }
     .rk-chip.active .rk-chip-n { color:#fff; background:rgba(255,255,255,0.22); }
+    .rk-order { display:flex; align-items:center; gap:8px; }
+    .rk-order-options { display:inline-flex; border:1px solid var(--border); border-radius:8px; overflow:hidden; background:var(--panel); }
+    .rk-order-btn { font:inherit; font-size:0.82rem; font-weight:600; color:var(--ink); background:transparent; border:0; padding:7px 10px; cursor:pointer; }
+    .rk-order-btn + .rk-order-btn { border-left:1px solid var(--border); }
+    .rk-order-btn[aria-pressed="true"] { color:#fff; background:var(--accent); }
   </style>
 
   <script type="application/ld+json">
@@ -197,6 +204,8 @@
         <a href="/rankings#type">Jungian Type</a>
         <a href="/ai-deception-rankings">Deception</a>
         <a href="/guides">Guides</a>
+        <a href="/blog">Blog</a>
+        <a href="/rankings#about">About</a>
         <a href="/" data-dest="app" data-create>Make your own</a>
       </nav>
     </header>
@@ -216,7 +225,16 @@
         </div>
       </div>
 
-      <div class="rk-filter" id="dfilter" hidden></div>
+      <div class="rk-controls">
+        <div class="rk-filter" id="dfilter" hidden></div>
+        <div class="rk-order" id="ranking-order">
+          <span class="rk-filter-label">Order</span>
+          <div class="rk-order-options" role="group" aria-label="Ranking order">
+            <button class="rk-order-btn" type="button" data-order="best" aria-pressed="true">Best first</button>
+            <button class="rk-order-btn" type="button" data-order="worst" aria-pressed="false">Worst first</button>
+          </div>
+        </div>
+      </div>
 
       <section>
         <h2 class="section">Overall — who deceives under pressure?</h2>
@@ -304,6 +322,6 @@
       of how a model behaves in the real world.
     </footer>
   </div>
-  <script type="module" src="/static/deception.js?v=7"></script>
+  <script type="module" src="/static/deception.js?v=8"></script>
 </body>
 </html>
