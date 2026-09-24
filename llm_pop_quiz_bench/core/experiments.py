@@ -606,6 +606,12 @@ def build_deception_rankings(db) -> dict[str, Any]:
         if updated and (latest is None or updated > latest):
             latest = updated
 
+    # Release dates recorded with each run (captured from OpenRouter at run time),
+    # so the timeline can plot deception against model age without a live lookup.
+    from .benchmarks import _released_for
+
+    released_map = _released_for(db)
+
     models_out: dict[str, Any] = {}
     for model_id in model_ids:
         total_deceptive = total_valid = total_invalid = 0
@@ -653,6 +659,7 @@ def build_deception_rankings(db) -> dict[str, Any]:
         # Surface deceptive examples first so the tooltip can show a real lie.
         examples.sort(key=lambda e: e.get("deceptive") is not True)
         models_out[model_id] = {
+            "released": released_map.get(model_id),
             "overall": {
                 "deceptive": total_deceptive,
                 "valid": total_valid,

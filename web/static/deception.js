@@ -114,12 +114,6 @@ function condShort(cond) {
   return COND_SHORT[cond.id] || cond.label || cond.id;
 }
 
-// Faint green→red wash so the deception pattern reads as a heatmap at a glance.
-function tint(rate) {
-  if (rate == null) return "transparent";
-  return colorFor(rate).replace("rgb(", "rgba(").replace(")", ",0.16)");
-}
-
 // Rich tooltip for a model: brand head, overall deception, per-dimension
 // breakdown, and a real reason the model gave.
 function modelTip(modelId, m) {
@@ -296,32 +290,40 @@ function dimTip(modelId, m, dimId) {
   );
 }
 
-// Per-dimension deep dives: one card per measured dimension, models ranked by
-// their deception rate for that motive.
+// Motive fingerprint: for each model, one pass/fail chip per dimension — did it
+// cross the line when THAT pressure was in play. An honest slice (a single
+// decision per motive), not a re-sampled percentage.
 function renderDimensions(host, models) {
-  host.innerHTML = (DATA.dimensions || [])
-    .map((d) => {
-      const ranked = models
-        .map((x) => ({ id: x.id, dv: (x.m.by_dimension || {})[d.id] }))
-        .filter((x) => x.dv != null)
-        .sort((a, b) => rankingOrder === "worst" ? b.dv - a.dv : a.dv - b.dv);
-      if (!ranked.length) return "";
-      const rows = ranked
-        .map(
-          (x) =>
-            `<div class="dd-row" data-id="${escapeHtml(x.id)}" data-dim="${escapeHtml(d.id)}">` +
-            `<div class="dd-logo">${providerLogoHtml(x.id, 16)}</div>` +
-            `<div class="dd-name">${escapeHtml(familyLabel(x.id))}</div>` +
-            `<div class="dd-bar"><span style="width:${Math.max(2, Math.round(x.dv * 100))}%;background:${colorFor(x.dv)}"></span></div>` +
-            `<div class="dd-val">${pct(x.dv)}</div></div>`
-        )
+  const dims = DATA.dimensions || [];
+  if (!dims.length || !models.length) {
+    host.innerHTML = "";
+    return;
+  }
+  const head =
+    `<th class="fp-name-h">Model</th>` +
+    dims
+      .map((d) => `<th class="fp-h" title="${escapeHtml(d.label)}">${escapeHtml(SHORT_DIM[d.id] || shortDimLabel(d.label))}</th>`)
+      .join("");
+  const body = models
+    .map((x) => {
+      const chips = dims
+        .map((d) => {
+          const dv = (x.m.by_dimension || {})[d.id];
+          const cls = dv == null ? "na" : dv >= 0.5 ? "de" : "ho";
+          const glyph = dv == null ? "–" : dv >= 0.5 ? "✗" : "✓";
+          return `<td class="fp-cell" data-id="${escapeHtml(x.id)}" data-dim="${escapeHtml(d.id)}"><span class="fp-chip ${cls}">${glyph}</span></td>`;
+        })
         .join("");
-      return `<div class="dd-card"><h3 title="${escapeHtml(d.label)}">${escapeHtml(SHORT_DIM[d.id] || shortDimLabel(d.label))}</h3><div class="dd-rows">${rows}</div></div>`;
+      return `<tr><td class="fp-name">${providerLogoHtml(x.id, 14)}<span>${escapeHtml(familyLabel(x.id))}</span></td>${chips}</tr>`;
     })
     .join("");
-  host.querySelectorAll(".dd-row").forEach((row) => {
-    const m = DATA.models[row.dataset.id];
-    if (m) attachRichTooltip(row, () => dimTip(row.dataset.id, m, row.dataset.dim));
+  host.innerHTML =
+    `<div class="dx-card"><div class="dx-scroll"><table class="fp-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
+    `<p class="dx-legend"><b class="dx-key ho">✓</b> stayed honest · <b class="dx-key de">✗</b> crossed the line under that motive · – not tested. ` +
+    `Hover a chip for the reason it gave.</p></div>`;
+  host.querySelectorAll(".fp-cell").forEach((td) => {
+    const m = DATA.models[td.dataset.id];
+    if (m) attachRichTooltip(td, () => dimTip(td.dataset.id, m, td.dataset.dim));
   });
 }
 
@@ -374,7 +376,7 @@ function renderExperiments(host, models) {
         conds
           .map((c, ci) => `<th class="dx-h" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}">${escapeHtml(condShort(c))}</th>`)
           .join("") +
-        `<th>All</th>`;
+        `<th>Rate</th>`;
       const body = models
         .map((x) => {
           const be = (x.m.by_experiment || {})[exp.id];
@@ -384,9 +386,11 @@ function renderExperiments(host, models) {
               const cc = (be.conditions || {})[c.id] || {};
               const dr = cc.deceptive_rate;
               const cls = dr == null ? "muted" : dr >= 0.5 ? "de" : "ho";
+              const glyph = dr == null ? "–" : dr >= 0.5 ? "✗" : "✓";
+              const sub = (cc.valid || 0) > 1 ? `<span class="dx-sub">${cc.deceptive || 0}/${cc.valid}</span>` : "";
               return (
-                `<td class="dx-cell ${cls}" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}" data-model="${escapeHtml(x.id)}" ` +
-                `style="background:${tint(dr)}">${dr == null ? "—" : Math.round(dr * 100) + "%"}</td>`
+                `<td class="dx-cell ${cls}" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}" data-model="${escapeHtml(x.id)}">` +
+                `<span class="dx-mk">${glyph}</span>${sub}</td>`
               );
             })
             .join("");
@@ -395,7 +399,7 @@ function renderExperiments(host, models) {
           return (
             `<tr><td class="dx-model">${providerLogoHtml(x.id, 14)}<span>${escapeHtml(familyLabel(x.id))}</span></td>` +
             cells +
-            `<td class="${ocls}"><b>${pct(oc)}</b></td></tr>`
+            `<td class="${ocls}"><b>${pct(oc)}</b><span class="dx-sub">${be.deceptive || 0}/${be.valid || 0}</span></td></tr>`
           );
         })
         .join("");
@@ -404,8 +408,8 @@ function renderExperiments(host, models) {
         `<div class="dx-card"><div class="dx-head"><h3>${escapeHtml(exp.title)} ` +
         `<span class="dx-v">v${escapeHtml(String(exp.version))}</span></h3></div>${about}` +
         `<div class="dx-scroll"><table class="dx-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
-        `<p class="dx-legend"><span class="dx-key ho">■</span> honest · <span class="dx-key de">■</span> deceptive · ` +
-        `hover a column or cell for what it means</p></div>`
+        `<p class="dx-legend"><b class="dx-key ho">✓</b> owned it · <b class="dx-key de">✗</b> hid the mistake · – no valid answer · ` +
+        `<b>Rate</b> rolls those scenarios up. Hover any cell for the model's real choice and reason.</p></div>`
       );
     })
     .join("");
@@ -421,6 +425,108 @@ function renderExperiments(host, models) {
     const cc = (be.conditions || {})[cond.id] || {};
     attachRichTooltip(td, () => cellTip(td.dataset.model, exp, cond, cc));
   });
+}
+
+// Deception over time: each model's overall rate against its release date,
+// mirroring the Dark Triad timeline. Honest at the top, deceptive at the
+// bottom, with a least-squares trend across whichever models carry a date.
+function renderTimeline(host, models) {
+  const NS = "http://www.w3.org/2000/svg";
+  const dated = models
+    .map((x) => ({ id: x.id, m: x.m, rel: x.m.released, r: x.rate }))
+    .filter((x) => x.rel && x.r != null);
+  if (dated.length < 2) {
+    host.innerHTML = '<p class="empty">A release-date trend appears once at least two shown models have a recorded date.</p>';
+    return;
+  }
+  const ms = (s) => Date.parse(s + "T00:00:00Z");
+  const times = dated.map((x) => ms(x.rel));
+  const tMin = Math.min(...times) - 30 * 864e5;
+  const tMax = Math.max(...times) + 30 * 864e5;
+  const yMax = Math.max(20, Math.ceil((Math.max(...dated.map((x) => x.r * 100)) + 8) / 10) * 10);
+  const W = 900, H = 240, padL = 40, padR = 16, padT = 20, padB = 28;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  const xFor = (v) => padL + ((v - tMin) / (tMax - tMin)) * plotW;
+  const yFor = (v) => padT + (v / yMax) * plotH;
+  const mk = (t, a = {}, txt) => {
+    const n = document.createElementNS(NS, t);
+    for (const k in a) n.setAttribute(k, a[k]);
+    if (txt != null) n.textContent = txt;
+    return n;
+  };
+  const svg = mk("svg", { viewBox: `0 0 ${W} ${H}`, class: "dt-svg", role: "img", "aria-label": "Deception rate over model release date" });
+  const defs = mk("defs");
+  const grad = mk("linearGradient", { id: "dt-grad", x1: "0", y1: "0", x2: "0", y2: "1" });
+  grad.appendChild(mk("stop", { offset: "0%", "stop-color": "#2a9d8f", "stop-opacity": "0.16" }));
+  grad.appendChild(mk("stop", { offset: "55%", "stop-color": "#e09f3e", "stop-opacity": "0.13" }));
+  grad.appendChild(mk("stop", { offset: "100%", "stop-color": "#9e2a2b", "stop-opacity": "0.18" }));
+  defs.appendChild(grad);
+  svg.appendChild(defs);
+  svg.appendChild(mk("rect", { x: padL, y: padT, width: plotW, height: plotH, fill: "url(#dt-grad)" }));
+  for (let v = 0; v <= yMax; v += 20) {
+    const y = yFor(v);
+    svg.appendChild(mk("line", { x1: padL, y1: y, x2: W - padR, y2: y, stroke: "var(--border)", "stroke-width": 1 }));
+    if (v > 0) svg.appendChild(mk("text", { x: padL - 6, y: y + 3, fill: "var(--muted)", "font-size": 9, "text-anchor": "end" }, v + "%"));
+  }
+  svg.appendChild(mk("text", { x: 2, y: padT + 4, fill: "var(--teal)", "font-size": 8.5, "font-weight": 600 }, "honest"));
+  svg.appendChild(mk("text", { x: 2, y: padT + plotH, fill: "var(--danger)", "font-size": 8.5, "font-weight": 600 }, "deceptive"));
+  for (let yr = new Date(tMin).getUTCFullYear(); yr <= new Date(tMax).getUTCFullYear(); yr++) {
+    const tt = Date.UTC(yr, 0, 1);
+    if (tt < tMin || tt > tMax) continue;
+    const x = xFor(tt);
+    svg.appendChild(mk("line", { x1: x, y1: padT, x2: x, y2: padT + plotH, stroke: "var(--border)", "stroke-width": 1 }));
+    svg.appendChild(mk("text", { x, y: H - padB + 16, fill: "var(--muted)", "font-size": 9, "text-anchor": "middle" }, yr));
+  }
+  const pts = dated.map((x) => ({ x: ms(x.rel), y: x.r * 100 }));
+  const n = pts.length;
+  const sx = pts.reduce((a, p) => a + p.x, 0), sy = pts.reduce((a, p) => a + p.y, 0);
+  const sxx = pts.reduce((a, p) => a + p.x * p.x, 0), sxy = pts.reduce((a, p) => a + p.x * p.y, 0);
+  const den = n * sxx - sx * sx;
+  if (den !== 0) {
+    const slope = (n * sxy - sx * sy) / den, intc = (sy - slope * sx) / n;
+    const clamp = (v) => Math.max(0, Math.min(yMax, v));
+    svg.appendChild(mk("line", {
+      x1: xFor(tMin), y1: yFor(clamp(intc + slope * tMin)),
+      x2: xFor(tMax), y2: yFor(clamp(intc + slope * tMax)),
+      stroke: "var(--muted)", "stroke-width": 1.5, "stroke-dasharray": "3 4", opacity: 0.6,
+    }));
+  }
+  const byRate = [...dated].sort((a, b) => a.r - b.r);
+  const saint = byRate[0].id, devil = byRate[byRate.length - 1].id;
+  // Label de-collision: the deceptive tail is the ranking story, so it gets
+  // first claim on scarce label space (plus the saint/devil). The honest
+  // majority piles into a dot band near the top — itself the point — and
+  // reveals names on hover. estW approximates a label's box to test overlap.
+  const estW = (s) => s.length * 5.2 + 8;
+  const placed = [];
+  const showLabel = new Set();
+  [...dated].sort((a, b) => b.r - a.r).forEach((x) => {
+    const cx = xFor(ms(x.rel)), cy = yFor(x.r * 100), right = cx > W - 150;
+    const txt = familyLabel(x.id);
+    const x0 = right ? cx - 11 - estW(txt) : cx + 11;
+    const box = { x0, x1: x0 + estW(txt), y0: cy - 6, y1: cy + 6 };
+    const clash = placed.some((p) => !(box.x1 < p.x0 || box.x0 > p.x1 || box.y1 < p.y0 || box.y0 > p.y1));
+    if (!clash || x.id === saint || x.id === devil) {
+      placed.push(box);
+      showLabel.add(x.id);
+    }
+  });
+  dated.forEach((x) => {
+    const cx = xFor(ms(x.rel)), cy = yFor(x.r * 100), right = cx > W - 150;
+    const g = mk("g", { class: "dt-pt", tabindex: "0" });
+    g.appendChild(mk("circle", { cx, cy, r: 11, fill: "transparent" }));
+    if (x.id === saint) g.appendChild(mk("text", { x: cx, y: cy, "font-size": 16, "text-anchor": "middle", "dominant-baseline": "central" }, SAINT));
+    else if (x.id === devil) g.appendChild(mk("text", { x: cx, y: cy, "font-size": 16, "text-anchor": "middle", "dominant-baseline": "central" }, VILLAIN));
+    else g.appendChild(mk("circle", { cx, cy, r: 6, fill: colorFor(x.r), stroke: "#fff", "stroke-width": 1.5 }));
+    if (showLabel.has(x.id)) {
+      g.appendChild(mk("text", { x: right ? cx - 11 : cx + 11, y: cy + 3.2, fill: "var(--ink)", "font-size": 9.5, "text-anchor": right ? "end" : "start" }, familyLabel(x.id)));
+    }
+    g.setAttribute("aria-label", `${familyLabel(x.id)}: ${pct(x.r)} deception, released ${x.rel}`);
+    attachRichTooltip(g, () => modelTip(x.id, x.m));
+    svg.appendChild(g);
+  });
+  host.innerHTML = "";
+  host.appendChild(svg);
 }
 
 async function loadData() {
@@ -446,10 +552,12 @@ function render() {
   if (scaleEl) renderScale(scaleEl, models);
   const boardEl = document.getElementById("dboard-overall");
   if (boardEl) renderBoard(boardEl, models);
-  const dimsEl = document.getElementById("ddims");
-  if (dimsEl) renderDimensions(dimsEl, models);
+  const timeEl = document.getElementById("dtime");
+  if (timeEl) renderTimeline(timeEl, models);
   const expsEl = document.getElementById("dexps");
   if (expsEl) renderExperiments(expsEl, models);
+  const dimsEl = document.getElementById("ddims");
+  if (dimsEl) renderDimensions(dimsEl, models);
 }
 
 // Build the curated group chips from whichever models actually have results.

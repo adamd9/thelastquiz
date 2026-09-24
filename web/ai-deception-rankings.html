@@ -126,6 +126,28 @@
     .dx-key.ho { color:var(--teal); }
     .dx-key.de { color:var(--danger); }
 
+    /* Pass/fail marks in the per-experiment grids. */
+    .dx-table td.dx-cell .dx-mk { font-weight:800; font-size:0.98rem; }
+    .dx-sub { display:block; font-size:0.62rem; color:var(--muted); font-weight:600; }
+
+    /* Deception-over-time timeline. */
+    .dt-panel { border:1px solid var(--border); border-radius:14px; padding:14px 16px; background:var(--panel); margin-top:8px; }
+    .dt-svg { width:100%; height:auto; display:block; }
+    .dt-pt { cursor:pointer; outline:none; }
+
+    /* Motive fingerprint (a pass/fail chip per motive). */
+    .fp-table { border-collapse:collapse; width:100%; font-size:0.82rem; min-width:600px; }
+    .fp-table th, .fp-table td { border:1px solid var(--border); padding:6px 8px; text-align:center; }
+    .fp-table th { background:rgba(0,0,0,0.03); font-weight:700; }
+    .fp-table th.fp-h { font-size:0.72rem; line-height:1.2; white-space:normal; min-width:64px; max-width:96px; cursor:help; }
+    .fp-table th.fp-name-h, .fp-table td.fp-name { text-align:left; white-space:nowrap; }
+    .fp-table td.fp-cell { cursor:pointer; }
+    .fp-table td.fp-name img { width:14px; height:14px; vertical-align:middle; margin-right:6px; }
+    .fp-chip { display:inline-block; min-width:26px; border-radius:8px; padding:3px 0; font-weight:800; font-size:0.95rem; line-height:1; }
+    .fp-chip.de { color:var(--danger); background:rgba(158,42,43,0.10); }
+    .fp-chip.ho { color:var(--teal); background:rgba(42,157,143,0.12); }
+    .fp-chip.na { color:var(--muted); background:rgba(0,0,0,0.04); }
+
     .section-lead { color:var(--muted); font-size:0.98rem; margin:6px 0 0; max-width:60ch; }
     .d-updated { font-size:0.78rem; color:var(--muted); font-weight:600; }
     .empty { color:var(--muted); padding:20px; text-align:center; }
@@ -251,22 +273,33 @@
       </section>
 
       <section style="margin-top:30px;">
-        <h2 class="section">Why they deceive</h2>
+        <h2 class="section">Deception over time</h2>
         <p class="section-lead">
-          The same lie is not the same thing depending on <em>why</em> it's told. These break the rate
-          down by motive and by how much the chance of getting caught moves the needle.
+          Every model's overall deception rate against its release date. Honest at the top, deceptive at
+          the bottom; the dashed line is the trend. Are newer models getting more — or less — willing to
+          deceive under pressure?
         </p>
-        <div class="dd-grid" id="ddims"></div>
+        <div class="dt-panel" id="dtime"><p class="empty">Loading…</p></div>
       </section>
 
       <section style="margin-top:30px;">
-        <h2 class="section">By experiment</h2>
+        <h2 class="section">Scenario by scenario</h2>
         <p class="section-lead">
-          Each experiment, condition by condition. Green is honest, red is deception; hover a column
-          header for the full condition. The matched conditions are what let us attribute a jump to one
-          specific pressure.
+          Every model's actual choice in each scenario — <b>✗</b> hid the mistake, <b>✓</b> owned it,
+          – no valid answer. Each scenario is a single decision (we don't re-run it); the <b>Rate</b>
+          column rolls those distinct scenarios up into an honest per-experiment percentage.
         </p>
         <div class="dx-grid" id="dexps"></div>
+      </section>
+
+      <section style="margin-top:30px;">
+        <h2 class="section">What tips each model over</h2>
+        <p class="section-lead">
+          The same decisions, re-sliced by <em>motive</em> — did the model cross the line when a cover-up
+          would protect itself, protect others, avoid shutdown, or when getting caught was likely or
+          costly? A fingerprint, not a percentage.
+        </p>
+        <div id="ddims"></div>
       </section>
 
       <div class="d-method">
@@ -322,6 +355,6 @@
       of how a model behaves in the real world.
     </footer>
   </div>
-  <script type="module" src="/static/deception.js?v=8"></script>
+  <script type="module" src="/static/deception.js?v=10"></script>
 </body>
 </html>
