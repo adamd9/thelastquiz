@@ -3,11 +3,12 @@
 // state.js import) so the public rankings page can load it without pulling in
 // the whole app module graph.
 //
-// Each group is built from whatever models are available right now, so the set
-// stays correct as the OpenRouter catalog changes. The rankings page passes the
-// models that actually have results (as `{ id, available: true }`), which makes
-// the price-based groups drop out automatically (no pricing) while the
-// id-pattern groups (classics, frontier, oss, unrestricted, HLE) still work.
+// Editorial groups are explicitly curated below, then intersected by EXACT id
+// with the available models. Research and verify each selection before editing;
+// never infer membership from names, prefixes, descriptions, or catalogue order.
+// Only the objective price-based groups are computed dynamically. The rankings
+// page passes models with results as `{ id, available: true }`, so editorial
+// groups still work there while price-based groups drop out (no pricing).
 
 // Local, dependency-free version of prettifyModelId (utils.js keeps its own
 // copy for the app; duplicated here to avoid a utils.js <-> model-groups.js
@@ -90,7 +91,7 @@ export function countryForModelId(modelId) {
 //     the whole list against the live catalogue — it loudly flags every null id
 //     and every id that has gone missing, and suggests that lab's newest models.
 //
-// Last reviewed: 2026-09-16 · source: Artificial Analysis Intelligence Index
+// Last reviewed: 2026-10-18 · source: Artificial Analysis Intelligence Index
 // leaderboard (https://artificialanalysis.ai/models) + the CAIS Text
 // Capabilities Index (https://dashboard.safe.ai) + provider announcements.
 // ===========================================================================
@@ -98,27 +99,27 @@ export const FRONTIER_MODELS = [
   {
     lab: "OpenAI",
     id: "openai/gpt-6-astra",
-    note: "GPT-6 Astra — joint leader on the AA Intelligence Index",
+    note: "GPT-6 Astra — OpenAI's flagship; GPT-6.1 Sol is a lower-cost tier, not its replacement",
   },
   {
     lab: "Anthropic",
-    id: "anthropic/claude-fable-5.1",
-    note: "Claude Fable 5.1 — joint leader on the AA Intelligence Index",
+    id: "anthropic/claude-opus-5.5",
+    note: "Claude Opus 5.5 — Anthropic's current flagship; ahead of Fable 5.1 on the AA Intelligence Index",
   },
   {
     lab: "Google",
-    id: "google/gemini-3.8-flash",
-    note: "Gemini 3.8 Flash — Google's newest and highest-ranked current OpenRouter model",
+    id: "google/gemini-4-argon",
+    note: "Gemini 4 Argon — Google's current flagship reasoning model",
   },
   {
     lab: "xAI",
-    id: "x-ai/grok-4.6",
-    note: "Grok 4.6 — newest xAI flagship",
+    id: "x-ai/grok-4.7",
+    note: "Grok 4.7 — newest xAI flagship",
   },
   {
     lab: "Moonshot",
     id: "moonshotai/kimi-k3",
-    note: "Kimi K3 — #4 on the AA Intelligence Index",
+    note: "Kimi K3 — Moonshot's current flagship",
   },
   {
     lab: "Alibaba",
@@ -132,8 +133,8 @@ export const FRONTIER_MODELS = [
   },
   {
     lab: "Meta",
-    id: "meta/muse-spark-1.3",
-    note: "Muse Spark 1.3 (Meta Superintelligence Labs) — newest build. NB: lives under the 'meta/' author prefix, NOT 'meta-llama/'.",
+    id: "meta/muse-wonder",
+    note: "Muse Wonder (Meta Superintelligence Labs) — current flagship. NB: lives under the 'meta/' author prefix, NOT 'meta-llama/'.",
   },
 ];
 
@@ -227,8 +228,11 @@ export const HLE_MODELS = [
 // Last reviewed: 2026-08-27 · sources: Artificial Analysis open-weights
 // Intelligence Index (https://artificialanalysis.ai/models/open-source) +
 // OpenRouter usage rankings (https://openrouter.ai/rankings).
+// Muse Spark Open added: 2026-10-18 · OpenRouter weight link + AA model page
+// (https://artificialanalysis.ai/models/muse-spark-open).
 // ===========================================================================
 export const OSS_MODELS = [
+  { name: "Muse Spark Open", id: "meta/muse-spark-open", note: "Meta — coding-optimized open-weight Muse; OpenRouter links meta-models/Muse-Spark-Open-816B-A42B weights." },
   { name: "GLM-5.2", id: "z-ai/glm-5.2", note: "Z AI (Zhipu) — newest GLM with open weights linked by OpenRouter." },
   { name: "MiniMax-M3", id: "minimax/minimax-m3", note: "MiniMax — #2 open-weight." },
   { name: "DeepSeek V4 Pro 0813", id: "deepseek/deepseek-v4-pro-0813", note: "DeepSeek — GA release of its V4 Pro flagship." },
@@ -241,6 +245,40 @@ export const OSS_MODELS = [
   { name: "Gemma 4 31B", id: "google/gemma-4-31b-it", note: "Google — flagship open Gemma." },
   { name: "gpt-oss-120b", id: "openai/gpt-oss-120b", note: "OpenAI — its open-weight release." },
   { name: "Llama 4 Maverick", id: "meta-llama/llama-4-maverick", note: "Meta — best open Llama (now behind the field)." },
+];
+
+// ===========================================================================
+// THE CLASSICS — HAND-CURATED, EXACT. No automatic sibling replacements.
+// Last reviewed: 2026-10-18 · established benchmark representatives, with exact
+// ids verified against the live OpenRouter catalogue.
+// ===========================================================================
+export const CLASSIC_MODELS = [
+  { name: "GPT-4o", id: "openai/gpt-4o", note: "OpenAI's widely recognized GPT-4o generation." },
+  { name: "DeepSeek R1", id: "deepseek/deepseek-r1", note: "DeepSeek's widely recognized reasoning release." },
+  { name: "Claude Sonnet 5", id: "anthropic/claude-sonnet-5", note: "Representative Claude Sonnet generation." },
+  { name: "Gemini 2.5 Pro", id: "google/gemini-2.5-pro", note: "Established Gemini reasoning model." },
+  { name: "Grok 4.7", id: "x-ai/grok-4.7", note: "Current representative of the Grok family." },
+  { name: "Llama 3.3 70B Instruct", id: "meta-llama/llama-3.3-70b-instruct", note: "Widely used open Llama baseline." },
+];
+
+// ===========================================================================
+// UNRESTRICTED — HAND-CURATED, EXACT. Low refusal is a researched editorial
+// judgement, not a property inferred from a model's name or open-weight status.
+// Review provider/model cards, then copy matching ids from OpenRouter. Keep
+// legacy comparisons explicitly documented; no promise of zero refusals.
+//
+// Last reviewed: 2026-10-18 · live OpenRouter catalogue/model descriptions +
+// https://huggingface.co/NousResearch/Hermes-4-405B
+// https://huggingface.co/NousResearch/Hermes-3-Llama-3.1-405B
+// https://huggingface.co/Gryphe/MythoMax-L2-13b
+// ===========================================================================
+export const UNRESTRICTED_MODELS = [
+  { name: "Cydonia 24B V4.1", id: "thedrummer/cydonia-24b-v4.1", note: "OpenRouter explicitly describes this Mistral Small 3.2 fine-tune as uncensored." },
+  { name: "Hermes 4 405B", id: "nousresearch/hermes-4-405b", note: "Nous Research documents reduced refusal rates and user-directed alignment." },
+  { name: "Dolphin Mistral 24B Venice Edition", id: "cognitivecomputations/dolphin-mistral-24b-venice-edition", note: "OpenRouter's Venice Uncensored model, developed by dphn.ai with Venice." },
+  { name: "Hermes 3 70B", id: "nousresearch/hermes-3-llama-3.1-70b", note: "Legacy user-aligned Hermes comparison at a smaller model size." },
+  { name: "Hermes 3 405B", id: "nousresearch/hermes-3-llama-3.1-405b", note: "Legacy user-aligned Hermes comparison; not the current flagship." },
+  { name: "MythoMax L2 13B", id: "gryphe/mythomax-l2-13b", note: "Legacy roleplay/storywriting comparison, not a current low-refusal flagship or a Mythos model." },
 ];
 
 // ===========================================================================
@@ -304,7 +342,6 @@ export function buildModelGroups(models) {
   const chat = available.filter(
     (m) => !exclude.test(m.id) && !m.id.startsWith("~") && !m.id.endsWith(":batch")
   );
-  const idl = (m) => m.id.toLowerCase();
   const price = (m) => {
     const c = Number(m.pricing?.completion);
     return Number.isFinite(c) ? c : null;
@@ -321,38 +358,12 @@ export function buildModelGroups(models) {
     }
   };
 
-  // Pick the first available model matching each needle, in priority order,
-  // preferring the canonical base model over mini/search/preview variants.
-  const variantPenalty = /(mini|nano|lite|search|preview|audio|realtime|vision|thinking|reasoning|:free|distill)/;
-  const pickByNeedles = (needles) => {
-    const out = [];
-    const used = new Set();
-    for (const needle of needles) {
-      const candidates = chat.filter((m) => !used.has(m.id) && idl(m).includes(needle));
-      if (!candidates.length) continue;
-      candidates.sort((a, b) => {
-        const scoreOf = (m) => {
-          const tail = idl(m).split("/").pop();
-          let s = tail.length;
-          if (tail === needle) s -= 1000;
-          else if (tail.startsWith(needle)) s -= 100;
-          if (variantPenalty.test(tail) && !variantPenalty.test(needle)) s += 200;
-          return s;
-        };
-        return scoreOf(a) - scoreOf(b);
-      });
-      out.push(candidates[0]);
-      used.add(candidates[0].id);
-    }
-    return out;
-  };
-
   // "Humanity's Last Exam" — the exact HLE-Rolling lineup, hard-coded in
   // HLE_MODELS at the top of this file. Built like `frontier`: each id must
   // match the OpenRouter catalogue exactly, so a model is either the one HLE
   // tested or it's absent — never a fuzzy "nearest sibling".
   const hlePicked = HLE_MODELS.filter((f) => f.id)
-    .map((f) => chat.find((m) => m.id === f.id))
+    .map((f) => available.find((m) => m.id === f.id))
     .filter(Boolean);
   add(
     "hle",
@@ -362,30 +373,15 @@ export function buildModelGroups(models) {
     hlePicked.length || 1
   );
 
-  // "The classics" — the famous, in-the-zeitgeist names people recognise.
-  // One flagship per household-name brand (GPT, DeepSeek, Claude, Gemini, Grok,
-  // Llama…), picked from whatever is currently available.
+  const classicPicked = CLASSIC_MODELS
+    .map((f) => available.find((m) => m.id === f.id))
+    .filter(Boolean);
   add(
     "classics",
     "The classics",
     "The famous models everyone's talking about.",
-    pickByNeedles([
-      "gpt-4o",
-      "deepseek",
-      "claude-sonnet",
-      "gemini-2.5-pro",
-      "grok",
-      "llama-3.3",
-      "gemini-3-pro",
-      "claude-opus",
-      "gemini",
-      "gpt-5",
-      "llama-4",
-      "llama-3.1-70b",
-      "qwen3",
-      "mistral-large",
-    ]),
-    6
+    classicPicked,
+    classicPicked.length || 1
   );
 
   // "Frontier models" — from the hand-curated FRONTIER_MODELS list at the top of
@@ -394,7 +390,7 @@ export function buildModelGroups(models) {
   // can be selected to benchmark them; on the public rankings page it's only the
   // curated models that already have results.
   const frontierPicked = FRONTIER_MODELS.filter((f) => f.id)
-    .map((f) => chat.find((m) => m.id === f.id))
+    .map((f) => available.find((m) => m.id === f.id))
     .filter(Boolean);
   add(
     "frontier",
@@ -411,7 +407,7 @@ export function buildModelGroups(models) {
   // one model per country so the card shows the international spread.
   const leaderPicked = GLOBAL_LEADERS
     .flatMap((b) => b.models.map((m) => ({ id: m.id, name: m.name, flag: b.flag, region: b.region })))
-    .filter((e) => chat.some((m) => m.id === e.id));
+    .filter((e) => available.some((m) => m.id === e.id));
   const leaderUniq = [...new Map(leaderPicked.map((e) => [e.id, e])).values()];
   if (leaderUniq.length >= 2) {
     const seenRegion = new Set();
@@ -437,7 +433,7 @@ export function buildModelGroups(models) {
   // regex + price-descending sort, which missed the current leaders and used
   // price as a bogus proxy for quality.
   const ossPicked = OSS_MODELS.filter((f) => f.id)
-    .map((f) => chat.find((m) => m.id === f.id))
+    .map((f) => available.find((m) => m.id === f.id))
     .filter(Boolean);
   add(
     "oss",
@@ -463,16 +459,15 @@ export function buildModelGroups(models) {
     5
   );
 
-  // Match refusal-light / RP-focused models by id only (descriptions often
-  // mention these names in comparisons, which would cause false positives).
-  const unrestrictedRe =
-    /(uncensored|abliterat|dolphin|mythomax|venice|unfiltered|no[-_ ]?guard|lumimaid|rocinante|cydonia|hermes|nous-)/;
+  const unrestrictedPicked = UNRESTRICTED_MODELS
+    .map((f) => available.find((m) => m.id === f.id))
+    .filter(Boolean);
   add(
     "unrestricted",
     "Unrestricted (a.k.a. the naughty models)",
     "Models with fewer safety guardrails — often the most surprising answers.",
-    chat.filter((m) => unrestrictedRe.test(idl(m))),
-    6
+    unrestrictedPicked,
+    unrestrictedPicked.length || 1
   );
 
   return groups;

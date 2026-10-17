@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Verify the hand-curated FRONTIER_MODELS list against the LIVE OpenRouter
-// catalogue. Run this whenever you review the frontier list (every few months):
+// Verify all hand-curated model lists against the LIVE OpenRouter catalogue.
+// Run this whenever you review the model groups (every few months):
 //
 //   node scripts/check-frontier-models.mjs
 //
@@ -14,10 +14,12 @@
 // row needs attention, so it doubles as a CI / pre-review guard.
 
 import {
+  CLASSIC_MODELS,
   FRONTIER_MODELS,
   GLOBAL_LEADERS,
   HLE_MODELS,
   OSS_MODELS,
+  UNRESTRICTED_MODELS,
 } from "../web/static/model-groups.js";
 
 const OPENROUTER = "https://openrouter.ai/api/v1/models";
@@ -153,22 +155,26 @@ for (const m of HLE_MODELS) {
   }
 }
 
-// Best open source is also an exact-id editorial list and needs the same stale
-// catalogue protection as the other curated groups.
-console.log(`\nBest open source (${OSS_MODELS.length} rows):`);
-for (const m of OSS_MODELS) {
-  const name = m.name.padEnd(24);
-  if (byId.has(m.id)) {
-    console.log(`  OK       ${name} ${m.id}  (${dateOf(byId.get(m.id))})`);
-  } else {
-    problems++;
-    console.log(`  MISSING  ${name} ${m.id}  — NOT ON OPENROUTER`);
+for (const [label, models] of [
+  ["Best open source", OSS_MODELS],
+  ["The classics", CLASSIC_MODELS],
+  ["Unrestricted", UNRESTRICTED_MODELS],
+]) {
+  console.log(`\n${label} (${models.length} rows):`);
+  for (const m of models) {
+    const name = m.name.padEnd(24);
+    if (byId.has(m.id)) {
+      console.log(`  OK       ${name} ${m.id}  (${dateOf(byId.get(m.id))})`);
+    } else {
+      problems++;
+      console.log(`  MISSING  ${name} ${m.id}  — NOT ON OPENROUTER`);
+    }
   }
 }
 
 console.log(
   problems
     ? `\n${problems} item(s) need attention — edit web/static/model-groups.js`
-    : `\nAll curated frontier + global-leaders + HLE + open-source models are present on OpenRouter.`
+    : `\nAll curated frontier + global-leaders + HLE + open-source + classics + unrestricted models are present on OpenRouter.`
 );
 process.exit(problems ? 1 : 0);

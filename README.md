@@ -117,8 +117,30 @@ The application supports multiple storage backends with automatic fallback:
 
 Models are configured in `config/models.yaml`. You can:
 - Add new models
-- Create custom model groups
 - Set default parameters (temperature, max tokens, etc.)
+
+### Curated Model Groups
+
+All editorial model groups live in [web/static/model-groups.js](./web/static/model-groups.js),
+shared by the app, admin console, and public rankings. They must always be
+explicit, manually curated lists of exact OpenRouter model IDs.
+
+When reviewing a group, the coding agent must research the relevant models,
+verify matching IDs in the live OpenRouter catalogue, and update the hardcoded
+list with selection notes and sources. For the low-refusal/uncensored group,
+use provider documentation and model cards, not just names or open-weight
+status. Do not generate membership using regexes, fuzzy matching, lab prefixes,
+catalogue order, or automatic sibling substitutions. Runtime code only filters
+the curated list to models available in the current catalogue or results.
+
+Only the objective "Cheapest" and "Most expensive" groups are computed from live
+pricing; they are not editorial selections.
+
+Validate all curated IDs and HLE source alignment with:
+
+```bash
+node scripts/check-frontier-models.mjs
+```
 
 ### Runtime Data
 
@@ -140,6 +162,9 @@ pytest --cov=llm_pop_quiz_bench
 
 # Run specific test file
 pytest tests/test_specific.py
+
+# Test shared frontend model-group selection (Node.js built-in test runner)
+node --test tests/model-groups.test.mjs
 ```
 
 ### Code Quality
