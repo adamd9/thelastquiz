@@ -62,6 +62,15 @@ LLM Pop Quiz Bench is a full-stack web application that:
 
 ## Usage
 
+### Public Rankings Homepage
+
+The public homepage leads with the deception spectrum and overall leaderboard,
+filtered to the Humanity's Last Exam (HLE) model group when available. It shares
+the renderer and `/deception.json` snapshot (with a live API fallback) with the
+full deception rankings page. The release-date timeline and experiment/motive
+breakdowns stay on `/ai-deception-rankings`; personality rankings remain at
+`/rankings`.
+
 ### Running Quizzes via Web Interface
 
 1. **Dashboard**: View your quiz run history and results

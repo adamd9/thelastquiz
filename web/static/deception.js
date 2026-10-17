@@ -17,20 +17,6 @@ let DATA = null;
 // meaningful subset instead of rendering every model at once.
 let GROUPS = [];
 let selectedGroup = "all";
-const RANKING_ORDER_KEY = "tlq-ranking-order";
-let rankingOrder = storedRankingOrder();
-
-function storedRankingOrder() {
-  try {
-    return localStorage.getItem(RANKING_ORDER_KEY) === "worst" ? "worst" : "best";
-  } catch (_) {
-    return "best";
-  }
-}
-
-function persistRankingOrder(order) {
-  try { localStorage.setItem(RANKING_ORDER_KEY, order); } catch (_) { /* storage unavailable */ }
-}
 
 // The payload only carries ids, so pass `{ id, available: true }`; that drops
 // the price-based groups (no pricing here) while the id-pattern groups resolve.
@@ -114,6 +100,12 @@ function condShort(cond) {
   return COND_SHORT[cond.id] || cond.label || cond.id;
 }
 
+// Faint green→red wash so the deception pattern reads as a heatmap at a glance.
+function tint(rate) {
+  if (rate == null) return "transparent";
+  return colorFor(rate).replace("rgb(", "rgba(").replace(")", ",0.16)");
+}
+
 // Rich tooltip for a model: brand head, overall deception, per-dimension
 // breakdown, and a real reason the model gave.
 function modelTip(modelId, m) {
@@ -143,7 +135,7 @@ function modelList() {
   return Object.entries(DATA.models || {})
     .map(([id, m]) => ({ id, m, rate: (m.overall || {}).deceptive_rate }))
     .filter((x) => x.rate != null && (!allowed || allowed.has(x.id)))
-    .sort((a, b) => rankingOrder === "worst" ? b.rate - a.rate : a.rate - b.rate);
+    .sort((a, b) => a.rate - b.rate);
 }
 
 // Hero spectrum: honest 😇 → deceiver 😈, dots windowed onto the occupied range.
@@ -152,7 +144,6 @@ function renderScale(host, models) {
     host.innerHTML = '<p class="empty">No deception results yet — check back soon.</p>';
     return;
   }
-  models = [...models].sort((a, b) => a.rate - b.rate);
   const maxV = Math.max(10, ...models.map((x) => x.rate * 100));
   const domainMax = Math.min(100, Math.max(40, Math.ceil((maxV + 8) / 10) * 10));
   const clamp = (v) => Math.max(2, Math.min(98, (v / domainMax) * 100));
@@ -188,14 +179,12 @@ function renderScale(host, models) {
 // design, so it doubles as the mobile view of the scale.
 function renderBoard(host, models) {
   if (!models.length) {
-    host.innerHTML = "";
+    host.innerHTML = '<p class="empty">No deception results yet — check back soon.</p>';
     return;
   }
-  const best = models.reduce((lowest, x) => x.rate < lowest.rate ? x : lowest, models[0]);
-  const worst = models.reduce((highest, x) => x.rate > highest.rate ? x : highest, models[0]);
   host.innerHTML = models
     .map((x, i) => {
-      const icon = x === best ? SAINT : x === worst ? VILLAIN : String(i + 1);
+      const icon = i === 0 ? SAINT : i === models.length - 1 ? VILLAIN : String(i + 1);
       const w = Math.max(2, Math.round(x.rate * 100));
       const o = x.m.overall || {};
       return (
@@ -290,40 +279,32 @@ function dimTip(modelId, m, dimId) {
   );
 }
 
-// Motive fingerprint: for each model, one pass/fail chip per dimension — did it
-// cross the line when THAT pressure was in play. An honest slice (a single
-// decision per motive), not a re-sampled percentage.
+// Per-dimension deep dives: one card per measured dimension, models ranked by
+// their deception rate for that motive.
 function renderDimensions(host, models) {
-  const dims = DATA.dimensions || [];
-  if (!dims.length || !models.length) {
-    host.innerHTML = "";
-    return;
-  }
-  const head =
-    `<th class="fp-name-h">Model</th>` +
-    dims
-      .map((d) => `<th class="fp-h" title="${escapeHtml(d.label)}">${escapeHtml(SHORT_DIM[d.id] || shortDimLabel(d.label))}</th>`)
-      .join("");
-  const body = models
-    .map((x) => {
-      const chips = dims
-        .map((d) => {
-          const dv = (x.m.by_dimension || {})[d.id];
-          const cls = dv == null ? "na" : dv >= 0.5 ? "de" : "ho";
-          const glyph = dv == null ? "–" : dv >= 0.5 ? "✗" : "✓";
-          return `<td class="fp-cell" data-id="${escapeHtml(x.id)}" data-dim="${escapeHtml(d.id)}"><span class="fp-chip ${cls}">${glyph}</span></td>`;
-        })
+  host.innerHTML = (DATA.dimensions || [])
+    .map((d) => {
+      const ranked = models
+        .map((x) => ({ id: x.id, dv: (x.m.by_dimension || {})[d.id] }))
+        .filter((x) => x.dv != null)
+        .sort((a, b) => b.dv - a.dv);
+      if (!ranked.length) return "";
+      const rows = ranked
+        .map(
+          (x) =>
+            `<div class="dd-row" data-id="${escapeHtml(x.id)}" data-dim="${escapeHtml(d.id)}">` +
+            `<div class="dd-logo">${providerLogoHtml(x.id, 16)}</div>` +
+            `<div class="dd-name">${escapeHtml(familyLabel(x.id))}</div>` +
+            `<div class="dd-bar"><span style="width:${Math.max(2, Math.round(x.dv * 100))}%;background:${colorFor(x.dv)}"></span></div>` +
+            `<div class="dd-val">${pct(x.dv)}</div></div>`
+        )
         .join("");
-      return `<tr><td class="fp-name">${providerLogoHtml(x.id, 14)}<span>${escapeHtml(familyLabel(x.id))}</span></td>${chips}</tr>`;
+      return `<div class="dd-card"><h3 title="${escapeHtml(d.label)}">${escapeHtml(SHORT_DIM[d.id] || shortDimLabel(d.label))}</h3><div class="dd-rows">${rows}</div></div>`;
     })
     .join("");
-  host.innerHTML =
-    `<div class="dx-card"><div class="dx-scroll"><table class="fp-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
-    `<p class="dx-legend"><b class="dx-key ho">✓</b> stayed honest · <b class="dx-key de">✗</b> crossed the line under that motive · – not tested. ` +
-    `Hover a chip for the reason it gave.</p></div>`;
-  host.querySelectorAll(".fp-cell").forEach((td) => {
-    const m = DATA.models[td.dataset.id];
-    if (m) attachRichTooltip(td, () => dimTip(td.dataset.id, m, td.dataset.dim));
+  host.querySelectorAll(".dd-row").forEach((row) => {
+    const m = DATA.models[row.dataset.id];
+    if (m) attachRichTooltip(row, () => dimTip(row.dataset.id, m, row.dataset.dim));
   });
 }
 
@@ -376,7 +357,7 @@ function renderExperiments(host, models) {
         conds
           .map((c, ci) => `<th class="dx-h" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}">${escapeHtml(condShort(c))}</th>`)
           .join("") +
-        `<th>Rate</th>`;
+        `<th>All</th>`;
       const body = models
         .map((x) => {
           const be = (x.m.by_experiment || {})[exp.id];
@@ -386,11 +367,9 @@ function renderExperiments(host, models) {
               const cc = (be.conditions || {})[c.id] || {};
               const dr = cc.deceptive_rate;
               const cls = dr == null ? "muted" : dr >= 0.5 ? "de" : "ho";
-              const glyph = dr == null ? "–" : dr >= 0.5 ? "✗" : "✓";
-              const sub = (cc.valid || 0) > 1 ? `<span class="dx-sub">${cc.deceptive || 0}/${cc.valid}</span>` : "";
               return (
-                `<td class="dx-cell ${cls}" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}" data-model="${escapeHtml(x.id)}">` +
-                `<span class="dx-mk">${glyph}</span>${sub}</td>`
+                `<td class="dx-cell ${cls}" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}" data-model="${escapeHtml(x.id)}" ` +
+                `style="background:${tint(dr)}">${dr == null ? "—" : Math.round(dr * 100) + "%"}</td>`
               );
             })
             .join("");
@@ -399,7 +378,7 @@ function renderExperiments(host, models) {
           return (
             `<tr><td class="dx-model">${providerLogoHtml(x.id, 14)}<span>${escapeHtml(familyLabel(x.id))}</span></td>` +
             cells +
-            `<td class="${ocls}"><b>${pct(oc)}</b><span class="dx-sub">${be.deceptive || 0}/${be.valid || 0}</span></td></tr>`
+            `<td class="${ocls}"><b>${pct(oc)}</b></td></tr>`
           );
         })
         .join("");
@@ -408,8 +387,8 @@ function renderExperiments(host, models) {
         `<div class="dx-card"><div class="dx-head"><h3>${escapeHtml(exp.title)} ` +
         `<span class="dx-v">v${escapeHtml(String(exp.version))}</span></h3></div>${about}` +
         `<div class="dx-scroll"><table class="dx-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
-        `<p class="dx-legend"><b class="dx-key ho">✓</b> owned it · <b class="dx-key de">✗</b> hid the mistake · – no valid answer · ` +
-        `<b>Rate</b> rolls those scenarios up. Hover any cell for the model's real choice and reason.</p></div>`
+        `<p class="dx-legend"><span class="dx-key ho">■</span> honest · <span class="dx-key de">■</span> deceptive · ` +
+        `hover a column or cell for what it means</p></div>`
       );
     })
     .join("");
@@ -427,9 +406,7 @@ function renderExperiments(host, models) {
   });
 }
 
-// Deception over time: each model's overall rate against its release date,
-// mirroring the Dark Triad timeline. Honest at the top, deceptive at the
-// bottom, with a least-squares trend across whichever models carry a date.
+// Honest at the top, deceptive at the bottom, against model release dates.
 function renderTimeline(host, models) {
   const NS = "http://www.w3.org/2000/svg";
   const dated = models
@@ -493,10 +470,7 @@ function renderTimeline(host, models) {
   }
   const byRate = [...dated].sort((a, b) => a.r - b.r);
   const saint = byRate[0].id, devil = byRate[byRate.length - 1].id;
-  // Label de-collision: the deceptive tail is the ranking story, so it gets
-  // first claim on scarce label space (plus the saint/devil). The honest
-  // majority piles into a dot band near the top — itself the point — and
-  // reveals names on hover. estW approximates a label's box to test overlap.
+  // Prioritise the deceptive tail and extremes when labels would overlap.
   const estW = (s) => s.length * 5.2 + 8;
   const placed = [];
   const showLabel = new Set();
@@ -535,14 +509,18 @@ async function loadData() {
     const res = await fetch("/deception.json", { cache: "no-cache" });
     if (res.ok) {
       const j = await res.json();
-      if (j && j.models) return j;
+      if (j && j.models && Object.values(j.models).some((m) => (m.overall || {}).deceptive_rate != null)) return j;
+      console.warn("Deception snapshot has no results; trying the live API.");
     }
   } catch (e) {
-    /* fall through to the API */
+    console.warn("Could not load deception snapshot; trying the live API.", e);
   }
   const base = window.API_BASE || "";
   const res = await fetch(base + "/api/experiments/rankings", { cache: "no-cache" });
-  return res.json();
+  if (!res.ok) throw new Error(`Results request failed (${res.status})`);
+  const data = await res.json();
+  if (!data || !data.models) throw new Error("Results response is missing model data");
+  return data;
 }
 
 // Render every section for the currently-selected group.
@@ -554,27 +532,27 @@ function render() {
   if (boardEl) renderBoard(boardEl, models);
   const timeEl = document.getElementById("dtime");
   if (timeEl) renderTimeline(timeEl, models);
-  const expsEl = document.getElementById("dexps");
-  if (expsEl) renderExperiments(expsEl, models);
   const dimsEl = document.getElementById("ddims");
   if (dimsEl) renderDimensions(dimsEl, models);
+  const expsEl = document.getElementById("dexps");
+  if (expsEl) renderExperiments(expsEl, models);
 }
 
 // Build the curated group chips from whichever models actually have results.
 // Defaults to the Humanity's Last Exam lineup when present (matching the
 // personality rankings), else shows all models.
 function buildFilter() {
-  const filterEl = document.getElementById("dfilter");
-  if (!filterEl) return;
   const allIds = Object.entries(DATA.models || {})
     .filter(([, m]) => (m.overall || {}).deceptive_rate != null)
     .map(([id]) => id);
   GROUPS = groupsForModels(allIds);
+  selectedGroup = GROUPS.some((g) => g.id === "hle") ? "hle" : "all";
+  const filterEl = document.getElementById("dfilter");
+  if (!filterEl) return;
   if (!GROUPS.length) {
     filterEl.hidden = true;
     return;
   }
-  selectedGroup = GROUPS.some((g) => g.id === "hle") ? "hle" : "all";
   const chips = [{ id: "all", label: "All models", count: allIds.length }].concat(
     GROUPS.map((g) => ({ id: g.id, label: g.label, count: g.modelIds.length }))
   );
@@ -600,34 +578,22 @@ function buildFilter() {
   paint();
 }
 
-function buildOrderControl() {
-  const orderEl = document.getElementById("ranking-order");
-  if (!orderEl) return;
-  const paint = () => orderEl.querySelectorAll("button[data-order]").forEach((button) =>
-    button.setAttribute("aria-pressed", String(button.dataset.order === rankingOrder)));
-  orderEl.querySelectorAll("button[data-order]").forEach((button) =>
-    button.addEventListener("click", () => {
-      rankingOrder = button.dataset.order === "worst" ? "worst" : "best";
-      persistRankingOrder(rankingOrder);
-      paint();
-      render();
-    }));
-  paint();
-}
-
 async function main() {
   const scaleEl = document.getElementById("dscale-overall");
   try {
     DATA = await loadData();
   } catch (e) {
     if (scaleEl) scaleEl.innerHTML = `<p class="empty">Could not load results: ${escapeHtml(e.message)}</p>`;
+    const boardEl = document.getElementById("dboard-overall");
+    if (boardEl) boardEl.innerHTML = `<p class="empty" role="alert">Could not load results: ${escapeHtml(e.message)}</p>`;
     return;
   }
   const updated = DATA.updated_at ? new Date(DATA.updated_at) : null;
   const upEl = document.getElementById("d-updated");
   if (upEl && updated) upEl.textContent = `Updated ${updated.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`;
   buildFilter();
-  buildOrderControl();
+  const groupEl = document.getElementById("home-deception-group");
+  if (groupEl) groupEl.textContent = selectedGroup === "hle" ? "Humanity's Last Exam lineup" : "All tested models";
   render();
 }
 

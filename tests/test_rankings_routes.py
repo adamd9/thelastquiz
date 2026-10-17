@@ -31,6 +31,43 @@ def test_public_pages_and_rankings(monkeypatch, tmp_path):
     assert {"big_five_ipip50", "mbti_oejts", "sd3_short_dark_triad"} <= ids
 
 
+def test_deception_page_keeps_timeline_separate_from_table(monkeypatch, tmp_path):
+    client = _client(monkeypatch, tmp_path)
+
+    page = client.get("/ai-deception-rankings")
+    assert page.status_code == 200
+    assert "Deception over time" in page.text
+    assert '<div class="dt-breakout">' in page.text
+    assert 'id="dtime"' in page.text
+    assert 'id="dboard-overall"' in page.text
+
+    script = client.get("/static/deception.js")
+    assert script.status_code == 200
+    assert "function renderTimeline(host, models)" in script.text
+    assert "if (timeEl) renderTimeline(timeEl, models);" in script.text
+
+
+def test_homepage_uses_shared_deception_summary():
+    web = pathlib.Path(__file__).resolve().parents[1] / "web"
+    page = (web / "home.html").read_text()
+    full_page = (web / "ai-deception-rankings.html").read_text()
+
+    assert 'id="dscale-overall"' in page
+    assert 'id="dboard-overall"' in page
+    assert 'id="home-deception-group"' in page
+    assert "Humanity's Last Exam lineup" in page
+    for asset in ("/static/deception.js?v=9", "/static/deception-summary.css?v=1"):
+        assert asset in page
+        assert asset in full_page
+    for detail_id in ("dtime", "dexps", "ddims", "dfilter"):
+        assert f'id="{detail_id}"' not in page
+        assert f'id="{detail_id}"' in full_page
+    assert "HUMAN_IDX" not in page
+    assert 'fetch("/rankings.json")' not in page
+    assert 'href="/ai-deception-rankings"' in page
+    assert 'href="/rankings#dark-triad"' in page
+
+
 def test_admin_requires_token_when_configured(monkeypatch, tmp_path):
     monkeypatch.setenv("LLM_POP_QUIZ_ADMIN_TOKEN", "secret")
     client = _client(monkeypatch, tmp_path)

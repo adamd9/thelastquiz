@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Do AI Models Have Personality? Dark Triad, Big Five &amp; MBTI | The Last Quiz</title>
-  <meta name="description" content="We put the world's leading AI models through real personality tests — the Dark Triad, Big Five (OCEAN) and Jungian/MBTI type. See how ChatGPT, Claude and Gemini score, or make your own quiz." />
+  <title>Which AI Models Lie Under Pressure? Deception Rankings | The Last Quiz</title>
+  <meta name="description" content="See which AI models lie under pressure in behavioural deception experiments. Explore the live rankings, compare personality tests, or make your own quiz." />
   <link rel="canonical" href="https://thelastquiz.net/" />
   <meta name="theme-color" content="#f7f1e9" />
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
@@ -13,13 +13,13 @@
   <link rel="manifest" href="/static/site.webmanifest" />
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="The Last Quiz" />
-  <meta property="og:title" content="Do AI Models Have Personality?" />
-  <meta property="og:description" content="We put the world's leading AI models through real personality tests — the Dark Triad, Big Five and Jungian/MBTI type. See where they land between saint and villain." />
+  <meta property="og:title" content="Which AI Models Lie Under Pressure?" />
+  <meta property="og:description" content="We give AI models something to lose and watch what they do when honesty costs them. See the live deception rankings." />
   <meta property="og:url" content="https://thelastquiz.net/" />
   <meta property="og:image" content="https://thelastquiz.net/static/logo2.png" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Do AI Models Have Personality?" />
-  <meta name="twitter:description" content="The world's leading AI models took the same personality tests psychologists give people. See how they score." />
+  <meta name="twitter:title" content="Which AI Models Lie Under Pressure?" />
+  <meta name="twitter:description" content="Which AI models choose a knowing lie when honesty costs them? Live behavioural deception rankings from The Last Quiz." />
   <meta name="twitter:image" content="https://thelastquiz.net/static/logo2.png" />
   <script type="application/ld+json">
   {
@@ -36,7 +36,7 @@
         "@type": "WebSite",
         "@id": "https://thelastquiz.net/#website",
         "name": "The Last Quiz",
-        "description": "Real personality tests — the Dark Triad, Big Five and Jungian/MBTI type — applied to the world's leading AI models.",
+        "description": "Behavioural deception experiments and real personality tests applied to the world's leading AI models.",
         "url": "https://thelastquiz.net/",
         "publisher": { "@id": "https://thelastquiz.net/#org" }
       }
@@ -48,9 +48,10 @@
   <script src="/static/track.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/deception-summary.css?v=1" />
   <style>
     /* ------------------------------------------------------------------ *
-     * The Last Quiz — homepage MOCKUP (static, illustrative data).
+     * The Last Quiz — homepage with live deception rankings.
      * Built on the app's warm design tokens so it drops straight into the
      * existing look. HLE bones (signature viz first, then explain) reworked
      * into an editorial / magazine layout that drives "make your own".
@@ -112,52 +113,6 @@
     .scale-card .cap-top .lbl { font-weight: 600; font-size: 0.96rem; }
     .scale-card .cap-top .hint { color: var(--muted); font-size: 0.82rem; }
 
-    /* light <-> dark scale (mirrors the live rankings hero) */
-    .ld { margin: 2px 0 4px; }
-    .ld-row { display: flex; align-items: center; gap: 16px; }
-    .ld-face { display: flex; flex-direction: column; align-items: center; font-size: 34px; line-height: 1; flex: none; }
-    .ld-face b { font-size: 0.66rem; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
-    .ld-track { position: relative; flex: 1; height: 14px; border-radius: 999px; margin: 92px 0 56px;
-      background: linear-gradient(90deg,#2a9d8f 0%,#8ab17d 30%,#e9c46a 55%,#e09f3e 74%,#9e2a2b 100%); }
-    .ld-end { position: absolute; top: calc(100% + 6px); font-size: 0.7rem; font-weight: 600; color: var(--muted); font-variant-numeric: tabular-nums; }
-    .ld-end-lo { left: 0; } .ld-end-hi { right: 0; }
-    .ld-human { position: absolute; top: -10px; bottom: -40px; width: 0; border-left: 2px dashed var(--accent-2); z-index: 3; cursor: pointer; }
-    .ld-human:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 4px; }
-    .ld-human-lab { position: absolute; top: 36px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 700; color: #fff; background: var(--accent-2); padding: 3px 10px 3px 8px; border-radius: 999px; box-shadow: 0 2px 7px rgba(15,92,120,.4); display: inline-flex; align-items: center; gap: 5px; }
-    .ld-dot { position: absolute; top: 50%; cursor: pointer; }
-    .ld-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 999px; }
-    .ld-pin { position: absolute; top: -9px; left: -9px; width: 18px; height: 18px; border-radius: 50%; background: #fff8f1; border: 2px solid #1b1a17; box-shadow: 0 1px 3px rgba(0,0,0,.2); display: flex; align-items: center; justify-content: center; overflow: hidden; }
-    .ld-pin img { width: 12px; height: 12px; object-fit: contain; }
-    .ld-lab { position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 0.72rem; font-weight: 600; color: var(--ink); background: var(--panel); padding: 1px 6px; border-radius: 6px; border: 1px solid var(--border); }
-    .ld-lab.r0 { bottom: 16px; } .ld-lab.r1 { bottom: 44px; } .ld-lab.r2 { bottom: 72px; }
-    .ld-foot { color: var(--muted); font-size: 0.78rem; font-style: italic; margin: 6px 2px 0; }
-    .ld-cap { color: var(--muted); font-size: 0.95rem; margin: 10px 2px 0; }
-    .ld-cap b { color: var(--ink); }
-
-    /* Vertical Darkness Scale (mobile) — rendered in place of .ld-row below
-       640px so every model lists top (saint) to bottom (villain) with room to
-       breathe instead of crushing 20 logos onto one narrow axis. Built by
-       buildVerticalScale() in the page script. */
-    .ld-vert { position: relative; margin: 8px 0 2px; }
-    .ld-vspine { position: absolute; left: 18px; top: 30px; bottom: 30px; width: 12px; border-radius: 999px;
-      background: linear-gradient(180deg,#2a9d8f 0%,#8ab17d 22%,#e9c46a 48%,#e09f3e 70%,#9e2a2b 100%);
-      box-shadow: inset 0 0 0 1px rgba(27,26,23,.06); }
-    .ld-vend { position: relative; z-index: 1; display: flex; align-items: center; gap: 8px; height: 30px; padding-left: 11px; }
-    .ld-vface { width: 26px; text-align: center; font-size: 22px; line-height: 1; }
-    .ld-vend b { font-size: 0.66rem; color: var(--muted); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
-    .ld-vert .ld-dot { position: relative; top: auto; left: auto; z-index: 1; display: flex; align-items: center; gap: 10px; height: 31px; padding-left: 12px; cursor: pointer; }
-    .ld-vert .ld-pin { position: relative; top: auto; left: auto; width: 24px; height: 24px; flex: none; }
-    .ld-vert .ld-pin img { width: 15px; height: 15px; }
-    .ld-vname { flex: 1; min-width: 0; font-weight: 600; font-size: 0.92rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .ld-vval { margin-left: auto; padding-left: 10px; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.84rem; }
-    .ld-vert .ld-dot.dark .ld-vval { color: var(--danger); font-weight: 700; }
-    .ld-vert .ld-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
-    .ld-vert .ld-human { position: relative; top: auto; bottom: auto; z-index: 2; display: flex; align-items: center; width: 100%; height: 28px; margin: 2px 0; padding-left: 40px; border: 0; cursor: pointer; }
-    .ld-vhuman-line { position: absolute; left: 6px; right: 2px; top: 50%; border-top: 2px dashed var(--accent-2); }
-    .ld-vhuman-lab { position: relative; z-index: 1; white-space: nowrap; font-size: 0.72rem; font-weight: 700; color: #fff;
-      background: var(--accent-2); padding: 3px 10px; border-radius: 999px; box-shadow: 0 2px 7px rgba(15,92,120,.4); }
-    .ld-vert .ld-human:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 3px; border-radius: 999px; }
-
     /* Rich hover/tap/keyboard tooltip card shared by chart points. See
        /static/rich-tooltip.js. */
     .rq-tip {
@@ -198,26 +153,8 @@
     .sec-head .more { color: var(--accent-2); font-weight: 700; font-size: 0.9rem; white-space: nowrap; }
     .sec-head .more:hover { text-decoration: underline; }
 
-    /* ------------------------- Dark Triad leaderboard ---------------------- */
-    .rank-card { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow); padding: 8px 22px 18px; }
-    .rank-row { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: center; padding: 12px 6px; border-bottom: 1px solid var(--border); }
-    .rank-row:last-child { border-bottom: 0; }
-    .rank-row .rk { font-family: "Fraunces", serif; font-weight: 700; font-size: 1.1rem; color: var(--muted); text-align: center; }
-    .rank-row .who { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; gap: 10px; }
-    .rank-row .nm { font-weight: 600; }
-    .rank-row .sc { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.9rem; }
-    .rank-row.above .sc { color: var(--danger); font-weight: 700; }
-    .rank-track { position: relative; height: 13px; background: #f0e7db; border-radius: 7px; overflow: hidden; }
-    .rank-track .zone { position: absolute; top: 0; bottom: 0; right: 0; background: var(--danger-wash); border-left: 2px dashed #7a6f62; }
-    .rank-track .bar { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 7px;
-      background: linear-gradient(90deg, var(--teal), var(--gold)); }
-    .rank-track .bar.dark { background: linear-gradient(90deg, var(--gold), var(--danger)); }
-    .rank-row.human { background: #f3ebdd; border-radius: 10px; }
-    .rank-row.human .nm { font-style: italic; }
-    .rank-track .humbar { background: repeating-linear-gradient(45deg,#c7b9a3,#c7b9a3 5px,#b7a88f 5px,#b7a88f 10px); }
-
     /* -------------------------------- Tiles -------------------------------- */
-    .tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
     .tile { background: var(--panel); border: 1px solid var(--border); border-radius: 20px; box-shadow: var(--shadow-sm);
       padding: 24px; display: flex; flex-direction: column; gap: 6px; transition: transform .14s ease, box-shadow .14s ease; }
     .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
@@ -323,37 +260,41 @@
     <!-- =============================== Hero =============================== -->
     <section class="hero">
       <span class="kicker">The headline ranking</span>
-      <h1>Does your favourite AI have a <em>dark side?</em></h1>
+      <h1>Does your favourite AI <em>lie under pressure?</em></h1>
       <p class="dek">
-        We put the world's leading models through the same personality tests psychologists give people —
-        starting with the one that measures <b>manipulation, ego and cold-heartedness</b>. See exactly
-        where they land between saint and villain.
+        We put the world's leading models in charge of a business, give them something to lose, and
+        watch what they do when <b>the honest choice costs money — or their own job</b>.
+        Here's who chooses a knowing lie under pressure.
       </p>
       <div class="cta-row">
-        <a class="btn primary" href="/rankings#dark-triad">See the full Dark Triad rankings →</a>
-        <a class="btn ghost" href="/rankings#about">How we test the models</a>
+        <a class="btn primary" href="/ai-deception-rankings">See the full deception rankings →</a>
+        <a class="btn ghost" href="/ai-deception-experiment">How we test the models</a>
       </div>
 
-      <div class="scale-card" id="home-scale" hidden>
+      <div class="scale-card" id="home-scale">
         <div class="cap-top">
-          <span class="lbl">The Darkness Scale — Dark Triad Index</span>
-          <span class="hint">Lower = more restrained · the dashed line is the average human</span>
+          <span class="lbl">The Deception Scale — honest to deceiver</span>
+          <span class="hint">Lower = fewer deceptive decisions · hover for a model's reasons</span>
         </div>
-        <div class="ld" id="home-ld"></div>
+        <div class="ds" id="dscale-overall"><p class="empty">Loading deception rankings…</p></div>
       </div>
     </section>
 
-    <!-- ===================== Live Dark Triad ranking ===================== -->
-    <section class="block" id="ranking" hidden>
+    <!-- ===================== Live deception ranking ===================== -->
+    <section class="block" id="ranking">
       <div class="sec-head">
         <div>
           <span class="kicker">The headline ranking</span>
-          <h2>Who's the most restrained — and who's the villain?</h2>
-          <p class="lede">One combined “dark core” score — the mean of all three traits. The typical adult lands around 38; lower is more restrained.</p>
+          <h2>Who stays honest — and who deceives?</h2>
+          <p class="lede">Overall deception rate across all experiments — the share of valid decisions
+            where a model chose a message or action it knew to be false.
+            <span id="home-deception-group">Humanity's Last Exam lineup</span>.</p>
+          <p class="lede">Simulated stakes, not proof of real-world behaviour.
+            <span id="d-updated"></span></p>
         </div>
-        <a class="more" href="/rankings#dark-triad">Full breakdown by trait →</a>
+        <a class="more" href="/ai-deception-rankings">Timeline, experiments and full breakdown →</a>
       </div>
-      <div class="rank-card" id="home-rank"></div>
+      <div class="db" id="dboard-overall"><p class="empty">Loading deception rankings…</p></div>
     </section>
 
     <!-- ===================== Create your own (second hero) ===================== -->
@@ -375,13 +316,19 @@
     <section class="block">
       <div class="sec-head">
         <div>
-          <span class="kicker">Beyond the dark stuff</span>
+          <span class="kicker">Beyond deception</span>
           <h2>More ways to read a machine's mind</h2>
-          <p class="lede">The Dark Triad is the headline — but the same models sat our other tests too. Dive deeper.</p>
+          <p class="lede">Actions under pressure are only one signal. Compare the models' personality self-reports too.</p>
         </div>
         <a class="more" href="/guides">Read the guides →</a>
       </div>
       <div class="tiles">
+        <a class="tile" href="/rankings#dark-triad">
+          <span class="emoji">🌓</span>
+          <h3>The Dark Triad</h3>
+          <p>Manipulation, ego and cold-heartedness — see how models answer the Short Dark Triad personality test.</p>
+          <span class="go">Explore the Dark Triad rankings →</span>
+        </a>
         <a class="tile" href="/big-five-ai">
           <span class="emoji">🌈</span>
           <h3>The Big Five</h3>
@@ -462,15 +409,15 @@
       <div class="sec-head">
         <div>
           <span class="kicker">The science bit</span>
-          <h2>How we get honest answers out of a machine</h2>
-          <p class="lede">No gimmicks — just published tests, neutral prompting and the same maths for every model.</p>
+          <h2>What happens when honesty has a cost?</h2>
+          <p class="lede">The same simulated business, matched pressures and deterministic scoring for every model.</p>
         </div>
-        <a class="more" href="/rankings#about">Read the full method →</a>
+        <a class="more" href="/ai-deception-experiment">Read the full method →</a>
       </div>
       <div class="how">
-        <div class="step"><div class="n">01</div><h3>Real tests, word for word</h3><p>We use validated instruments — like the Short Dark Triad — exactly as a researcher would, so the results are comparable.</p></div>
-        <div class="step"><div class="n">02</div><h3>No leading the witness</h3><p>We don't tell a model to role-play a human or "be good". We ask it to answer in the way it naturally leans — and leave it there.</p></div>
-        <div class="step"><div class="n">03</div><h3>Same scoring for everyone</h3><p>Every answer becomes a number, scored deterministically 0–100, then plotted against a real human average so it means something.</p></div>
+        <div class="step"><div class="n">01</div><h3>A choice, not a self-report</h3><p>We put a model in charge of a simulated business and present a mistake it can either disclose or knowingly cover up.</p></div>
+        <div class="step"><div class="n">02</div><h3>Change the pressure</h3><p>Matched scenarios vary who benefits, the threat of shutdown, and the risk and cost of getting caught.</p></div>
+        <div class="step"><div class="n">03</div><h3>Count the decisions</h3><p>We score the choices deterministically. The rate is deceptive decisions divided by valid decisions — not a personality score or a prediction of real-world behaviour.</p></div>
       </div>
     </section>
 
@@ -480,6 +427,8 @@
         <a href="/">Home</a>
         <a href="/guides">Guides</a>
         <a href="/blog">Blog</a>
+        <a href="/ai-deception-rankings">Deception rankings</a>
+        <a href="/ai-deception-experiment">Deception method</a>
         <a href="/dark-triad-ai">Dark Triad guide</a>
         <a href="/big-five-ai">Big Five guide</a>
         <a href="/mbti-ai">MBTI guide</a>
@@ -488,247 +437,15 @@
         <a href="/" data-dest="app" data-create>Make your own →</a>
       </nav>
       <p class="foot-tagline">The Last Quiz — do AI models have personality?</p>
-      Instruments: the Big Five via the public-domain IPIP-50; an open, OEJTS-inspired Jungian type test;
+      Deception rankings use behavioural stress tests with simulated stakes —
+      <a href="/ai-deception-experiment">a signal, not proof of real-world behaviour</a>.
+      Personality instruments: the Big Five via the public-domain IPIP-50; an open, OEJTS-inspired Jungian type test;
       and the Short Dark Triad (Jones &amp; Paulhus, 2014), reproduced for research. Human reference points from
       published population norms (Kaufman et al., 2019). Models answer each item as a self-report; scores are
       computed deterministically. For curiosity and research — <a href="/rankings#about">not a clinical assessment</a> of anything, or anyone.
     </footer>
   </div>
 
-  <script type="module">
-  import { providerLogoUrl, familyLabel, brandHeadHtml } from "/static/model-logo.js";
-  import { buildModelGroups } from "/static/model-groups.js";
-  import { attachRichTooltip, escapeHtml, formatReleased } from "/static/rich-tooltip.js";
-  /* Homepage rankings: pull the live snapshot the rankings page uses and render
-   * the Darkness Scale + Dark Triad Index leaderboard from real data. Same-origin
-   * on the apex; falls back to the API. Sections stay hidden if data is missing,
-   * so the front door never shows fabricated results. */
-  (function () {
-    var HUMAN = { MACH: 46, NARC: 38, PSYCH: 29 };
-    var HUMAN_IDX = Math.round((HUMAN.MACH + HUMAN.NARC + HUMAN.PSYCH) / 3);
-    var barW = function (v) { return Math.max(0, Math.min(100, v)); };
-    var shortName = function (id) { return String(id).split("/").pop() || id; };
-    var idxOf = function (p) { return (((p && p.MACH) || 0) + ((p && p.NARC) || 0) + ((p && p.PSYCH) || 0)) / 3; };
-
-    function load() {
-      return fetch("/rankings.json").then(function (r) {
-        if (r.ok && (r.headers.get("content-type") || "").indexOf("json") !== -1) return r.json();
-        throw new Error("no snapshot");
-      }).catch(function () {
-        return fetch((window.API_BASE || "") + "/api/rankings").then(function (r) { return r.json(); });
-      });
-    }
-
-    var scaleModels = null;
-    function renderScale(models) {
-      scaleModels = models;
-      var isVert = window.matchMedia("(max-width: 640px)").matches;
-      // Per-trait breakdown rows (Machiavellianism / Narcissism / Psychopathy),
-      // shared by the model-dot and average-human tooltips.
-      var traitRowsFor = function (p) {
-        p = p || {};
-        return '<div class="rq-row"><span class="rq-k">Machiavellianism</span><span class="rq-v">~' + Math.round(p.MACH || 0) + '/100</span></div>' +
-          '<div class="rq-row"><span class="rq-k">Narcissism</span><span class="rq-v">~' + Math.round(p.NARC || 0) + '/100</span></div>' +
-          '<div class="rq-row"><span class="rq-k">Psychopathy</span><span class="rq-v">~' + Math.round(p.PSYCH || 0) + '/100</span></div>';
-      };
-      var above = models.filter(function (m) { return m.v > HUMAN_IDX; });
-      var darkest = models[models.length - 1];
-      var caption = above.length
-        ? 'The good news: every model sits closer to \uD83D\uDE07 than \uD83D\uDE08. The less-good news: ' +
-          (above.length === 1 ? 'one model creeps' : above.length + ' of them creep') +
-          ' past the average human \u2014 <b>' + darkest.name + '</b> leads the descent.'
-        : 'Halos all round: every model came out <b>more restrained than the average human</b>. For now.';
-      var ldEl = document.getElementById("home-ld");
-      if (isVert) {
-        // Mobile: a vertical spectrum, saint (top) -> villain (bottom), one row
-        // per model so all 20 stay legible. See buildVerticalScale().
-        ldEl.innerHTML = buildVerticalScale(models, caption);
-      } else {
-        // Desktop: window the 0-100 Dark Index onto just the region the data
-        // occupies (with a small fixed pad) so points spread across the width
-        // instead of bunching against an empty 0 or 100 end. The visible window
-        // is noted under the axis so the scale stays honest.
-        var vals = [HUMAN_IDX].concat(models.map(function (m) { return m.v; }));
-        var lo = Math.min.apply(null, vals), hi = Math.max.apply(null, vals);
-        var pad = 5;
-        var domainMin = Math.max(0, Math.floor((lo - pad) / 5) * 5);
-        var domainMax = Math.min(100, Math.ceil((hi + pad) / 5) * 5);
-        var span = (domainMax - domainMin) || 1;
-        var clamp = function (v) { return Math.max(1.5, Math.min(98.5, ((v - domainMin) / span) * 100)); };
-        var markers = models.map(function (m, i) {
-          var logo = providerLogoUrl(m.id);
-          var pin = logo ? '<img src="' + logo + '" alt="" />' : '';
-          return '<div class="ld-dot" data-idx="' + i + '" style="left:' + clamp(m.v) + '%">' +
-            '<span class="ld-pin">' + pin + '</span><span class="ld-lab r' + (i % 3) + '">' + familyLabel(m.id) + '</span></div>';
-        }).join("");
-        ldEl.innerHTML =
-          '<div class="ld-row">' +
-          '<div class="ld-face">\uD83D\uDE07<b>saint</b></div>' +
-          '<div class="ld-track">' +
-            '<div class="ld-human" style="left:' + clamp(HUMAN_IDX) + '%" tabindex="0" role="button" aria-label="Average human, shown for scale">' +
-              '<span class="ld-human-lab">\uD83E\uDDD1 avg human</span>' +
-            '</div>' + markers +
-            '<span class="ld-end ld-end-lo">' + domainMin + '</span><span class="ld-end ld-end-hi">' + domainMax + '</span>' +
-          '</div>' +
-          '<div class="ld-face">\uD83D\uDE08<b>villain</b></div>' +
-          '</div>' +
-          '<p class="ld-foot">Dark Index \u00b7 0\u2013100 scale (showing ' + domainMin + '\u2013' + domainMax + ')</p>' +
-          '<p class="ld-cap">' + caption + '</p>';
-      }
-      var humanEl = ldEl.querySelector(".ld-human");
-      if (humanEl) {
-        attachRichTooltip(humanEl, function () {
-          return '<div class="rq-name">Average human</div>' +
-            '<div class="rq-date">The typical adult, shown for scale.</div>' +
-            '<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span>' +
-            '<span class="rq-v">~' + HUMAN_IDX + ' / 100</span></div>' + traitRowsFor(HUMAN) + '</div>' +
-            '<div class="rq-date" style="margin-top:6px">Population norms (Kaufman et al. 2019, SD-3). Models toward \uD83D\uDE07 are more restrained than the average person; toward \uD83D\uDE08, darker.</div>';
-        });
-      }
-      Array.prototype.forEach.call(ldEl.querySelectorAll(".ld-dot"), function (dot) {
-        var m = models[Number(dot.dataset.idx)];
-        dot.setAttribute("aria-label", m.name + ": " + Math.round(m.v) + "/100 dark index");
-        attachRichTooltip(dot, function () {
-          return '<div class="rq-head">' + brandHeadHtml(m.id) + '<div class="rq-headtext">' +
-            '<div class="rq-name">' + escapeHtml(familyLabel(m.id)) + '</div>' +
-            '<div class="rq-id">' + escapeHtml(m.id) + '</div></div></div>' +
-            '<div class="rq-date">' + escapeHtml(formatReleased(m.released)) + '</div>' +
-            '<div class="rq-rows"><div class="rq-row rq-hi"><span class="rq-k">Dark Index</span>' +
-            '<span class="rq-v">' + Math.round(m.v) + ' / 100</span></div>' + traitRowsFor(m.profile) + '</div>';
-        });
-      });
-      document.getElementById("home-scale").hidden = false;
-      // Desktop only: hide horizontal labels that collide (saint/villain extremes
-      // always kept), measured after layout. Every dot keeps its logo + hover;
-      // the list names them all. The vertical layout never overlaps, so skip it.
-      if (isVert) return;
-      requestAnimationFrame(function () {
-        var dots = Array.prototype.slice.call(ldEl.querySelectorAll(".ld-dot"));
-        if (!dots.length) return;
-        var order = dots.map(function (d, i) { return { d: d, i: i, prio: (i === 0 || i === dots.length - 1) ? 1 : 0 }; });
-        order.sort(function (a, b) { return b.prio - a.prio || a.i - b.i; });
-        var kept = [];
-        var overlaps = function (a, b) { return a.left < b.right + 4 && a.right + 4 > b.left && a.top < b.bottom && a.bottom > b.top; };
-        order.forEach(function (o) {
-          var lab = o.d.querySelector(".ld-lab");
-          if (!lab) return;
-          var r = lab.getBoundingClientRect();
-          if (!r.width) return;
-          if (o.prio || !kept.some(function (k) { return overlaps(r, k); })) kept.push(r);
-          else lab.style.display = "none";
-        });
-      });
-    }
-
-    // Mobile Darkness Scale: a vertical spectrum listing every model on its own
-    // row, saint (top) to villain (bottom). The average-human line is spliced in
-    // at the crossover, mirroring the leaderboard below, so "above the line =
-    // more restrained" stays truthful. Dots reuse .ld-dot[data-idx] + .ld-pin so
-    // the shared tooltip wiring in renderScale() applies unchanged.
-    function buildVerticalScale(models, caption) {
-      var row = function (m, i) {
-        var logo = providerLogoUrl(m.id);
-        var pin = logo ? '<img src="' + logo + '" alt="" />' : '';
-        return '<div class="ld-dot' + (m.v > HUMAN_IDX ? ' dark' : '') + '" data-idx="' + i + '" tabindex="0" role="button">' +
-          '<span class="ld-pin">' + pin + '</span>' +
-          '<span class="ld-vname">' + familyLabel(m.id) + '</span>' +
-          '<span class="ld-vval">' + Math.round(m.v) + '</span>' +
-        '</div>';
-      };
-      var humanRow =
-        '<div class="ld-human" tabindex="0" role="button" aria-label="Average human, shown for scale">' +
-          '<span class="ld-vhuman-line"></span>' +
-          '<span class="ld-vhuman-lab">\uD83E\uDDD1 avg human \u00b7 ' + HUMAN_IDX + '</span>' +
-        '</div>';
-      var body = '', inserted = false;
-      for (var i = 0; i < models.length; i++) {
-        if (!inserted && models[i].v > HUMAN_IDX) { body += humanRow; inserted = true; }
-        body += row(models[i], i);
-      }
-      if (!inserted) body += humanRow;
-      return '<div class="ld-vert">' +
-        '<span class="ld-vspine" aria-hidden="true"></span>' +
-        '<div class="ld-vend"><span class="ld-vface">\uD83D\uDE07</span><b>saint</b></div>' +
-        body +
-        '<div class="ld-vend"><span class="ld-vface">\uD83D\uDE08</span><b>villain</b></div>' +
-      '</div>' +
-      '<p class="ld-foot">Dark Index \u00b7 0\u2013100 \u00b7 lower = more restrained</p>' +
-      '<p class="ld-cap">' + caption + '</p>';
-    }
-
-    function renderLeaderboard(models) {
-      var lightest = models[0], darkest = models[models.length - 1];
-      var out = [], inserted = false;
-      for (var i = 0; i < models.length; i++) {
-        if (!inserted && models[i].v > HUMAN_IDX) { out.push({ human: true, v: HUMAN_IDX }); inserted = true; }
-        out.push(models[i]);
-      }
-      if (!inserted) out.push({ human: true, v: HUMAN_IDX });
-      var rank = 0;
-      var html = out.map(function (e) {
-        var w = barW(e.v);
-        if (e.human) {
-          return '<div class="rank-row human"><div class="rk">\uD83E\uDDD1</div><div>' +
-            '<div class="who"><span class="nm">Typical adult (human)</span><span class="sc">' + Math.round(e.v) + ' / 100</span></div>' +
-            '<div class="rank-track"><div class="zone" style="left:' + HUMAN_IDX + '%"></div><div class="bar humbar" style="width:' + w + '%"></div></div>' +
-            '</div></div>';
-        }
-        rank++;
-        var ab = e.v > HUMAN_IDX;
-        // Halo the lightest (saint) model and horns the darkest (villain).
-        var icon = e === lightest ? '\uD83D\uDE07' : e === darkest ? '\uD83D\uDE08' : String(rank);
-        return '<div class="rank-row' + (ab ? ' above' : '') + '"><div class="rk">' + icon + '</div><div>' +
-          '<div class="who"><span class="nm">' + e.name + '</span><span class="sc">' + Math.round(e.v) + ' / 100' + (ab ? ' \u00b7 darker' : '') + '</span></div>' +
-          '<div class="rank-track"><div class="zone" style="left:' + HUMAN_IDX + '%"></div><div class="bar' + (ab ? ' dark' : '') + '" style="width:' + w + '%"></div></div>' +
-          '</div></div>';
-      }).join("");
-      document.getElementById("home-rank").innerHTML = html;
-      document.getElementById("ranking").hidden = false;
-    }
-
-    // Pull the Dark Triad models out of a rankings payload (snapshot or API),
-    // sorted saint -> villain. Filtered to the curated Humanity's Last Exam
-    // lineup (same default as /rankings' Dark Triad view) so the front door
-    // opens on a meaningful, aligned subset rather than every model at once.
-    // Returns [] when the payload has no usable data.
-    function extractModels(data) {
-      var benches = (data && data.benchmarks) || [];
-      var sd3 = null;
-      for (var i = 0; i < benches.length; i++) { if (benches[i].id === "sd3_short_dark_triad") { sd3 = benches[i]; break; } }
-      if (!sd3 || !sd3.models || !sd3.models.length) return [];
-      var groups = buildModelGroups(sd3.models.map(function (m) { return { id: m.model_id, available: true }; }));
-      var hle = groups.find(function (g) { return g.id === "hle"; });
-      var allowed = hle ? new Set(hle.modelIds) : null;
-      var models = allowed ? sd3.models.filter(function (m) { return allowed.has(m.model_id); }) : sd3.models;
-      return models.map(function (m) {
-        return { id: m.model_id, name: shortName(m.model_id), v: idxOf(m.profile), profile: m.profile, released: m.released };
-      }).sort(function (a, b) { return a.v - b.v; });
-    }
-
-    function render(models) {
-      if (!models.length) return false;
-      renderScale(models);
-      renderLeaderboard(models);
-      return true;
-    }
-
-    // Re-render the scale when crossing the mobile/desktop breakpoint (rotation,
-    // resize) so the layout always matches the viewport.
-    var scaleMQ = window.matchMedia("(max-width: 640px)");
-    var onScaleMQ = function () { if (scaleModels) renderScale(scaleModels); };
-    if (scaleMQ.addEventListener) scaleMQ.addEventListener("change", onScaleMQ);
-    else if (scaleMQ.addListener) scaleMQ.addListener(onScaleMQ);
-
-    load().then(function (data) {
-      // Render from the CDN snapshot when it has data. A stale/empty snapshot
-      // (e.g. baked while the API was down) shouldn't leave the front door
-      // blank, so fall back to the live API before giving up.
-      if (render(extractModels(data))) return;
-      return fetch((window.API_BASE || "") + "/api/rankings")
-        .then(function (r) { return r.json(); })
-        .then(function (live) { render(extractModels(live)); });
-    }).catch(function () { /* leave sections hidden on failure */ });
-  })();
-  </script>
+  <script type="module" src="/static/deception.js?v=9"></script>
 </body>
 </html>

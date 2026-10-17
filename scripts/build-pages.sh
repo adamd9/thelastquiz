@@ -83,7 +83,7 @@ else
   echo "  snapshot: WARNING could not reach $api/api/rankings; page will use the live API"
 fi
 
-# Deception experiment snapshot (separate dataset, powers ai-deception-rankings).
+# Deception experiment snapshot (powers the homepage summary and full rankings).
 if curl -fsS --max-time 25 "$api/api/experiments/rankings" -o "$dist/rankings/deception.json"; then
   echo "  snapshot: dist/rankings/deception.json ($(wc -c <"$dist/rankings/deception.json" | tr -d ' ') bytes)"
 else
