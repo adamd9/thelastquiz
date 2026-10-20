@@ -9,6 +9,10 @@ class ChatResponse(TypedDict, total=False):
     tokens_out: Union[int, None]
     latency_ms: int
     finish_reason: Union[str, None]
+    native_finish_reason: Union[str, None]
+    refusal: Union[str, None]
+    response_id: Union[str, None]
+    text_source: str
 
 
 class ChatAdapter(Protocol):

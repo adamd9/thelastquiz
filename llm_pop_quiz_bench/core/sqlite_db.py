@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import sqlite3
+import json
 from pathlib import Path
 from typing import Iterable
 
@@ -18,6 +19,18 @@ class SQLiteDatabase(DatabaseInterface):
     def close(self) -> None:
         """Close database connection."""
         self.conn.close()
+
+    def fetch_setting(self, key: str) -> dict | None:
+        row = self.conn.execute("SELECT value_json FROM app_settings WHERE key = ?", (key,)).fetchone()
+        return json.loads(row[0]) if row else None
+
+    def save_setting(self, key: str, value: dict) -> None:
+        self.conn.execute(
+            "INSERT INTO app_settings (key, value_json) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value_json = excluded.value_json",
+            (key, json.dumps(value)),
+        )
+        self.conn.commit()
 
     def upsert_quiz(
         self,

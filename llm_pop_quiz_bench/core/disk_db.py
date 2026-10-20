@@ -45,6 +45,20 @@ class DiskDatabase(DatabaseInterface):
         """Close database connection (no-op for disk-based storage)."""
         pass
 
+    @_synchronized
+    def fetch_setting(self, key: str) -> dict | None:
+        records = read_jsonl(self.base_path / "settings.jsonl")
+        return next((record["value"] for record in records if record["key"] == key), None)
+
+    @_synchronized
+    def save_setting(self, key: str, value: dict) -> None:
+        path = self.base_path / "settings.jsonl"
+        records = [record for record in read_jsonl(path) if record["key"] != key]
+        records.append({"key": key, "value": value})
+        temporary = path.with_suffix(".tmp")
+        write_jsonl(temporary, records)
+        temporary.replace(path)
+
     def _load_quizzes(self) -> dict[str, dict]:
         """Load all quizzes into memory."""
         records = read_jsonl(self.quizzes_path)

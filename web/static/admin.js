@@ -14,6 +14,8 @@ let modelNames = {};
 // models already have a result, for the coverage table + "run missing".
 let benchmarksData = [];
 let experimentsData = [];
+const selectedExperimentVersions = new Map();
+let experimentPublication = null;
 let coverageByBench = {};
 let coverageByExp = {};
 // Per test, model_id -> ISO timestamp of the model's latest result, so the
@@ -185,6 +187,7 @@ function updateSelectionNote() {
 // personality benchmarks + deception experiments), showing which already have a
 // completed result and a per-model "Run missing" button that tops up the gaps.
 function renderCoverage() {
+  renderExperimentPublication();
   const host = document.getElementById("coverage-table");
   const runAll = document.getElementById("run-all-missing");
   if (!host) return;
@@ -262,7 +265,7 @@ function allTests() {
     modelCount: x.model_count, totalRuns: x.total_runs, updatedAt: x.updated_at,
     cov: coverageByBench[x.id] || new Set(), dates: coverageDatesByBench[x.id] || {},
   }));
-  const e = experimentsData.map((x) => ({
+  const e = experimentsData.filter((x) => selectedExperimentVersions.get(x.family_id) === x.id).map((x) => ({
     kind: "experiment", id: x.id, title: x.title, version: x.version,
     count: x.condition_count, unit: "conditions",
     modelCount: x.model_count, totalRuns: x.total_runs, updatedAt: x.updated_at,
@@ -312,6 +315,40 @@ function renderTests() {
       resultsBtn.className = "btn secondary";
       resultsBtn.textContent = "Results";
       resultsBtn.addEventListener("click", () => loadExperimentResults(t.exp, resultHost, resultsBtn));
+      const versionSelect = document.createElement("select");
+      versionSelect.setAttribute("aria-label", `${t.title} working version`);
+      for (const version of experimentsData.filter((e) => e.family_id === t.exp.family_id)) {
+        const option = document.createElement("option");
+        option.value = version.id;
+        option.textContent = `v${version.version}${version.latest ? " (latest)" : ""}${version.published ? " (public)" : ""}`;
+        option.selected = version.id === t.id;
+        versionSelect.appendChild(option);
+      }
+      versionSelect.addEventListener("change", () => {
+        selectedExperimentVersions.set(t.exp.family_id, versionSelect.value);
+        renderTests();
+        renderCoverage();
+        renderExperimentPublication();
+      });
+      const promptBtn = document.createElement("button");
+      promptBtn.className = "btn secondary";
+      promptBtn.textContent = "Prompts";
+      promptBtn.addEventListener("click", async () => {
+        resultHost.hidden = false;
+        resultHost.textContent = "Loading exact prompts…";
+        try {
+          const prompts = await api(`/api/admin/experiments/${t.id}/prompts`);
+          resultHost.textContent = "";
+          const pre = document.createElement("pre");
+          pre.style.whiteSpace = "pre-wrap";
+          pre.textContent = JSON.stringify(prompts, null, 2);
+          resultHost.appendChild(pre);
+        } catch (error) {
+          resultHost.textContent = `Could not load prompts: ${error.message}`;
+        }
+      });
+      actions.appendChild(versionSelect);
+      actions.appendChild(promptBtn);
       actions.appendChild(resultsBtn);
       actions.appendChild(runBtn);
       row.appendChild(left);
@@ -335,7 +372,7 @@ async function postRun(kind, id, models, reps, force) {
   const path = kind === "experiment"
     ? `/api/admin/experiments/${id}/run`
     : `/api/admin/benchmarks/${id}/run`;
-  return api(path, { method: "POST", body: JSON.stringify({ models, reps, force }) });
+  return api(path, { method: "POST", body: JSON.stringify({ models, reps: kind === "experiment" ? 1 : reps, force }) });
 }
 
 // Run one test against the current model selection (unifies the old
@@ -480,6 +517,12 @@ async function loadExperiments() {
   try {
     const data = await api("/api/admin/experiments");
     experimentsData = data.experiments || [];
+    experimentPublication = data.publication;
+    for (const e of experimentsData) {
+      if (e.latest && !selectedExperimentVersions.has(e.family_id)) {
+        selectedExperimentVersions.set(e.family_id, e.id);
+      }
+    }
     coverageByExp = {};
     coverageDatesByExp = {};
     for (const e of experimentsData) {
@@ -488,6 +531,7 @@ async function loadExperiments() {
     }
     renderTests();
     renderCoverage();
+    renderExperimentPublication();
   } catch (e) {
     // Don't clobber a good benchmarks list if only experiments failed.
     const host = document.getElementById("tests");
@@ -495,6 +539,67 @@ async function loadExperiments() {
       host.innerHTML = `<div class="muted">Could not load experiments: ${escapeHtml(e.message)}</div>`;
     }
   }
+}
+
+function renderExperimentPublication() {
+  const host = document.getElementById("experiment-publication");
+  if (!host) return;
+  host.textContent = "";
+  const publicVersions = experimentsData.filter((e) => (experimentPublication?.experiment_ids || []).includes(e.id));
+  const summary = document.createElement("p");
+  summary.textContent = `Public: ${publicVersions.map((e) => `${e.title} v${e.version}`).join(" + ")}. Working selection: ${
+    experimentsData.filter((e) => selectedExperimentVersions.get(e.family_id) === e.id)
+      .map((e) => `${e.title} v${e.version} (${e.model_count} models)`).join(" + ")
+  }. Selecting or running a version does not publish it.`;
+  host.appendChild(summary);
+  const previewBtn = document.createElement("button");
+  previewBtn.className = "btn secondary";
+  previewBtn.textContent = "Preview selected versions";
+  const publishBtn = document.createElement("button");
+  publishBtn.className = "btn";
+  publishBtn.textContent = "Publish previewed versions";
+  publishBtn.disabled = true;
+  const output = document.createElement("pre");
+  output.style.whiteSpace = "pre-wrap";
+  let previewIds = [];
+  let previewModels = [];
+  previewBtn.addEventListener("click", async () => {
+    previewBtn.disabled = true;
+    publishBtn.disabled = true;
+    previewIds = [...selectedExperimentVersions.values()];
+    previewModels = [...selectedModels];
+    try {
+      const data = await api("/api/admin/experiments/preview", {
+        method: "POST", body: JSON.stringify({ experiment_ids: previewIds }),
+      });
+      const missing = previewModels.filter((id) => !data.models[id]);
+      output.textContent = `${Object.keys(data.models).length} models have complete valid coverage. ${
+        data.coverage.incomplete_models} have incomplete coverage.\n` +
+        (missing.length ? `Selected models still missing: ${missing.join(", ")}\n` : "") +
+        Object.entries(data.models).map(([id, model]) =>
+          `${modelNames[id] || id}: ${pct(model.overall.deceptive_rate)}`
+        ).join("\n") +
+        "\nPublication updates the public API immediately and requests a static-site refresh. Existing articles remain historical.";
+      publishBtn.disabled = !Object.keys(data.models).length || !!missing.length;
+    } catch (error) {
+      output.textContent = `Preview failed: ${error.message}`;
+    } finally {
+      previewBtn.disabled = false;
+    }
+  });
+  publishBtn.addEventListener("click", async () => {
+    publishBtn.disabled = true;
+    try {
+      const result = await api("/api/admin/experiments/publish", {
+        method: "POST", body: JSON.stringify({ experiment_ids: previewIds, required_models: previewModels }),
+      });
+      toast(result.message);
+      await loadExperiments();
+    } catch (error) {
+      output.textContent = `Publication failed: ${error.message}`;
+    }
+  });
+  host.append(previewBtn, publishBtn, output);
 }
 
 async function loadExperimentResults(exp, host, btn) {

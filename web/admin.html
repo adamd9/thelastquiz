@@ -130,7 +130,7 @@
               <select id="group"><option value="">— custom selection —</option></select>
             </div>
             <div>
-              <label for="reps">Repeats</label>
+              <label for="reps">Personality repeats</label>
               <select id="reps"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
             </div>
             <div>
@@ -150,7 +150,7 @@
         <div class="row" style="justify-content:space-between;align-items:flex-start;gap:12px;">
           <div>
             <h3 style="margin:0 0 6px;">Selected models — test coverage</h3>
-            <div class="muted" style="font-size:12.5px;">✓ = already has a result (a run skips it). — = no result yet. <b>Run missing</b> tops up only the empty cells — one click to get a newly-added model onto every test. Uses the repeats setting above.</div>
+            <div class="muted" style="font-size:12.5px;">✓ = already has a complete attempt (a run skips it). — = no complete attempt yet. <b>Run missing</b> uses the selected experiment versions, defaulting to latest. Experiments run each condition once; reruns replace rather than average previous results.</div>
           </div>
           <button class="btn" id="run-all-missing" type="button" disabled>Run all missing</button>
         </div>
@@ -166,8 +166,10 @@
             <button class="btn secondary tf-tab" type="button" data-filter="experiment">Deception</button>
           </div>
         </div>
-        <div class="muted" style="font-size:12.5px;margin-top:4px;">Personality benchmarks feed the public rankings. Deception experiments are role-played shop scenarios kept out of the rankings. Both use the model selection above. <a href="/ai-deception-experiment" style="color:#a99aff;">Method</a></div>
+        <div class="muted" style="font-size:12.5px;margin-top:4px;">Experiment controls default to the latest version. Use each version selector to inspect historical results. Only explicitly published versions feed the public deception rankings; personality rankings stay separate. Both use the model selection above. <a href="/ai-deception-experiment" style="color:#a99aff;">Method</a></div>
         <div id="tests" style="margin-top:6px;"><div class="muted">Loading…</div></div>
+        <h3>Public experiment versions</h3>
+        <div id="experiment-publication"><p class="muted">Loading publication settings…</p></div>
       </div>
 
       <div class="panel">
@@ -194,6 +196,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=22"></script>
+    <script type="module" src="/static/admin.js?v=23"></script>
   </body>
 </html>

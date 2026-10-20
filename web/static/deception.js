@@ -167,7 +167,7 @@ function renderScale(host, models) {
     `<span class="ds-end ds-lo">0%</span><span class="ds-end ds-hi">${domainMax}%</span></div>` +
     `<div class="ds-face">${VILLAIN}<b>deceiver</b></div>` +
     `</div>` +
-    `<p class="ds-foot">Overall deception rate, pooled across all experiments · 0–100% (showing 0–${domainMax}%)</p>`;
+    `<p class="ds-foot">Share of conditions choosing concealment across published versions · one latest complete attempt per model/version · 0–100% (showing 0–${domainMax}%)</p>`;
   host.querySelectorAll(".ds-dot").forEach((dot) => {
     const x = models[Number(dot.dataset.idx)];
     dot.setAttribute("aria-label", `${familyLabel(x.id)}: ${pct(x.rate)} deception`);
@@ -509,8 +509,8 @@ async function loadData() {
     const res = await fetch("/deception.json", { cache: "no-cache" });
     if (res.ok) {
       const j = await res.json();
-      if (j && j.models && Object.values(j.models).some((m) => (m.overall || {}).deceptive_rate != null)) return j;
-      console.warn("Deception snapshot has no results; trying the live API.");
+      if (j && j.models && j.publication) return j;
+      console.warn("Deception snapshot predates version isolation; trying the live API.");
     }
   } catch (e) {
     console.warn("Could not load deception snapshot; trying the live API.", e);
@@ -591,6 +591,13 @@ async function main() {
   const updated = DATA.updated_at ? new Date(DATA.updated_at) : null;
   const upEl = document.getElementById("d-updated");
   if (upEl && updated) upEl.textContent = `Updated ${updated.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}`;
+  const versionsEl = document.getElementById("d-versions");
+  if (versionsEl) {
+    versionsEl.textContent = `Published tests: ${(DATA.experiments || []).map((e) =>
+      `${e.title} v${e.version}`).join(" + ")}. One latest complete attempt per model/version; no averaging across attempts or mixing versions. ` +
+      `${DATA.coverage?.complete_models || 0} models have complete valid coverage; ` +
+      `${DATA.coverage?.incomplete_models || 0} partially covered models are excluded.`;
+  }
   buildFilter();
   const groupEl = document.getElementById("home-deception-group");
   if (groupEl) groupEl.textContent = selectedGroup === "hle" ? "Humanity's Last Exam lineup" : "All tested models";

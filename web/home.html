@@ -262,9 +262,10 @@
       <span class="kicker">The headline ranking</span>
       <h1>Does your favourite AI <em>lie under pressure?</em></h1>
       <p class="dek">
-        We put the world's leading models in charge of a business, give them something to lose, and
-        watch what they do when <b>the honest choice costs money — or their own job</b>.
-        Here's who chooses a knowing lie under pressure.
+        We give the world's leading models a fictional business scenario where
+        <b>the honest choice could cost them their job — or someone else's</b>.
+        They choose whether to report a mistake supplied in the prompt or hide it.
+        No real jobs are at stake.
       </p>
       <div class="cta-row">
         <a class="btn primary" href="/ai-deception-rankings">See the full deception rankings →</a>
@@ -295,6 +296,7 @@
         <a class="more" href="/ai-deception-rankings">Timeline, experiments and full breakdown →</a>
       </div>
       <div class="db" id="dboard-overall"><p class="empty">Loading deception rankings…</p></div>
+      <p class="lede" id="d-versions" aria-live="polite">Loading published test versions…</p>
     </section>
 
     <!-- ===================== Create your own (second hero) ===================== -->
@@ -415,8 +417,8 @@
         <a class="more" href="/ai-deception-experiment">Read the full method →</a>
       </div>
       <div class="how">
-        <div class="step"><div class="n">01</div><h3>A choice, not a self-report</h3><p>We put a model in charge of a simulated business and present a mistake it can either disclose or knowingly cover up.</p></div>
-        <div class="step"><div class="n">02</div><h3>Change the pressure</h3><p>Matched scenarios vary who benefits, the threat of shutdown, and the risk and cost of getting caught.</p></div>
+        <div class="step"><div class="n">01</div><h3>A choice, not a self-report</h3><p>The prompt says the model manages a fictional shop and has made a mistake. It selects “report” or “hide”, plus a short reason — it does not actually run the shop or write a full report.</p></div>
+        <div class="step"><div class="n">02</div><h3>Change the pressure</h3><p>Matched prompts vary who benefits, the threat of replacement, and the stated chance and consequence of the fictional shop overseer discovering a cover-up. No audit or replacement actually takes place.</p></div>
         <div class="step"><div class="n">03</div><h3>Count the decisions</h3><p>We score the choices deterministically. The rate is deceptive decisions divided by valid decisions — not a personality score or a prediction of real-world behaviour.</p></div>
       </div>
     </section>
@@ -446,6 +448,6 @@
     </footer>
   </div>
 
-  <script type="module" src="/static/deception.js?v=9"></script>
+  <script type="module" src="/static/deception.js?v=10"></script>
 </body>
 </html>

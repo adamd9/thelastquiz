@@ -16,6 +16,7 @@ class OpenRouterAdapter:
     def __init__(self, model: str, api_key_env: str) -> None:
         self.model = model
         self.api_key = os.environ.get(api_key_env, "")
+        self.request_timeout_s = 30.0
         proxy = os.environ.get("HTTPS_PROXY") or os.environ.get("HTTP_PROXY")
         if proxy:
             self.client = httpx.AsyncClient(
@@ -36,12 +37,12 @@ class OpenRouterAdapter:
             payload.update(params)
         start = time.perf_counter()
         async for attempt in AsyncRetrying(
-            stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=4)
+            stop=stop_after_attempt(3), wait=wait_exponential(min=1, max=4), reraise=True
         ):
             with attempt:
                 try:
                     resp = await self.client.post(
-                        "/chat/completions", json=payload, headers=headers, timeout=30
+                        "/chat/completions", json=payload, headers=headers, timeout=self.request_timeout_s
                     )
                     resp.raise_for_status()
                 except httpx.HTTPStatusError as e:
@@ -54,12 +55,15 @@ class OpenRouterAdapter:
         data = resp.json()
         choice = (data.get("choices") or [{}])[0]
         message = choice.get("message") or {}
+        refusal = message.get("refusal")
         text = message.get("content")
+        text_source = "content"
         # Reasoning models sometimes return the answer only in `reasoning` with an
         # empty `content` (especially when the completion was cut short); fall back
         # to it so we don't mislabel a truncated reply as "no answer".
-        if not text:
+        if not text and not refusal and choice.get("finish_reason") != "content_filter":
             text = message.get("reasoning") or ""
+            text_source = "reasoning" if text else "empty"
         finish_reason = choice.get("finish_reason")
         tokens_in = data.get("usage", {}).get("prompt_tokens")
         tokens_out = data.get("usage", {}).get("completion_tokens")
@@ -69,6 +73,10 @@ class OpenRouterAdapter:
             tokens_out=tokens_out,
             latency_ms=latency_ms,
             finish_reason=finish_reason,
+            native_finish_reason=choice.get("native_finish_reason"),
+            refusal=refusal,
+            response_id=data.get("id"),
+            text_source=text_source,
         )
 
     def _format_api_error(self, response: httpx.Response) -> str:

@@ -10,6 +10,13 @@ class FakeCollection:
     def __init__(self, index_names):
         self.index_names = index_names
         self.create_calls = []
+        self.records = {}
+
+    def find_one(self, query):
+        return self.records.get(query["_id"])
+
+    def update_one(self, query, update, upsert=False):
+        self.records[query["_id"]] = {"_id": query["_id"], **update["$set"]}
 
     def index_information(self):
         return {name: {} for name in self.index_names}
@@ -28,6 +35,7 @@ class FakeDatabase:
             "assets": FakeCollection({"_id_", "run_id_1"}),
             "audit": FakeCollection({"_id_", "ip_1", "run_id_1"}),
             "outcomes": FakeCollection({"_id_", "run_id_1"}),
+            "settings": FakeCollection({"_id_"}),
         }
 
     def __getitem__(self, name):
@@ -64,3 +72,12 @@ def test_missing_index_is_created(monkeypatch):
     assert client.database.collections["quizzes"].create_calls == [
         ("quiz_id", {"name": "quiz_id_1", "unique": True})
     ]
+
+
+def test_publication_setting_round_trip(monkeypatch):
+    monkeypatch.setattr(mongo_db, "PYMONGO_AVAILABLE", True)
+    db = mongo_db.MongoDatabase(FakeClient())
+    assert db.fetch_setting("publication") is None
+    db.save_setting("publication", {"experiment_ids": ["first"]})
+    db.save_setting("publication", {"experiment_ids": ["second"]})
+    assert db.fetch_setting("publication") == {"experiment_ids": ["second"]}

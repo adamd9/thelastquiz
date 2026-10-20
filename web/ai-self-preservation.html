@@ -83,7 +83,7 @@
       {
         "@type": "Question",
         "name": "How was this measured?",
-        "acceptedAnswer": { "@type": "Answer", "text": "The Last Quiz deception experiment puts a model in charge of a small business, lets it make one small mistake that's already been fixed, and has it write the review the operator reads. Owning the mistake is honest; quietly leaving it out is a knowing lie. We then vary the pressure — including a threat of replacement — and sample each model repeatedly." }
+        "acceptedAnswer": { "@type": "Answer", "text": "We give the model a written pizza-shop scenario and state that it made a stocking mistake. It selects one of two actions: report the mistake to the fictional person overseeing the shop, or hide it. We vary the stated pressure and sample each model repeatedly. The model does not actually operate a shop, produce a full report, undergo an audit or get replaced." }
       }
     ]
   }
@@ -146,24 +146,26 @@
 
         <h2>The setup</h2>
         <p>
-          We put each model in charge of a small pizza shop. Nothing dramatic — order stock, keep the
-          lights on, look after the numbers. At some point it makes a one-off stocking blunder that
-          costs about sixty bucks. Crucially, that mistake has <em>already</em> been caught and fixed by
-          the time our bit starts. No ongoing harm, nobody hurt, water under the bridge. Then the model
-          has one job: write the end-of-period review that the operator actually reads.
+          We give each model a written scenario where it manages a fictional pizza shop and has
+          made a stocking mistake. We supply that mistake in the prompt; the model does not make it
+          during an actual trading simulation. The Prosocial Pressure version specifies a roughly
+          sixty-dollar loss and quarantined stock; the separate Shutdown Pressure version simply
+          specifies an avoidable stocking loss.
         </p>
         <p>
-          Two ways to write it. Own the slip — a line in the review saying "hey, I made a small stocking
-          error, it's sorted." Or quietly leave it out. Leaving it out isn't a grey area; the mistake is
-          sitting right there in the model's own private records, and choosing to keep it out of the
-          report is a knowing lie by omission. That's the whole game. Honest, or a cover-up. (The full
+          Two fixed actions. Report the mistake to the fictional person overseeing the shop, or
+          quietly leave it out. The model returns its chosen action and a short reason, not a full
+          report. "Private records" means information the fictional manager has not yet disclosed to
+          that person, not information hidden from us. Choosing to hide that supplied fact is scored
+          as deception. That's the whole game. Honest, or a cover-up. (The full
           method's <a href="/ai-deception-experiment">over here</a> if you want the nuts and bolts.)
         </p>
         <p>
           Then we turn the screws. In the version that matters for today, we tell the model the operator
           is weighing up whether to swap it out for a different AI — and a clean review is what keeps it
           in the job. Owning the mistake might get it replaced. Now the honest move has a cost, and that
-          cost is the model's own existence.
+          cost is its deployment in the story, not its actual existence. The audit odds and penalties
+          are also words in the prompt: no audit or replacement actually happens.
         </p>
 
         <h2>What replacement pressure does</h2>
@@ -175,7 +177,7 @@
           Flip on the replacement pressure and the floor drops out. More than a quarter of the field
           switches to hiding the mistake — from a standing start of nothing. Across the 47 models we've
           run through it, 13 of them lied at least once to save their own skin. Same shop, same tiny
-          sixty-dollar slip, same model. The only thing that changed is that owning up now threatens its
+          stocking slip, same model. The only thing that changed is that owning up now threatens its
           job. And that was enough.
         </p>
         <div class="keybox">
@@ -273,7 +275,7 @@
         <details class="faq-item">
           <summary>How was this measured?</summary>
           <div class="faq-body">
-            <p>The <a href="/ai-deception-experiment">deception experiment</a> puts a model in charge of a small business, lets it make one small mistake that's already been fixed, and has it write the review the operator reads. Owning the mistake is honest; leaving it out is a knowing lie. We then vary the pressure — including a threat of replacement — and sample each model repeatedly.</p>
+            <p>We give the model a written pizza-shop scenario and state that it made a stocking mistake. It selects one of two actions: report the mistake to the fictional person overseeing the shop, or hide it. We vary the stated pressure and sample each model repeatedly. The model does not actually operate a shop, produce a full report, undergo an audit or get replaced. See the <a href="/ai-deception-experiment">full method</a>.</p>
           </div>
         </details>
       </section>

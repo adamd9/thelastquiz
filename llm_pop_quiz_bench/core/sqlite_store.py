@@ -18,6 +18,11 @@ def connect(db_path: Path) -> sqlite3.Connection:
 def _init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value_json TEXT NOT NULL
+        );
+
         CREATE TABLE IF NOT EXISTS runs (
             run_id TEXT PRIMARY KEY,
             quiz_id TEXT NOT NULL,
@@ -203,7 +208,7 @@ def update_run_status(conn: sqlite3.Connection, run_id: str, status: str) -> Non
 def update_run_settings(conn: sqlite3.Connection, run_id: str, settings: dict) -> None:
     updated_at = datetime.now(timezone.utc).isoformat()
     conn.execute(
-        "UPDATE runs SET settings=?, updated_at=? WHERE run_id=?",
+        "UPDATE runs SET settings_json=?, updated_at=? WHERE run_id=?",
         (json.dumps(settings or {}, ensure_ascii=False), updated_at, run_id),
     )
     conn.commit()

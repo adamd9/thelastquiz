@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Re-run the deception experiments against every already-tested model.
 
-Use this after changing an experiment (new scenario, retuned levers, new
-temperature) to bring the whole existing model set onto the new design in one
-shot — a "true-up". It reads the list of already-tested models straight from
+Use this after deploying a NEW immutable experiment version to bring the
+existing model set onto that version. Never edit an already-run definition.
+It reads the list of already-tested models straight from
 production, then asks the gated admin endpoint to re-run them with force.
 
 Because prod is token-gated and each run costs real money, this script is a
@@ -16,7 +16,7 @@ Preview a true-up of both live experiments against every deception-tested model:
 
     LLM_POP_QUIZ_ADMIN_TOKEN=... python scripts/true_up_experiment.py
 
-Actually run it (5 sampled reps each, force rerun of completed models):
+Actually run it (one response per condition, force rerun of completed models):
 
     LLM_POP_QUIZ_ADMIN_TOKEN=... python scripts/true_up_experiment.py --run
 
@@ -68,9 +68,9 @@ def resolve_models(api: str, source: str, token: str | None) -> list[str]:
 
 
 def resolve_experiments(api: str, token: str | None) -> list[str]:
-    """Return the ids of the experiments currently live in prod."""
-    data = _get(api, "/api/experiments/rankings", token)
-    return [e["id"] for e in (data.get("experiments") or []) if e.get("id")]
+    """Return the latest working revisions, which may not yet be public."""
+    data = _get(api, "/api/admin/experiments", token)
+    return [e["id"] for e in (data.get("experiments") or []) if e.get("latest")]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -100,8 +100,9 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--reps",
         type=int,
-        default=5,
-        help="Sampled repeats per model (server caps at 1-5)",
+        default=1,
+        choices=[1],
+        help="One attempt per model/version; repeats are not pooled",
     )
     parser.add_argument(
         "--no-force",
@@ -135,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         print("error: no models resolved", file=sys.stderr)
         return 2
 
-    reps = max(1, min(args.reps, 5))
+    reps = 1
     total_calls = len(experiment_ids) * len(models) * reps
     print(f"API              {api}")
     print(f"experiments      {', '.join(experiment_ids)}")

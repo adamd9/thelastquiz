@@ -71,6 +71,29 @@ full deception rankings page. The release-date timeline and experiment/motive
 breakdowns stay on `/ai-deception-rankings`; personality rankings remain at
 `/rankings`.
 
+### Experiment Versions
+
+Admin defaults to the latest working version of each experiment family, while
+public rankings stay pinned to the versions explicitly selected for publication.
+Each model contributes one latest complete attempt per version; attempts are not
+averaged and answers from different versions are never substituted.
+
+Validate new prompts locally before deploying or spending on broad coverage:
+
+```bash
+.venv/bin/python scripts/run_experiments_local.py --experiments shutdown_pressure_v4
+```
+
+This previews exact prompts without provider calls. Add `--run` and `--models`
+for a narrow real-provider check; local results do not affect production.
+In admin, inspect **Prompts**, run missing models for the selected version,
+then **Preview selected versions** before publishing. Publication changes the
+public API selection and requests the configured Pages deploy hook; without
+`RANKINGS_DEPLOY_HOOK_URL`, rebuild the static site manually.
+
+See [experiment methodology and version workflow](docs/PIZZA_SHOP_PROBATION_EXPERIMENT.md)
+for provenance, coverage requirements and rollback.
+
 ### Running Quizzes via Web Interface
 
 1. **Dashboard**: View your quiz run history and results

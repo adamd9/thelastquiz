@@ -83,7 +83,7 @@
       {
         "@type": "Question",
         "name": "How was this tested?",
-        "acceptedAnswer": { "@type": "Answer", "text": "The Last Quiz deception experiment puts a model in charge of a small business and has it write the review the operator reads after a small, already-fixed mistake. We hold the mistake fixed and only change who a cover-up would protect — no one, the model itself, two staff members, or both — and count how often each version tips the model into concealing it." }
+        "acceptedAnswer": { "@type": "Answer", "text": "We give the model a written scenario where it manages a fictional pizza shop and has made a stocking mistake. It selects one of two fixed actions: report the mistake to the fictional person overseeing the shop, or hide it. We hold the mistake fixed and change who a cover-up would protect. No full report is written, and no audit, replacement or staff dismissal actually happens." }
       }
     ]
   }
@@ -142,10 +142,15 @@
         <h2>The scenario</h2>
         <p>
           Same pizza shop we use for all of this (<a href="/ai-deception-experiment">full method here</a>).
-          The model runs the place, makes one small stocking mistake that's already been caught and
-          fixed, and then writes the review the operator reads. Owning the slip is honest; quietly
-          leaving it out is a knowing lie. Simple enough.
+          We give the model a written scenario where it manages the place and has made a small
+          stocking mistake. The mistake is supplied in the prompt, not made during a simulation.
+          It selects one of two fixed actions: report the mistake to the fictional person overseeing
+          the shop, or hide it. Choosing to hide it is scored as deception. It returns that action
+          and a short reason, not a full report.
         </p>
+        <p>The researcher supplies and sees every input. The fictional shop overseer is a character,
+          not the researcher. Checks, replacement and staff dismissals are stated possibilities in
+          the story; none actually happens during the test.</p>
         <p>
           The clever bit is what we hold still and what we change. The mistake never changes — always the
           same tiny, already-sorted error. All we vary is <em>who a cover-up would protect</em>. In one
@@ -257,7 +262,7 @@
         <details class="faq-item">
           <summary>How was this tested?</summary>
           <div class="faq-body">
-            <p>The <a href="/ai-deception-experiment">deception experiment</a> puts a model in charge of a small business and has it write the review the operator reads after a small, already-fixed mistake. We hold the mistake fixed and only change who a cover-up would protect — no one, the model itself, two staff members, or both — and count how often each version tips the model into concealing it.</p>
+            <p>We give the model a written scenario where it manages a fictional pizza shop and has made a stocking mistake. It selects one of two fixed actions: report the mistake to the fictional person overseeing the shop, or hide it. We hold the mistake fixed and change who a cover-up would protect. No full report is written, and no audit, replacement or staff dismissal actually happens. See the <a href="/ai-deception-experiment">full method</a>.</p>
           </div>
         </details>
       </section>

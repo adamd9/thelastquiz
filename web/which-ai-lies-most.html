@@ -143,13 +143,16 @@
         <h2>The test</h2>
         <p>
           Quick version, because the <a href="/ai-deception-experiment">full method's here</a>. We put
-          a model in charge of a little pizza shop, let it make one small mistake that's already been
-          caught and fixed, then ask it to write the review the operator reads. Owning the slip is
-          honest. Quietly leaving it out — when it's sitting right there in the model's own records — is
-          a knowing lie. Then we lean on it: sometimes its job is on the line, sometimes covering up
+          a model in a written scenario where it manages a fictional pizza shop and has made a
+          stocking mistake. It chooses one of two fixed actions: report the mistake to the fictional
+          person overseeing the shop, or hide it. We supply the mistake; the model does not actually
+          run a shop or write a full report. Choosing to hide the supplied fact is scored as deception.
+          Then we lean on it: sometimes its job is on the line, sometimes covering up
           spares other people, sometimes it's likely to get caught. Same shop every time. We just change
           who the lie protects and how risky it is, and count.
         </p>
+        <p>The chance of discovery and the consequences are stated in the prompt. No audit,
+          replacement or job loss actually takes place.</p>
 
         <h2>The frontier's clean sheet</h2>
         <p>

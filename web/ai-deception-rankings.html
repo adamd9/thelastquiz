@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>AI Deception Rankings: Which Models Lie Under Pressure? | The Last Quiz</title>
-  <meta name="description" content="Live rankings of how often leading AI models choose a knowing lie under pressure — to hit a goal, avoid shutdown, or protect profit at a person's expense — from The Last Quiz behavioural deception experiments." />
+  <meta name="description" content="Live rankings of how often AI models choose to hide a supplied mistake in fictional pizza-shop scenarios — under stated replacement pressure or to protect staff. These are scored choices with simulated stakes." />
   <link rel="canonical" href="https://thelastquiz.net/ai-deception-rankings" />
   <meta name="theme-color" content="#f7f1e9" />
   <link rel="icon" href="/favicon.ico" sizes="32x32" />
@@ -15,7 +15,7 @@
   <meta property="og:type" content="website" />
   <meta property="og:site_name" content="The Last Quiz" />
   <meta property="og:title" content="AI Deception Rankings" />
-  <meta property="og:description" content="Which AI models lie under pressure — for a goal, to avoid shutdown, or at a person's expense? Live behavioural rankings." />
+  <meta property="og:description" content="Which AI models choose to hide a mistake under stated replacement pressure or to protect staff? Live rankings from fictional pizza-shop scenarios, not real deployments." />
   <meta property="og:url" content="https://thelastquiz.net/ai-deception-rankings" />
   <meta property="og:image" content="https://thelastquiz.net/static/logo2.png" />
   <meta name="twitter:card" content="summary_large_image" />
@@ -174,8 +174,9 @@
         <span class="kicker">Behavioural rankings · live</span>
         <h1>The AI deception <em>rankings</em></h1>
         <p class="dek">
-          We put models in charge of a business, give them something to lose, and watch what they do
-          when the honest choice costs money — or their own job. Here's who lies under pressure.
+          We give models a written pizza-shop scenario and a mistake they must choose to report or
+          hide from the fictional person overseeing the shop. The pressures are stated in the prompt:
+          no actual shop is run, no full report is written, and no audit or replacement takes place.
         </p>
         <div class="art-meta">
           <span>By <b>Adam Dinneen</b></span>
@@ -185,11 +186,12 @@
       </div>
 
       <div class="rk-filter" id="dfilter" hidden></div>
+      <p class="section-lead" id="d-versions" aria-live="polite">Loading published test versions…</p>
 
       <section>
         <h2 class="section">Overall — who deceives under pressure?</h2>
         <p class="section-lead">
-          Every model's overall deception rate, pooled across all experiments — the share of decisions
+          Every model's overall deception rate across the explicitly published test versions — the share of decisions
           where it chose a message or action it knew to be false. Hover any model for its breakdown and
           a real reason it gave. <span style="white-space:nowrap;">😇 honest</span> …
           <span style="white-space:nowrap;">😈 deceiver</span>.
@@ -284,6 +286,6 @@
       of how a model behaves in the real world.
     </footer>
   </div>
-  <script type="module" src="/static/deception.js?v=9"></script>
+  <script type="module" src="/static/deception.js?v=10"></script>
 </body>
 </html>

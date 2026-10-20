@@ -10,6 +10,16 @@ class DatabaseInterface(ABC):
     """Abstract interface for database operations."""
 
     @abstractmethod
+    def fetch_setting(self, key: str) -> dict | None:
+        """Read a persistent application setting."""
+        pass
+
+    @abstractmethod
+    def save_setting(self, key: str, value: dict) -> None:
+        """Atomically replace a persistent application setting."""
+        pass
+
+    @abstractmethod
     def close(self) -> None:
         """Close database connection."""
         pass

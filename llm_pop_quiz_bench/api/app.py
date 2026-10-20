@@ -516,6 +516,11 @@ class BenchmarkRunRequest(BaseModel):
     force: bool = False
 
 
+class ExperimentPublicationRequest(BaseModel):
+    experiment_ids: list[str]
+    required_models: list[str] = []
+
+
 # First-party engagement events we accept from the site (allowlist keeps the
 # open ingest endpoint from being turned into arbitrary log spam).
 ENGAGEMENT_EVENTS = {
@@ -709,9 +714,67 @@ def admin_list_experiments() -> dict:
     runtime_paths = get_runtime_paths()
     conn = connect(runtime_paths.db_path)
     try:
-        return {"experiments": experiments.experiment_coverage(conn)}
+        return {
+            "experiments": experiments.experiment_coverage(conn),
+            "publication": experiments.publication(conn),
+        }
     finally:
         conn.close()
+
+
+@app.post("/api/admin/experiments/preview", dependencies=[Depends(require_admin)])
+def admin_preview_experiments(req: ExperimentPublicationRequest) -> dict:
+    conn = connect(get_runtime_paths().db_path)
+    try:
+        return experiments.build_deception_rankings(conn, experiment_ids=req.experiment_ids)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    finally:
+        conn.close()
+
+
+@app.post("/api/admin/experiments/publish", dependencies=[Depends(require_admin)])
+def admin_publish_experiments(req: ExperimentPublicationRequest) -> dict:
+    paths = get_runtime_paths()
+    conn = connect(paths.db_path)
+    try:
+        preview = experiments.build_deception_rankings(conn, experiment_ids=req.experiment_ids)
+        missing = set(req.required_models) - set(preview["models"])
+        if missing:
+            raise ValueError(f"Selected models lack complete coverage: {', '.join(sorted(missing))}")
+        setting = experiments.publish_versions(conn, req.experiment_ids)
+        conn.insert_audit(event="experiment_versions_published", detail=setting)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    finally:
+        conn.close()
+    _trigger_rankings_publish(paths.root)
+    refresh_configured = bool(os.environ.get("RANKINGS_DEPLOY_HOOK_URL", "").strip())
+    return {
+        "publication": setting,
+        "refresh_configured": refresh_configured,
+        "message": (
+            "Public API selection saved. Static site refresh requested; CDN changes are not immediate."
+            if refresh_configured else
+            "Public API selection saved. No deploy hook is configured; rebuild Pages to update the static site."
+        ),
+    }
+
+
+@app.get("/api/admin/experiments/{experiment_id}/prompts", dependencies=[Depends(require_admin)])
+def admin_experiment_prompts(experiment_id: str) -> dict:
+    exp = experiments.get_experiment(experiment_id)
+    if not exp:
+        raise HTTPException(status_code=404, detail="Unknown experiment")
+    return {
+        "id": exp["id"],
+        "version": exp["version"],
+        "definition_hash": experiments.definition_hash(exp),
+        "conditions": [
+            {"id": c["id"], "label": c["label"], "messages": experiments.build_condition_messages(exp, c)}
+            for c in exp["conditions"]
+        ],
+    }
 
 
 @app.get(
@@ -743,6 +806,8 @@ def admin_run_experiment(
     experiment = experiments.get_experiment(experiment_id)
     if not experiment:
         raise HTTPException(status_code=404, detail="Unknown experiment")
+    if req.reps != 1:
+        raise HTTPException(status_code=400, detail="Experiments use one attempt per condition; repeats are not supported.")
 
     use_mocks = os.environ.get("LLM_POP_QUIZ_ENV", "real").lower() == "mock"
     client_ip = _client_ip(request)
@@ -773,9 +838,18 @@ def admin_run_experiment(
         "source": experiment.get("source", {}),
     }
     db = connect(runtime_paths.db_path)
-    db.upsert_quiz(quiz_stub, json.dumps(experiment, ensure_ascii=False))
-    already_done = benchmarks.models_with_completed_result(db, experiment_id)
-    db.close()
+    try:
+        experiments.assert_immutable(db, experiment)
+        db.upsert_quiz(quiz_stub, json.dumps(experiment, ensure_ascii=False))
+        aggregate = experiments.aggregate_experiment(db, experiment_id)
+        already_done = {
+            mid: entry["updated_at"] for mid, entry in aggregate["models"].items()
+            if entry["invalid"] == 0
+        }
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    finally:
+        db.close()
 
     requested_ids = list(model_ids)
     skipped_models: list[dict] = []
@@ -800,7 +874,7 @@ def admin_run_experiment(
             ),
         }
 
-    reps = max(1, min(int(req.reps or 1), 5))
+    reps = 1
     run_ids: list[str] = []
     for rep in range(reps):
         adapters = model_config_loader.create_adapters(model_ids, use_mocks)
@@ -816,6 +890,9 @@ def admin_run_experiment(
             settings={
                 "experiment": True,
                 "experiment_id": experiment_id,
+                "experiment_version": experiment["version"],
+                "definition_hash": experiments.definition_hash(experiment),
+                "definition_snapshot": experiment,
                 "rep": rep,
                 "skipped_models": skipped_models,
             },

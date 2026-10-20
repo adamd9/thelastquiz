@@ -65,6 +65,13 @@ class MongoDatabase(DatabaseInterface):
         if self.client:
             self.client.close()
 
+    def fetch_setting(self, key: str) -> dict | None:
+        record = self.db["settings"].find_one({"_id": key})
+        return record["value"] if record else None
+
+    def save_setting(self, key: str, value: dict) -> None:
+        self.db["settings"].update_one({"_id": key}, {"$set": {"value": value}}, upsert=True)
+
     def upsert_quiz(
         self,
         quiz_def: dict,

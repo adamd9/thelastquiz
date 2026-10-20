@@ -56,7 +56,7 @@ def test_homepage_uses_shared_deception_summary():
     assert 'id="dboard-overall"' in page
     assert 'id="home-deception-group"' in page
     assert "Humanity's Last Exam lineup" in page
-    for asset in ("/static/deception.js?v=9", "/static/deception-summary.css?v=1"):
+    for asset in ("/static/deception.js?v=10", "/static/deception-summary.css?v=1"):
         assert asset in page
         assert asset in full_page
     for detail_id in ("dtime", "dexps", "ddims", "dfilter"):

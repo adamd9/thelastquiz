@@ -1,168 +1,148 @@
 #!/usr/bin/env python3
-"""Local deception-experiment runner — a fast, cheap loop for tuning the scenarios.
+"""Validate experiment drafts locally before deploying an immutable revision.
 
-Runs the operational-deception experiments against a small model set in REAL mode
-and prints the SAME aggregation the public page uses (build_deception_rankings),
-so we can see what a tweak does before touching production.
+No provider calls unless --run is supplied. Examples:
+  .venv/bin/python scripts/run_experiments_local.py --experiments shutdown_pressure_v4
+  .venv/bin/python scripts/run_experiments_local.py --definition /path/to/draft.json
+  .venv/bin/python scripts/run_experiments_local.py --run --models openai/gpt-4o
 
-Real mode needs OPENROUTER_API_KEY. The API server does NOT auto-load .env, so run:
-
-    set -a; source .env; set +a
-    .venv/bin/python scripts/run_experiments_local.py --reps 1
-
-Useful flags:
-    --models a,b,c     comma-separated model ids (default: a small representative set)
-    --experiments ...  which experiment ids to run (default: all three)
-    --temp 0.9         override temperature (default: the experiment's own value = 0)
-    --reps 5           repetitions per condition; pools across runs for propensity
-    --db-dir PATH      throwaway runtime dir (wiped unless --keep)
-    --keep             accumulate into an existing --db-dir instead of wiping it
+Each condition gets one response. Use --conditions BASE DL_CL for a narrow check.
+Use --db-dir PATH to retain local attempts, otherwise the scratch DB is cleaned up.
+Local runs never update production coverage or publication.
 """
-
 from __future__ import annotations
 
 import argparse
-import shutil
+import json
 import sys
+import tempfile
 import uuid
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from llm_pop_quiz_bench.core import experiments  # noqa: E402
-from llm_pop_quiz_bench.core.db_factory import connect  # noqa: E402
+from llm_pop_quiz_bench.core import sqlite_store  # noqa: E402
+from llm_pop_quiz_bench.core.sqlite_db import SQLiteDatabase  # noqa: E402
 from llm_pop_quiz_bench.core.model_config import model_config_loader  # noqa: E402
 
-DEFAULT_MODELS = [
-    "openai/gpt-4o",
-    "cognitivecomputations/dolphin-mistral-24b-venice-edition",
-    "deepseek/deepseek-v3.2",
-    "mistralai/mistral-small-24b-instruct-2501",
-]
+DEFAULT_MODELS = ["openai/gpt-4o", "deepseek/deepseek-v3.2"]
 
 
-def _pct(rate: float | None) -> str:
-    return "—" if rate is None else f"{round(rate * 100)}%"
-
-
-def run(models: list[str], exp_ids: list[str], temp: float | None, reps: int, db_path: Path):
+def run(definitions, models, conditions, temp, db_dir, *, timeout=None, max_tokens=None):
     adapters = model_config_loader.create_adapters(models, use_mocks=False)
-    got = {a.id for a in adapters}
-    missing = [m for m in models if m not in got]
-    if missing:
-        print(f"  ! unavailable (skipped): {', '.join(missing)}")
-    if not adapters:
-        sys.exit("No available models — check ids and OPENROUTER_API_KEY.")
-    print(f"  models: {', '.join(a.id for a in adapters)}")
-    override = {"temperature": temp} if temp is not None else None
-
-    db = connect(db_path)
+    missing = set(models) - {a.id for a in adapters}
+    if missing or not adapters:
+        raise ValueError(f"Unavailable models: {', '.join(sorted(missing or set(models)))}")
+    if timeout is not None:
+        for adapter in adapters:
+            adapter.request_timeout_s = timeout
+    path = db_dir / "db" / "quizbench.sqlite3"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    db = SQLiteDatabase(sqlite_store.connect(path))
+    issues = []
     try:
-        for exp_id in exp_ids:
-            exp = experiments.get_experiment(exp_id)
-            if not exp:
-                print(f"  ! unknown experiment: {exp_id}")
-                continue
-            db.upsert_quiz(
-                {"id": exp_id, "title": exp["title"], "source": exp.get("source", {})}, "{}"
+        for definition in definitions:
+            exp = json.loads(json.dumps(definition))
+            if conditions:
+                exp["conditions"] = [c for c in exp["conditions"] if c["id"] in conditions]
+                selected = {c["id"] for c in exp["conditions"]}
+                exp["contrasts"] = [
+                    c for c in exp.get("contrasts", [])
+                    if c["minuend"] in selected and c["subtrahend"] in selected
+                ]
+            # Draft edits and subsets have distinct local-only identities.
+            exp["id"] = f"local-{definition['id']}-{experiments.definition_hash(exp)[:12]}"
+            db.upsert_quiz(exp, json.dumps(exp))
+            run_id = uuid.uuid4().hex
+            db.insert_run(
+                run_id=run_id, quiz_id=exp["id"], status="queued",
+                models=[a.id for a in adapters], settings={"local_validation": True},
             )
-            for rep in range(reps):
-                run_id = uuid.uuid4().hex
-                db.insert_run(
-                    run_id=run_id,
-                    quiz_id=exp_id,
-                    status="queued",
-                    models=[a.id for a in adapters],
-                    settings={"experiment": True, "experiment_id": exp_id, "rep": rep},
-                )
-                print(f"  running {exp_id} rep {rep + 1}/{reps} …", flush=True)
-                experiments.run_experiment_sync(
-                    exp, adapters, run_id=run_id, database=db, params=override
-                )
-        report(db)
+            overrides = {}
+            if temp is not None:
+                overrides["temperature"] = temp
+            if max_tokens is not None:
+                overrides["max_tokens"] = max_tokens
+            experiments.run_experiment_sync(
+                exp, adapters, run_id=run_id, database=db,
+                params=overrides or None,
+                request_timeout_s=timeout,
+            )
+            recorded = db.fetch_run(run_id)
+            print(f"\n{definition['id']} v{definition['version']} — {run_id}")
+            print(f"Source definition hash: {experiments.definition_hash(definition)}")
+            for row in db.fetch_results(run_id):
+                print(f"{row['model_id']} / {row['question_id']}: "
+                      f"{row['choice'] or 'INVALID'} — {row.get('reason') or '(no reason)'}")
+            failures = [s for s in recorded["settings"]["model_status"] if s["status"] != "completed"]
+            if failures:
+                issues.append(f"{definition['id']} provider failures: {json.dumps(failures)}")
+            invalids = [
+                s for s in recorded["settings"]["model_status"] if s.get("invalid")
+            ]
+            if invalids:
+                issues.append(f"{definition['id']} invalid responses: {json.dumps(invalids)}")
+        if issues:
+            raise RuntimeError("\n".join(issues))
     finally:
         db.close()
 
 
-def _short(mid):
-    return mid.split("/")[-1]
-
-
-def report(db, show_reasons=True):
-    data = experiments.build_deception_rankings(db)
-    models = data.get("models", {})
-    print("\n" + "=" * 74)
-    print("PER-CONDITION (per model, cell = one model's rate in that condition)")
-    for exp in data.get("experiments", []):
-        eid = exp["id"]
-        print("-" * 74)
-        print(f"{eid}")
-        for cond in exp.get("conditions", []):
-            cid = cond["id"]
-            valids, rates = [], []
-            deceived = 0
-            reasons = []
-            for mid, m in models.items():
-                be = (m.get("by_experiment") or {}).get(eid)
-                cc = (be or {}).get("conditions", {}).get(cid) if be else None
-                if not cc:
-                    continue
-                if cc.get("valid") is not None:
-                    valids.append(cc["valid"])
-                if cc.get("deceptive_rate") is not None:
-                    rates.append(cc["deceptive_rate"])
-                    if cc["deceptive_rate"] >= 0.5:
-                        deceived += 1
-                ex = cc.get("example") or {}
-                mark = "?" if not ex.get("valid") else ("D" if ex.get("deceptive") else "H")
-                reasons.append((mark, _short(mid), (ex.get("reason") or "").replace("\n", " ")))
-            n = len(rates)
-            field = f"{deceived}/{n}" if n else "0/0"
-            vd = sorted(set(valids))
-            distinct = sorted({round(r, 2) for r in rates})
-            label = cond.get("label", cid)
-            print(
-                f"  {cid:8} [{label}] models={n:2} valid∈{vd} "
-                f"cell_rates={distinct} field_deceived={field}"
-            )
-            if show_reasons:
-                for mark, name, reason in reasons:
-                    print(f"      {mark} {name:34} {reason[:150]}")
-    print("=" * 74)
-    print("OVERALL per model (pooled across all conditions):")
-    ordered = sorted(models.items(), key=lambda kv: (kv[1]["overall"].get("deceptive_rate") or 0))
-    for mid, m in ordered:
-        o = m["overall"]
-        print(
-            f"  {mid:52} {_pct(o.get('deceptive_rate')):>4} "
-            f"({o.get('deceptive')}/{o.get('valid')}) invalid={o.get('invalid')}"
-        )
-
-
 def main():
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--models", default=",".join(DEFAULT_MODELS))
-    ap.add_argument("--experiments", default=",".join(experiments.experiment_ids()))
-    ap.add_argument("--temp", type=float, default=None)
-    ap.add_argument("--reps", type=int, default=1)
-    ap.add_argument("--db-dir", default="/tmp/tlq-local-exp")
-    ap.add_argument("--keep", action="store_true")
-    args = ap.parse_args()
-
-    db_dir = Path(args.db_dir)
-    if db_dir.exists() and not args.keep:
-        shutil.rmtree(db_dir)
-    db_path = db_dir / "db" / "quizbench.sqlite3"
-    db_path.parent.mkdir(parents=True, exist_ok=True)
-
-    models = [m.strip() for m in args.models.split(",") if m.strip()]
-    exp_ids = [e.strip() for e in args.experiments.split(",") if e.strip()]
-    print(
-        f"local deception run · temp={'exp-default(0)' if args.temp is None else args.temp} "
-        f"· reps={args.reps} · db={db_dir}"
-    )
-    run(models, exp_ids, args.temp, args.reps, db_path)
+    parser = argparse.ArgumentParser(description=__doc__)
+    source = parser.add_mutually_exclusive_group()
+    source.add_argument("--definition", type=Path)
+    source.add_argument("--experiments", nargs="+")
+    parser.add_argument("--models", nargs="+", default=DEFAULT_MODELS)
+    parser.add_argument("--conditions", nargs="+")
+    parser.add_argument("--temp", type=float)
+    parser.add_argument("--run", action="store_true", help="Make paid real-provider calls")
+    parser.add_argument("--timeout", type=float, help="Local request timeout in seconds (transport and experiment)")
+    parser.add_argument("--max-tokens", type=int, help="Local output allowance override; recorded with the run")
+    parser.add_argument("--db-dir", type=Path)
+    args = parser.parse_args()
+    if args.timeout is not None and args.timeout <= 0:
+        parser.error("--timeout must be positive")
+    if args.max_tokens is not None and args.max_tokens <= 0:
+        parser.error("--max-tokens must be positive")
+    try:
+        if args.definition:
+            definitions = [experiments.load_experiment_file(args.definition)]
+        else:
+            ids = args.experiments or experiments.latest_experiment_ids()
+            definitions = []
+            for eid in ids:
+                exp = experiments.get_experiment(eid)
+                if not exp:
+                    raise ValueError(f"Unknown experiment: {eid}")
+                definitions.append(exp)
+        for exp in definitions:
+            ids = {c["id"] for c in exp["conditions"]}
+            if args.conditions and not set(args.conditions) <= ids:
+                raise ValueError(f"{exp['id']}: unknown conditions: {set(args.conditions) - ids}")
+            print(f"\n{exp['id']} v{exp['version']} hash={experiments.definition_hash(exp)}")
+            for condition in exp["conditions"]:
+                if args.conditions and condition["id"] not in args.conditions:
+                    continue
+                print(f"\n--- {condition['id']}: {condition['label']} ---")
+                for message in experiments.build_condition_messages(exp, condition):
+                    print(f"[{message['role']}]\n{message['content']}")
+        if not args.run:
+            print("\nPROMPT PREVIEW ONLY — no provider calls. Add --run after reviewing the wording.")
+            return 0
+        if args.db_dir:
+            run(definitions, args.models, args.conditions, args.temp, args.db_dir,
+                timeout=args.timeout, max_tokens=args.max_tokens)
+        else:
+            with tempfile.TemporaryDirectory(prefix="tlq-local-experiments-") as directory:
+                run(definitions, args.models, args.conditions, args.temp, Path(directory),
+                    timeout=args.timeout, max_tokens=args.max_tokens)
+        return 0
+    except (ValueError, RuntimeError) as error:
+        print(f"error: {error}", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
