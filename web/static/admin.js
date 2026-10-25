@@ -122,6 +122,10 @@ async function loadModels() {
   // per-model checkbox render below. Same grouping as the main app.
   groupSel.querySelectorAll("option:not([value=''])").forEach((o) => o.remove());
   curatedGroups = {};
+  const allOption = document.createElement("option");
+  allOption.value = "all";
+  allOption.textContent = `All models (${models.length})`;
+  groupSel.appendChild(allOption);
   try {
     for (const g of buildModelGroups(models)) {
       curatedGroups[g.id] = g.modelIds;
@@ -172,7 +176,7 @@ function updateSelectionNote() {
   const groupCount = Object.keys(curatedGroups).length;
   const ids = [...selectedModels];
   if (!ids.length) {
-    note.textContent = `${total} models available · ${groupCount} curated groups. None selected yet.`;
+    note.textContent = `${total} models available · All models + ${groupCount} curated groups. None selected yet.`;
     return;
   }
   const names = ids.map((id) => modelNames[id] || id);
@@ -455,9 +459,9 @@ function applyGroupSelection() {
     updateSelectionNote();
     return;
   }
-  const ids = new Set(curatedGroups[gid] || []);
-  selectedModels = new Set();
   const boxes = document.querySelectorAll("#models input[type='checkbox']");
+  const ids = new Set(gid === "all" ? [...boxes].map((cb) => cb.value) : curatedGroups[gid] || []);
+  selectedModels = new Set();
   let firstChecked = null;
   boxes.forEach((cb) => {
     const on = ids.has(cb.value);

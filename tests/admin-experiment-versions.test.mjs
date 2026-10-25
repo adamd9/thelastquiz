@@ -19,6 +19,8 @@ class Element {
   append(...children) { this.children.push(...children); }
   setAttribute() {}
   addEventListener(event, listener) { this.listeners[event] = listener; }
+  querySelectorAll() { return []; }
+  scrollIntoView() {}
 }
 
 function admin({ previewModels = { "model/a": { overall: { deceptive_rate: 0 } } } } = {}) {
@@ -40,10 +42,14 @@ function admin({ previewModels = { "model/a": { overall: { deceptive_rate: 0 } }
     localStorage: { getItem: () => "" },
     setTimeout: () => {},
     console,
+    buildModelGroups: () => [],
+    providerLogoImg: () => null,
     fetch: async (path, opts = {}) => {
       calls.push({ path, body: opts.body && JSON.parse(opts.body) });
       let data;
-      if (path === "/api/admin/experiments") {
+      if (path === "/api/models") {
+        data = { models: [{ id: "model/a" }, { id: "model/b" }] };
+      } else if (path === "/api/admin/experiments") {
         data = { experiments: revisions, publication: { experiment_ids: ["shop_v1"] } };
       } else if (path.endsWith("/results")) {
         data = { models: { "model/a": {
@@ -146,6 +152,39 @@ test("admin has no repeat selector and explains single attempts", () => {
   assert.doesNotMatch(html, /id="reps"|Personality repeats/);
   assert.match(html, /Each test runs once per model/);
   assert.match(html, /id="force"/);
+});
+
+test("publication occupies a separate section before model selection and run controls", () => {
+  const html = readFileSync(new URL("../web/admin.html", import.meta.url), "utf8");
+  const section = html.match(/<section[^>]*id="publication-panel"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(section);
+  assert.match(section, /id="experiment-publication"/);
+  assert.doesNotMatch(section, /id="group"|id="tests"|id="run-all-missing"/);
+  assert.ok(html.indexOf(section) < html.indexOf('id="group"'));
+  assert.equal((html.match(/id="experiment-publication"/g) || []).length, 1);
+});
+
+test("All models selects the entire catalogue and curated groups still narrow it without running tests", async () => {
+  const a = admin();
+  a.hosts.group = new Element("select");
+  a.hosts.models = new Element();
+  a.hosts["models-note"] = new Element();
+  a.context.document.querySelectorAll = (selector) =>
+    selector === "#models input[type='checkbox']"
+      ? a.hosts.models.children.map((label) => label.children[0]) : [];
+  await a.evaluate("loadModels()");
+  assert.equal(a.hosts.group.children[0].value, "all");
+  assert.equal(a.hosts.group.children[0].textContent, "All models (2)");
+  a.hosts.group.value = "all";
+  await a.hosts.group.listeners.change();
+  assert.deepEqual(Array.from(a.evaluate("[...selectedModels]")), ["model/a", "model/b"]);
+  assert.ok(a.hosts.models.children.every((label) => label.children[0].checked));
+  a.evaluate("curatedGroups.small = ['model/a']");
+  a.hosts.group.value = "small";
+  await a.hosts.group.listeners.change();
+  assert.deepEqual(Array.from(a.evaluate("[...selectedModels]")), ["model/a"]);
+  assert.equal(a.hosts.models.children[1].children[0].checked, false);
+  assert.equal(a.calls.filter((call) => call.path.endsWith("/run")).length, 0);
 });
 
 test("run missing queues one attempt for both test types without a repeat control", async () => {

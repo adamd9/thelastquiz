@@ -93,6 +93,9 @@ public API selection and requests the configured Pages deploy hook; without
 Publication switches versions site-wide for all groups, not the selected model
 group. Preview enables Publish when at least one model has full valid coverage;
 other models stay hidden until they complete those same versions.
+Site-wide publishing has its own panel above the testing controls. Use the
+admin's **All models** option to inspect coverage across the entire catalogue,
+including models outside the curated groups; selection alone starts no runs.
 All admin test launches use one attempt per model, including personality tests.
 Use **Force** for a deliberate rerun; there is no automatic repeats selector.
 Individual deception conditions display ticks/crosses for reported/hidden

@@ -118,6 +118,12 @@
       </div>
 
       <div id="admin-content" hidden>
+      <section class="panel" id="publication-panel" aria-labelledby="publication-heading">
+        <h3 id="publication-heading">Public site publishing — all model groups</h3>
+        <p class="muted">Controls the versions displayed across the entire public site. This is separate from selecting models or running tests below. Choose working experiment versions in Tests, then preview and publish them here.</p>
+        <div id="experiment-publication"><p class="muted">Loading publication settings…</p></div>
+      </section>
+
       <div class="panel">
         <div class="row" style="justify-content:space-between;">
           <div>
@@ -164,8 +170,6 @@
         </div>
         <div class="muted" style="font-size:12.5px;margin-top:4px;">Experiment controls default to the latest version. Use each version selector to inspect historical results. Only explicitly published versions feed the public deception rankings; personality rankings stay separate. Both use the model selection above. <a href="/ai-deception-experiment" style="color:#a99aff;">Method</a></div>
         <div id="tests" style="margin-top:6px;"><div class="muted">Loading…</div></div>
-        <h3>Public experiment versions — site-wide</h3>
-        <div id="experiment-publication"><p class="muted">Loading publication settings…</p></div>
       </div>
 
       <div class="panel">
@@ -192,6 +196,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=24"></script>
+    <script type="module" src="/static/admin.js?v=25"></script>
   </body>
 </html>
