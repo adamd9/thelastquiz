@@ -518,7 +518,6 @@ class BenchmarkRunRequest(BaseModel):
 
 class ExperimentPublicationRequest(BaseModel):
     experiment_ids: list[str]
-    required_models: list[str] = []
 
 
 # First-party engagement events we accept from the site (allowlist keeps the
@@ -738,10 +737,6 @@ def admin_publish_experiments(req: ExperimentPublicationRequest) -> dict:
     paths = get_runtime_paths()
     conn = connect(paths.db_path)
     try:
-        preview = experiments.build_deception_rankings(conn, experiment_ids=req.experiment_ids)
-        missing = set(req.required_models) - set(preview["models"])
-        if missing:
-            raise ValueError(f"Selected models lack complete coverage: {', '.join(sorted(missing))}")
         setting = experiments.publish_versions(conn, req.experiment_ids)
         conn.insert_audit(event="experiment_versions_published", detail=setting)
     except ValueError as error:

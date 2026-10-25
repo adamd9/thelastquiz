@@ -122,16 +122,12 @@
         <div class="row" style="justify-content:space-between;">
           <div>
             <label>Models to benchmark</label>
-            <div class="muted" style="font-size:12.5px;">Select individual models, or pick a group below.</div>
+            <div class="muted" style="font-size:12.5px;">Select individual models, or pick a group below. Each test runs once per model; use Force for a deliberate rerun.</div>
           </div>
           <div class="row">
             <div>
               <label for="group">Group</label>
               <select id="group"><option value="">— custom selection —</option></select>
-            </div>
-            <div>
-              <label for="reps">Personality repeats</label>
-              <select id="reps"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
             </div>
             <div>
               <label for="force">Rerun</label>
@@ -168,7 +164,7 @@
         </div>
         <div class="muted" style="font-size:12.5px;margin-top:4px;">Experiment controls default to the latest version. Use each version selector to inspect historical results. Only explicitly published versions feed the public deception rankings; personality rankings stay separate. Both use the model selection above. <a href="/ai-deception-experiment" style="color:#a99aff;">Method</a></div>
         <div id="tests" style="margin-top:6px;"><div class="muted">Loading…</div></div>
-        <h3>Public experiment versions</h3>
+        <h3>Public experiment versions — site-wide</h3>
         <div id="experiment-publication"><p class="muted">Loading publication settings…</p></div>
       </div>
 
@@ -196,6 +192,6 @@
     </div>
     <div id="toast"></div>
     <script src="/static/site-links.js"></script>
-    <script type="module" src="/static/admin.js?v=23"></script>
+    <script type="module" src="/static/admin.js?v=24"></script>
   </body>
 </html>

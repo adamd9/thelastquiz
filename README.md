@@ -90,6 +90,14 @@ In admin, inspect **Prompts**, run missing models for the selected version,
 then **Preview selected versions** before publishing. Publication changes the
 public API selection and requests the configured Pages deploy hook; without
 `RANKINGS_DEPLOY_HOOK_URL`, rebuild the static site manually.
+Publication switches versions site-wide for all groups, not the selected model
+group. Preview enables Publish when at least one model has full valid coverage;
+other models stay hidden until they complete those same versions.
+All admin test launches use one attempt per model, including personality tests.
+Use **Force** for a deliberate rerun; there is no automatic repeats selector.
+Individual deception conditions display ticks/crosses for reported/hidden
+mistakes, not 0%/100%. Percentages summarize decisions across multiple conditions,
+not repeated samples; missing or invalid answers display a dash.
 
 See [experiment methodology and version workflow](docs/PIZZA_SHOP_PROBATION_EXPERIMENT.md)
 for provenance, coverage requirements and rollback.

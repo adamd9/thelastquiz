@@ -309,10 +309,6 @@ def test_admin_preview_publication_and_repeat_rejection(tmp_path, monkeypatch):
     for eid in LATEST:
         attempt(db, eid, f"api-{eid}")
     db.close()
-    assert client.post(
-        "/api/admin/experiments/publish",
-        json={"experiment_ids": LATEST, "required_models": ["missing/model"]},
-    ).status_code == 400
     assert not triggered
     assert client.post(
         "/api/admin/experiments/preview", json={"experiment_ids": LATEST},
@@ -320,7 +316,7 @@ def test_admin_preview_publication_and_repeat_rejection(tmp_path, monkeypatch):
     assert not triggered
     result = client.post(
         "/api/admin/experiments/publish",
-        json={"experiment_ids": LATEST, "required_models": [Adapter.id]},
+        json={"experiment_ids": LATEST},
     )
     assert result.status_code == 200, result.text
     assert triggered

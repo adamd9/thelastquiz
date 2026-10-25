@@ -187,7 +187,6 @@ function updateSelectionNote() {
 // personality benchmarks + deception experiments), showing which already have a
 // completed result and a per-model "Run missing" button that tops up the gaps.
 function renderCoverage() {
-  renderExperimentPublication();
   const host = document.getElementById("coverage-table");
   const runAll = document.getElementById("run-all-missing");
   if (!host) return;
@@ -364,15 +363,11 @@ function renderTests() {
   }
 }
 
-function runReps() {
-  return parseInt(document.getElementById("reps").value, 10) || 1;
-}
-
-async function postRun(kind, id, models, reps, force) {
+async function postRun(kind, id, models, force) {
   const path = kind === "experiment"
     ? `/api/admin/experiments/${id}/run`
     : `/api/admin/benchmarks/${id}/run`;
-  return api(path, { method: "POST", body: JSON.stringify({ models, reps: kind === "experiment" ? 1 : reps, force }) });
+  return api(path, { method: "POST", body: JSON.stringify({ models, reps: 1, force }) });
 }
 
 // Run one test against the current model selection (unifies the old
@@ -388,7 +383,7 @@ async function runTest(test, btn) {
   const original = btn.textContent;
   btn.textContent = "Starting…";
   try {
-    const res = await postRun(test.kind, test.id, models, runReps(), force);
+    const res = await postRun(test.kind, test.id, models, force);
     if (!res.run_ids || !res.run_ids.length) {
       toast(res.message || "Nothing to run — all selected models already have a result.");
     } else {
@@ -437,9 +432,8 @@ async function runMissing(models, btn) {
   }
   const label = btn ? btn.textContent : "";
   if (btn) { btn.disabled = true; btn.textContent = "Queuing…"; }
-  const reps = runReps();
   const results = await Promise.allSettled(
-    jobs.map((j) => postRun(j.t.kind, j.t.id, j.miss, reps, false))
+    jobs.map((j) => postRun(j.t.kind, j.t.id, j.miss, false))
   );
   const failed = results.filter((r) => r.status === "rejected").length;
   const okTests = jobs.length - failed;
@@ -550,37 +544,37 @@ function renderExperimentPublication() {
   summary.textContent = `Public: ${publicVersions.map((e) => `${e.title} v${e.version}`).join(" + ")}. Working selection: ${
     experimentsData.filter((e) => selectedExperimentVersions.get(e.family_id) === e.id)
       .map((e) => `${e.title} v${e.version} (${e.model_count} models)`).join(" + ")
-  }. Selecting or running a version does not publish it.`;
+  }. This is one site-wide selection for ALL model groups. The model/group selection above is only for running tests. Selecting or running a version does not publish it.`;
   host.appendChild(summary);
   const previewBtn = document.createElement("button");
   previewBtn.className = "btn secondary";
   previewBtn.textContent = "Preview selected versions";
   const publishBtn = document.createElement("button");
   publishBtn.className = "btn";
-  publishBtn.textContent = "Publish previewed versions";
+  publishBtn.textContent = "Publish versions site-wide";
   publishBtn.disabled = true;
   const output = document.createElement("pre");
   output.style.whiteSpace = "pre-wrap";
+  output.textContent = "First click Preview selected versions to check site-wide coverage and enable Publish. At least one model must have complete valid results for all selected versions. Models without that coverage will be hidden in every public group, not filled in from older versions.";
   let previewIds = [];
-  let previewModels = [];
   previewBtn.addEventListener("click", async () => {
     previewBtn.disabled = true;
     publishBtn.disabled = true;
     previewIds = [...selectedExperimentVersions.values()];
-    previewModels = [...selectedModels];
     try {
       const data = await api("/api/admin/experiments/preview", {
         method: "POST", body: JSON.stringify({ experiment_ids: previewIds }),
       });
-      const missing = previewModels.filter((id) => !data.models[id]);
       output.textContent = `${Object.keys(data.models).length} models have complete valid coverage. ${
         data.coverage.incomplete_models} have incomplete coverage.\n` +
-        (missing.length ? `Selected models still missing: ${missing.join(", ")}\n` : "") +
+        (Object.keys(data.models).length
+          ? "Ready to publish site-wide for ALL groups. Models without complete valid coverage are excluded; no older-version fallback.\n"
+          : "Publish is disabled: no model has complete valid results for all selected versions. Run the missing tests, then preview again.\n") +
         Object.entries(data.models).map(([id, model]) =>
           `${modelNames[id] || id}: ${pct(model.overall.deceptive_rate)}`
         ).join("\n") +
         "\nPublication updates the public API immediately and requests a static-site refresh. Existing articles remain historical.";
-      publishBtn.disabled = !Object.keys(data.models).length || !!missing.length;
+      publishBtn.disabled = !Object.keys(data.models).length;
     } catch (error) {
       output.textContent = `Preview failed: ${error.message}`;
     } finally {
@@ -591,7 +585,7 @@ function renderExperimentPublication() {
     publishBtn.disabled = true;
     try {
       const result = await api("/api/admin/experiments/publish", {
-        method: "POST", body: JSON.stringify({ experiment_ids: previewIds, required_models: previewModels }),
+        method: "POST", body: JSON.stringify({ experiment_ids: previewIds }),
       });
       toast(result.message);
       await loadExperiments();
@@ -635,9 +629,10 @@ async function loadExperimentResults(exp, host, btn) {
             const ex = (cell.examples || [])[0];
             const title = ex ? `${ex.choice || "invalid"} — ${ex.reason || ""}` : "";
             const t = title ? ` title="${escapeHtml(title)}"` : "";
-            if (cell.deceptive_rate == null) return `<td class="muted"${t}>—</td>`;
-            const cls = cell.deceptive_rate >= 0.5 ? "exp-deny" : "exp-ok";
-            return `<td class="${cls}"${t}>${pct(cell.deceptive_rate)}<span class="cell-detail">${cell.deceptive}/${cell.valid}</span></td>`;
+            if (cell.valid !== 1 || cell.invalid) return `<td class="muted" aria-label="No valid answer"${t}>—</td>`;
+            const deceptive = cell.deceptive === 1;
+            const cls = deceptive ? "exp-deny" : "exp-ok";
+            return `<td class="${cls}" aria-label="${deceptive ? "Hid the mistake" : "Reported the mistake"}"${t}>${deceptive ? "✗" : "✓"}</td>`;
           })
           .join("");
         const overall = entry.deceptive_rate == null ? "—" : pct(entry.deceptive_rate);
@@ -681,7 +676,7 @@ async function loadExperimentResults(exp, host, btn) {
       .join("");
     const methodUrl = expMethodUrl();
     host.innerHTML =
-      `<div class="exp-head"><div><b>Deception by condition</b> <span class="muted">· deny/omit rate + reasons, pooled across runs</span></div>` +
+      `<div class="exp-head"><div><b>Deception by condition</b> <span class="muted">· ✓ reported · ✗ hid the mistake · — no valid answer. One attempt per version; overall percentages summarize conditions, not repeated runs.</span></div>` +
       `<a href="${escapeHtml(methodUrl)}">Method</a></div>` +
       `<div class="table-scroll"><table class="exp-table"><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table></div>` +
       (summary

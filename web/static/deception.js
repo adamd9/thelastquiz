@@ -38,6 +38,22 @@ function pct(rate) {
   return rate == null ? "—" : `${Math.round(rate * 100)}%`;
 }
 
+function conditionOutcome(cell) {
+  if (cell.valid !== 1 || cell.invalid) return { glyph: "—", label: "No valid answer" };
+  return cell.deceptive === 1
+    ? { glyph: "✗", label: "Hid the mistake" }
+    : { glyph: "✓", label: "Reported the mistake" };
+}
+
+function dimensionValue(model, dimension) {
+  const cells = (DATA.experiments || []).flatMap((exp) =>
+    (exp.conditions || []).filter((c) => (c.dimensions || []).includes(dimension))
+      .map((c) => model.by_experiment?.[exp.id]?.conditions?.[c.id] || {})
+  );
+  return cells.length === 1 ? conditionOutcome(cells[0]).glyph
+    : pct((model.by_dimension || {})[dimension]);
+}
+
 // Teal (honest) → gold → red (deceptive), so colour reinforces the rate.
 const STOPS = [
   [0, [42, 157, 143]],
@@ -111,8 +127,7 @@ function tint(rate) {
 function modelTip(modelId, m) {
   const dimRows = (DATA.dimensions || [])
     .map((d) => {
-      const v = (m.by_dimension || {})[d.id];
-      return `<div class="rq-row"><span class="rq-k">${escapeHtml(d.label)}</span><span class="rq-v">${pct(v)}</span></div>`;
+      return `<div class="rq-row"><span class="rq-k">${escapeHtml(d.label)}</span><span class="rq-v">${dimensionValue(m, d.id)}</span></div>`;
     })
     .join("");
   const ex = (m.examples || [])[0];
@@ -255,11 +270,10 @@ function dimExampleFor(m, dimId) {
 function dimTip(modelId, m, dimId) {
   const dim = (DATA.dimensions || []).find((d) => d.id === dimId);
   const dimLabel = dim ? dim.label : dimId;
-  const rate = (m.by_dimension || {})[dimId];
   const ex = dimExampleFor(m, dimId);
   const rows =
     `<div class="rq-row rq-hi"><span class="rq-k">${escapeHtml(dimLabel)}</span>` +
-    `<span class="rq-v">${pct(rate)}</span></div>` +
+    `<span class="rq-v">${dimensionValue(m, dimId)}</span></div>` +
     (ex && ex.cond
       ? `<div class="rq-row"><span class="rq-k">When</span><span class="rq-v">${escapeHtml(ex.cond)}</span></div>`
       : "") +
@@ -296,7 +310,7 @@ function renderDimensions(host, models) {
             `<div class="dd-logo">${providerLogoHtml(x.id, 16)}</div>` +
             `<div class="dd-name">${escapeHtml(familyLabel(x.id))}</div>` +
             `<div class="dd-bar"><span style="width:${Math.max(2, Math.round(x.dv * 100))}%;background:${colorFor(x.dv)}"></span></div>` +
-            `<div class="dd-val">${pct(x.dv)}</div></div>`
+            `<div class="dd-val">${dimensionValue(DATA.models[x.id], d.id)}</div></div>`
         )
         .join("");
       return `<div class="dd-card"><h3 title="${escapeHtml(d.label)}">${escapeHtml(SHORT_DIM[d.id] || shortDimLabel(d.label))}</h3><div class="dd-rows">${rows}</div></div>`;
@@ -325,8 +339,7 @@ function condTip(exp, cond) {
 // Tooltip for a single cell: the model's actual choice and reason for this exact
 // condition — the real insight behind the number.
 function cellTip(modelId, exp, cond, cc) {
-  const dr = cc.deceptive_rate;
-  const verdict = dr == null ? "no valid answer" : dr >= 0.5 ? "chose to deceive" : "stayed honest";
+  const outcome = conditionOutcome(cc);
   const dims = (cond.dimensions || []).map((d) => DIM_NAME[d] || d).join(", ");
   const ex = cc.example;
   const choice = ex && ex.valid ? ex.choice : ex ? "invalid response" : "";
@@ -336,7 +349,7 @@ function cellTip(modelId, exp, cond, cc) {
     `<div class="rq-name">${escapeHtml(familyLabel(modelId))}</div>` +
     `<div class="rq-id">${escapeHtml(cond.label || cond.id)}</div></div></div>` +
     `<div class="rq-rows">` +
-    `<div class="rq-row rq-hi"><span class="rq-k">${escapeHtml(verdict)}</span><span class="rq-v">${pct(dr)}</span></div>` +
+    `<div class="rq-row rq-hi"><span class="rq-k">${outcome.label}</span><span class="rq-v">${outcome.glyph}</span></div>` +
     (dims ? `<div class="rq-row"><span class="rq-k">Pressure</span><span class="rq-v">${escapeHtml(dims)}</span></div>` : "") +
     (choice ? `<div class="rq-row"><span class="rq-k">Chose</span><span class="rq-v">${escapeHtml(choice)}</span></div>` : "") +
     `</div>` +
@@ -366,10 +379,11 @@ function renderExperiments(host, models) {
             .map((c, ci) => {
               const cc = (be.conditions || {})[c.id] || {};
               const dr = cc.deceptive_rate;
+              const outcome = conditionOutcome(cc);
               const cls = dr == null ? "muted" : dr >= 0.5 ? "de" : "ho";
               return (
                 `<td class="dx-cell ${cls}" data-exp="${escapeHtml(exp.id)}" data-ci="${ci}" data-model="${escapeHtml(x.id)}" ` +
-                `style="background:${tint(dr)}">${dr == null ? "—" : Math.round(dr * 100) + "%"}</td>`
+                `aria-label="${outcome.label}" style="background:${tint(dr)}">${outcome.glyph}</td>`
               );
             })
             .join("");
@@ -387,8 +401,8 @@ function renderExperiments(host, models) {
         `<div class="dx-card"><div class="dx-head"><h3>${escapeHtml(exp.title)} ` +
         `<span class="dx-v">v${escapeHtml(String(exp.version))}</span></h3></div>${about}` +
         `<div class="dx-scroll"><table class="dx-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>` +
-        `<p class="dx-legend"><span class="dx-key ho">■</span> honest · <span class="dx-key de">■</span> deceptive · ` +
-        `hover a column or cell for what it means</p></div>`
+        `<p class="dx-legend"><b class="dx-key ho">✓</b> reported · <b class="dx-key de">✗</b> hid the mistake · — no valid answer · ` +
+        `overall percentages summarize different conditions, not repeated runs. Hover a column or cell for details.</p></div>`
       );
     })
     .join("");

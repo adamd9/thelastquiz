@@ -107,9 +107,12 @@ hash, so the revised draft cannot be pooled with those earlier attempts.
   outcomes. Admin's family selectors default to the latest numeric version,
   independently of the public selection. "Prompts" displays exact messages.
   Coverage and "Run missing" apply to the selected version.
-- Preview the selected family versions, check coverage for the selected model
-  group, then explicitly publish. Preview does not mutate the public selection.
-  Publication validates selected-model coverage again on the server, persists
+- Preview the selected family versions, check site-wide coverage, then explicitly
+  publish. The Publish button stays disabled until a successful preview contains
+  at least one fully covered model; the panel explains missing coverage.
+  Publication is global for all model groups, independent of the admin's model
+  selection. Preview does not mutate the public selection.
+  Publication validates that complete coverage still exists on the server, persists
   the entire selection atomically and requests the existing Pages refresh hook.
   No paid runs are started by publication. An older version can be selected and
   published again to roll back.
